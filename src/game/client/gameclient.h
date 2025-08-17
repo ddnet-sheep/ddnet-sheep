@@ -63,6 +63,9 @@
 #include "components/tooltips.h"
 #include "components/touch_controls.h"
 #include "components/voting.h"
+//<sheep>
+#include "components/sheep/update.h"
+//</sheep>
 
 #include <vector>
 
@@ -178,6 +181,9 @@ public:
 
 	CLocalServer m_LocalServer;
 
+	//<sheep>
+	CSheepUpdate m_SheepUpdate;
+	//</sheep>
 private:
 	std::vector<class CComponent *> m_vpAll;
 	std::vector<class CComponent *> m_vpInput;

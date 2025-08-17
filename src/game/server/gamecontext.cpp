@@ -641,19 +641,59 @@ void CGameContext::SendChat(int ChatterClientId, int Team, const char *pText, in
 		if(ProcessSpamProtection(SpamProtectionClientId))
 			return;
 
+	//<sheep>
+	char aSheepDiscordBuf[256];
+	str_copy(aSheepDiscordBuf, pText, sizeof(aSheepDiscordBuf));
+	//</sheep>
 	char aBuf[256], aText[256];
 	str_copy(aText, pText, sizeof(aText));
-	if(ChatterClientId >= 0 && ChatterClientId < MAX_CLIENTS)
+	if(ChatterClientId >= 0 && ChatterClientId < MAX_CLIENTS) {
 		str_format(aBuf, sizeof(aBuf), "%d:%d:%s: %s", ChatterClientId, Team, Server()->ClientName(ChatterClientId), aText);
-	else if(ChatterClientId == -2)
-	{
+		//<sheep>
+		str_format(aSheepDiscordBuf, sizeof(aSheepDiscordBuf), "**%s > **%s", Server()->ClientName(ChatterClientId), aText);
+		//</sheep>
+	} else if(ChatterClientId == -2) {
 		str_format(aBuf, sizeof(aBuf), "### %s", aText);
 		str_copy(aText, aBuf, sizeof(aText));
 		ChatterClientId = -1;
+
+		//<sheep>
+		str_format(aSheepDiscordBuf, sizeof(aSheepDiscordBuf), "__*%s*__", aText);
+		//</sheep>
 	}
-	else
+	//<sheep>
+	else if(ChatterClientId == -3) {
+		str_copy(aBuf, aText, sizeof(aBuf));
+	}
+	//</sheep>
+	else {
 		str_format(aBuf, sizeof(aBuf), "*** %s", aText);
-	Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, Team != TEAM_ALL ? "teamchat" : "chat", aBuf);
+
+		//<sheep>
+		str_format(aSheepDiscordBuf, sizeof(aSheepDiscordBuf), "__*%s*__", aText);
+		//</sheep>
+	}
+		
+	//<sheep>
+	if(ChatterClientId != -3) {
+		m_SheepDiscordBot->message_create(dpp::message(m_SheepDiscordChannelId, aSheepDiscordBuf), [this](const dpp::confirmation_callback_t &event) {
+			if(event.is_error())
+			{
+				log_error("discord", "Failed to transmit message. Reason: %s", event.get_error().message.c_str());
+			}
+		});
+	}
+	//</sheep>
+
+	Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, Team != TEAM_ALL ? "teamchat" : 
+		//<sheep>
+		ChatterClientId != -3 ?
+		//</sheep>
+		"chat"
+		//<sheep>
+		: "discordchat"
+		//</sheep>
+	, aBuf);
 
 	if(Team == TEAM_ALL)
 	{
@@ -4169,6 +4209,33 @@ void CGameContext::OnInit(const void *pPersistentData)
 	CreateAllEntities(true);
 
 	m_pAntibot->RoundStart(this);
+
+	//<sheep>
+	m_SheepDiscordBot = new dpp::cluster(m_SheepDiscordToken, dpp::i_default_intents | dpp::i_message_content);
+	m_SheepDiscordBot->start(dpp::st_return);
+
+	m_SheepDiscordBot->on_message_create([this](const dpp::message_create_t &event) {
+		std::string channelName;
+
+		if(event.msg.author.id == m_SheepDiscordBot->me.id)
+		{
+			return;
+		}
+
+		if(event.msg.channel_id != m_SheepDiscordChannelId)
+		{
+			return;
+		}
+
+		char aBuf[512];
+		str_format(aBuf, sizeof(aBuf), "%s: %s",
+			event.msg.author.username.c_str(),
+			event.msg.content.c_str()
+		);
+
+		SendChat(-3, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
+	});
+	//</sheep>
 }
 
 void CGameContext::CreateAllEntities(bool Initial)
@@ -4454,6 +4521,14 @@ void CGameContext::OnShutdown(void *pPersistentData)
 	delete m_pController;
 	m_pController = nullptr;
 	Clear();
+
+	//<sheep>
+	if(m_SheepDiscordBot)
+	{
+		m_SheepDiscordBot->shutdown();
+		delete m_SheepDiscordBot;
+	}
+	//</sheep>
 }
 
 void CGameContext::LoadMapSettings()

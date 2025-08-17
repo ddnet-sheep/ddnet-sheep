@@ -704,6 +704,10 @@ void CChat::AddLine(int ClientId, int Team, const char *pLine)
 				ChatLogColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClMessageSystemColor));
 			else if(Line.m_ClientId == CLIENT_MSG)
 				ChatLogColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClMessageClientColor));
+			//<sheep>
+			else if(Line.m_ClientId == DISCORD_MSG)
+				ChatLogColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClMessageDiscordColor));
+			//</sheep>
 			else // regular message
 				ChatLogColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClMessageColor));
 		}
@@ -717,6 +721,10 @@ void CChat::AddLine(int ClientId, int Team, const char *pLine)
 			pFrom = "chat/server";
 		else if(Line.m_ClientId == CLIENT_MSG)
 			pFrom = "chat/client";
+		//<sheep>
+		else if(Line.m_ClientId == DISCORD_MSG)
+			pFrom = "chat/discord";
+		//</sheep>
 		else
 			pFrom = "chat/all";
 
@@ -791,6 +799,15 @@ void CChat::AddLine(int ClientId, int Team, const char *pLine)
 	{
 		str_copy(CurrentLine.m_aName, "— ");
 	}
+	//<sheep>
+	else if(CurrentLine.m_ClientId == DISCORD_MSG)
+	{
+		std::string line = std::string(pLine);
+		std::string username = line.substr(0, line.find(":"));
+		str_copy(CurrentLine.m_aName, username.c_str());
+		str_copy(CurrentLine.m_aText, line.substr(line.find(":")).c_str());
+	}
+	//</sheep>
 	else
 	{
 		const auto &LineAuthor = GameClient()->m_aClients[CurrentLine.m_ClientId];
@@ -1056,6 +1073,10 @@ void CChat::OnPrepareLines(float y)
 			NameColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClMessageSystemColor));
 		else if(Line.m_ClientId == CLIENT_MSG)
 			NameColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClMessageClientColor));
+		//<sheep>
+		else if(Line.m_ClientId == DISCORD_MSG)
+			NameColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClMessageDiscordColor));
+		//</sheep>
 		else if(Line.m_Team)
 			NameColor = CalculateNameColor(ColorHSLA(g_Config.m_ClMessageTeamColor));
 		else if(Line.m_NameColor == TEAM_RED)

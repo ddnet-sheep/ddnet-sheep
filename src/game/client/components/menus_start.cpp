@@ -250,10 +250,16 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 	Ui()->DoLabel(&VersionUpdate, aBuf, 14.0f, TEXTALIGN_ML);
 	TextRender()->TextColor(TextRender()->DefaultTextColor());
 #elif defined(CONF_INFORM_UPDATE)
-	if(str_comp(Client()->LatestVersion(), "0") != 0)
+	//<sheep>
+	//if(str_comp(Client()->LatestVersion(), "0") != 0)
+	if(GameClient()->m_SheepUpdate.m_InternalVersion < GameClient()->m_SheepUpdate.m_CurVersionInternal)
+	//</sheep>
 	{
 		char aBuf[64];
-		str_format(aBuf, sizeof(aBuf), Localize("DDNet %s is out!"), Client()->LatestVersion());
+		//<sheep>
+		//str_format(aBuf, sizeof(aBuf), Localize("DDNet %s is out!"), Client()->LatestVersion());
+		str_format(aBuf, sizeof(aBuf), Localize("Sheep Client %s is out!"), GameClient()->m_SheepUpdate.m_CurVersion);
+		//</sheep>
 		TextRender()->TextColor(TextRender()->DefaultTextColor());
 		Ui()->DoLabel(&VersionUpdate, aBuf, 14.0f, TEXTALIGN_MC);
 	}

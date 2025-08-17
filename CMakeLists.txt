@@ -286,7 +286,9 @@ if(NOT MSVC AND NOT HAIKU)
   endif()
 
   # Disable exceptions as DDNet does not use them.
-  add_cxx_compiler_flag_if_supported(OUR_FLAGS -fno-exceptions)
+  #<sheep>
+  #add_cxx_compiler_flag_if_supported(OUR_FLAGS -fno-exceptions)
+  #</sheep>
 
   # Inaccurate floating point numbers cause problems on mingw-w64-gcc when
   # compiling for x86, might cause problems elsewhere. So don't store floats
@@ -1442,6 +1444,9 @@ set(EXPECTED_DATA
   fonts/DejaVuSans.ttf
   fonts/Font_Awesome_6_Free-Solid-900.otf
   fonts/GlowSansJ-Compressed-Book.otf
+  #<sheep>
+  fonts/NotoEmoji-VariableFont_wght.ttf
+  #</sheep>
   fonts/SourceHanSans.ttc
   fonts/index.json
   game.png
@@ -2414,6 +2419,10 @@ if(CLIENT)
     components/touch_controls.h
     components/voting.cpp
     components/voting.h
+    #<sheep>
+    components/sheep/update.cpp
+    components/sheep/update.h
+    #</sheep>
     gameclient.cpp
     gameclient.h
     laser_data.cpp
@@ -3691,3 +3700,19 @@ foreach(target ${TARGETS_DEP})
     target_compile_options(${target} PRIVATE ${OUR_FLAGS_DEP})
   endif()
 endforeach()
+
+#<sheep>
+add_subdirectory("${PROJECT_SOURCE_DIR}/ddnet-libs-sheep/DPP")
+target_link_libraries(game-server
+    dpp
+)
+target_include_directories(game-server PRIVATE
+    "${PROJECT_SOURCE_DIR}/ddnet-libs-sheep/DPP/include"
+)
+target_link_libraries(game-server-without-main
+    dpp
+)
+target_include_directories(game-server-without-main PRIVATE
+    "${PROJECT_SOURCE_DIR}/ddnet-libs-sheep/DPP/include"
+)
+#</sheep>

@@ -67,6 +67,9 @@ class CChat : public CComponent
 	enum
 	{
 		// client IDs for special messages
+		//<sheep>
+		DISCORD_MSG = -3,
+		//</sheep>
 		CLIENT_MSG = -2,
 		SERVER_MSG = -1,
 
