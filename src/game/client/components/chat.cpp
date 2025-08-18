@@ -663,8 +663,8 @@ void CChat::AddLine(int ClientId, int Team, const char *pLine)
 			pEnd = nullptr;
 		}
 		else if(pEnd == nullptr)
-			pEnd = pStrOld;
-
+		pEnd = pStrOld;
+		
 		if(++Length >= MAX_LINE_LENGTH)
 		{
 			*(const_cast<char *>(pStr)) = '\0';
@@ -672,11 +672,17 @@ void CChat::AddLine(int ClientId, int Team, const char *pLine)
 		}
 	}
 	if(pEnd != nullptr)
-		*(const_cast<char *>(pEnd)) = '\0';
-
+	*(const_cast<char *>(pEnd)) = '\0';
+	
 	if(*pLine == 0)
-		return;
-
+	return;
+	
+	//<sheep>
+	if (ClientId == SERVER_MSG && str_startswith(pLine, "[DC]")) {
+		ClientId = DISCORD_MSG;
+	}
+	//</sheep>
+	
 	bool Highlighted = false;
 
 	auto &&FChatMsgCheckAndPrint = [this](const CLine &Line) {
@@ -790,6 +796,7 @@ void CChat::AddLine(int ClientId, int Team, const char *pLine)
 	CurrentLine.m_Highlighted = Highlighted;
 
 	str_copy(CurrentLine.m_aText, pLine);
+	
 
 	if(CurrentLine.m_ClientId == SERVER_MSG)
 	{
@@ -802,7 +809,7 @@ void CChat::AddLine(int ClientId, int Team, const char *pLine)
 	//<sheep>
 	else if(CurrentLine.m_ClientId == DISCORD_MSG)
 	{
-		std::string line = std::string(pLine);
+		std::string line = std::string(pLine).substr(5);
 		std::string username = line.substr(0, line.find(":"));
 		str_copy(CurrentLine.m_aName, username.c_str());
 		str_copy(CurrentLine.m_aText, line.substr(line.find(":")).c_str());

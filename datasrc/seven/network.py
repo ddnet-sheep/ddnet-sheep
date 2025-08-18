@@ -270,10 +270,7 @@ Messages = [
 
 	NetMessage("Sv_Chat", [
 		NetIntRange("m_Mode", 0, 'NUM_CHATS-1'),
-        #<sheep>
-		#NetIntRange("m_ClientId", -1, 'MAX_CLIENTS-1'),
-		NetIntRange("m_ClientId", -3, 'MAX_CLIENTS-1'),
-        #</sheep>
+        NetIntRange("m_ClientId", -1, 'MAX_CLIENTS-1'),
 		NetIntRange("m_TargetId", -1, 'MAX_CLIENTS-1'),
 		NetStringStrict("m_pMessage"),
 	]),

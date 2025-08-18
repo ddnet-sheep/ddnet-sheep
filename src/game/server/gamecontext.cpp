@@ -643,8 +643,12 @@ void CGameContext::SendChat(int ChatterClientId, int Team, const char *pText, in
 
 	//<sheep>
 	char aSheepDiscordBuf[256];
-	str_copy(aSheepDiscordBuf, pText, sizeof(aSheepDiscordBuf));
+	bool isDiscordMessage = str_startswith(pText, "[DC]");
+	if (!isDiscordMessage) {
+		str_format(aSheepDiscordBuf, sizeof(aSheepDiscordBuf), "__*%s*__", pText);
+	}
 	//</sheep>
+
 	char aBuf[256], aText[256];
 	str_copy(aText, pText, sizeof(aText));
 	if(ChatterClientId >= 0 && ChatterClientId < MAX_CLIENTS) {
@@ -656,26 +660,21 @@ void CGameContext::SendChat(int ChatterClientId, int Team, const char *pText, in
 		str_format(aBuf, sizeof(aBuf), "### %s", aText);
 		str_copy(aText, aBuf, sizeof(aText));
 		ChatterClientId = -1;
-
-		//<sheep>
-		str_format(aSheepDiscordBuf, sizeof(aSheepDiscordBuf), "__*%s*__", aText);
-		//</sheep>
 	}
-	//<sheep>
-	else if(ChatterClientId == -3) {
-		str_copy(aBuf, aText, sizeof(aBuf));
-	}
-	//</sheep>
 	else {
-		str_format(aBuf, sizeof(aBuf), "*** %s", aText);
-
 		//<sheep>
-		str_format(aSheepDiscordBuf, sizeof(aSheepDiscordBuf), "__*%s*__", aText);
+		if (isDiscordMessage) {
+			str_copy(aBuf, aText, sizeof(aBuf));
+		} else {
+		//</sheep>
+			str_format(aBuf, sizeof(aBuf), "*** %s", aText);
+		//<sheep>
+		}
 		//</sheep>
 	}
 		
 	//<sheep>
-	if(ChatterClientId != -3) {
+	if(!isDiscordMessage) {
 		m_SheepDiscordBot->message_create(dpp::message(m_SheepDiscordChannelId, aSheepDiscordBuf), [this](const dpp::confirmation_callback_t &event) {
 			if(event.is_error())
 			{
@@ -687,12 +686,9 @@ void CGameContext::SendChat(int ChatterClientId, int Team, const char *pText, in
 
 	Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, Team != TEAM_ALL ? "teamchat" : 
 		//<sheep>
-		ChatterClientId != -3 ?
+		isDiscordMessage ? "discordchat" :
 		//</sheep>
 		"chat"
-		//<sheep>
-		: "discordchat"
-		//</sheep>
 	, aBuf);
 
 	if(Team == TEAM_ALL)
@@ -4228,12 +4224,12 @@ void CGameContext::OnInit(const void *pPersistentData)
 		}
 
 		char aBuf[512];
-		str_format(aBuf, sizeof(aBuf), "%s: %s",
+		str_format(aBuf, sizeof(aBuf), "[DC] %s: %s",
 			event.msg.author.username.c_str(),
 			event.msg.content.c_str()
 		);
 
-		SendChat(-3, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
+		SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
 	});
 	//</sheep>
 }

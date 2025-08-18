@@ -12,8 +12,8 @@ class CSheepUpdate : public CComponent
     
 public:
     // this client
-	const char *m_ReleaseVersion = "1.0.1_alpha";
-	const int m_InternalVersion = 1000001;
+	const char *m_ReleaseVersion = "1.0.3_alpha";
+	const int m_InternalVersion = 1000003;
 
     // the server
     int m_MinVersion = 0;
