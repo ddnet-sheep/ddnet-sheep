@@ -4225,7 +4225,7 @@ void CGameContext::OnInit(const void *pPersistentData)
 
 		char aBuf[512];
 		str_format(aBuf, sizeof(aBuf), "[DC] %s: %s",
-			event.msg.author.username.c_str(),
+			event.msg.author.global_name.c_str(),
 			event.msg.content.c_str()
 		);
 
