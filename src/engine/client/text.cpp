@@ -324,9 +324,6 @@ private:
 	// Font faces
 	FT_Face m_DefaultFace = nullptr;
 	FT_Face m_IconFace = nullptr;
-	//<sheep>
-	FT_Face m_EmojiFace = nullptr;
-	//</sheep>
 	FT_Face m_VariantFace = nullptr;
 	FT_Face m_SelectedFace = nullptr;
 	std::vector<FT_Face> m_vFallbackFaces;
@@ -405,11 +402,7 @@ private:
 
 	FT_UInt GetCharGlyph(int Chr, FT_Face *pFace, bool AllowReplacementCharacter)
 	{
-		for(FT_Face Face : {m_SelectedFace, m_DefaultFace, m_VariantFace, 
-			//<sheep>
-			m_EmojiFace
-			//</sheep>
-		})
+		for(FT_Face Face : {m_SelectedFace, m_DefaultFace, m_VariantFace})
 		{
 			if(Face && Face->charmap)
 			{
@@ -621,13 +614,6 @@ public:
 		return m_IconFace;
 	}
 
-	//<sheep>
-	FT_Face EmojiFace() const
-	{
-		return m_EmojiFace;
-	}
-	//</sheep>
-
 	void AddFace(FT_Face Face)
 	{
 		m_vFtFaces.push_back(Face);
@@ -658,19 +644,6 @@ public:
 		}
 		return true;
 	}
-
-	//<sheep>
-	bool SetEmojiFaceByName(const char *pFamilyName)
-	{
-		m_EmojiFace = GetFaceByName(pFamilyName);
-		if(!m_EmojiFace)
-		{
-			log_error("textrender", "The emoji font face '%s' could not be found", pFamilyName);
-			return false;
-		}
-		return true;
-	}
-	//</sheep>
 
 	bool AddFallbackFaceByName(const char *pFamilyName)
 	{
@@ -1350,23 +1323,6 @@ public:
 			log_error("textrender", "Font index malformed: 'icon' must be a string");
 			Success = false;
 		}
-
-		//<sheep>
-		// extract icon font family name
-		const json_value &EmojiFace = (*pJsonData)["emoji"];
-		if(EmojiFace.type == json_string)
-		{
-			if(!m_pGlyphMap->SetEmojiFaceByName(EmojiFace.u.string.ptr))
-			{
-				Success = false;
-			}
-		}
-		else
-		{
-			log_error("textrender", "Font index malformed: 'emoji' must be a string");
-			Success = false;
-		}
-		//</sheep>
 
 		json_value_free(pJsonData);
 		return Success;

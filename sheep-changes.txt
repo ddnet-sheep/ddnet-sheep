@@ -1,0 +1,11 @@
+<sheep>
+data/fonts/index.json:
+{
+    "font-files": [
++        "NotoEmoji-VariableFont_wght.ttf"
+    ],
+    "fallbacks": [
++        "Noto Emoji"
+    ]
+}
+</sheep>
