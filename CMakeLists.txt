@@ -1399,6 +1399,10 @@ set(EXPECTED_DATA
   countryflags/ZW.png
   countryflags/default.png
   countryflags/index.txt
+  #<sheep>
+  #TODO: include all maps
+  #ddnet-maps/types/brutal/maps/...
+  #</sheep>
   deadtee.png
   debug_font.png
   editor/audio_source.png
@@ -2767,6 +2771,19 @@ if(SERVER)
     entities/dragger.h
     entities/dragger_beam.cpp
     entities/dragger_beam.h
+    #<sheep>
+    entities/sheep/dummy/blmapchill_police.cpp
+    entities/sheep/dummy/blmapchill_police.h
+    entities/sheep/dummy/chillblock5_police.cpp
+    entities/sheep/dummy/chillblock5_police.h
+    entities/sheep/dummy/dummybase.cpp
+    entities/sheep/dummy/dummybase.h
+    entities/sheep/dummy/house.cpp
+    entities/sheep/dummy/house.h
+    entities/sheep/dummy/macros.h
+    entities/sheep/dummy/v3_blocker.cpp
+    entities/sheep/dummy/v3_blocker.h
+    #</sheep>
     entities/gun.cpp
     entities/gun.h
     entities/laser.cpp
@@ -3721,4 +3738,6 @@ target_link_libraries(game-server-without-main
 target_include_directories(game-server-without-main PRIVATE
     "${PROJECT_SOURCE_DIR}/ddnet-libs-sheep/DPP/include"
 )
+
+add_definitions(-w)
 #</sheep>
