@@ -1142,6 +1142,7 @@ set(EXPECTED_DATA
   audio/wp_switch-02.wv
   audio/wp_switch-03.wv
   autoexec_server.cfg
+  autoexec_sheep.cfg
   background_noise.png
   blob.png
   censorlist.txt
