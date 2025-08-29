@@ -2771,19 +2771,6 @@ if(SERVER)
     entities/dragger.h
     entities/dragger_beam.cpp
     entities/dragger_beam.h
-    #<sheep>
-    entities/sheep/dummy/blmapchill_police.cpp
-    entities/sheep/dummy/blmapchill_police.h
-    entities/sheep/dummy/chillblock5_police.cpp
-    entities/sheep/dummy/chillblock5_police.h
-    entities/sheep/dummy/dummybase.cpp
-    entities/sheep/dummy/dummybase.h
-    entities/sheep/dummy/house.cpp
-    entities/sheep/dummy/house.h
-    entities/sheep/dummy/macros.h
-    entities/sheep/dummy/v3_blocker.cpp
-    entities/sheep/dummy/v3_blocker.h
-    #</sheep>
     entities/gun.cpp
     entities/gun.h
     entities/laser.cpp
