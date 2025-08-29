@@ -240,6 +240,14 @@ bool CRenderLayerGroup::DoRender(const CRenderLayerParams &Params)
 			if(Right < 0.0f || Left > ScreenWidth || Bottom < 0.0f || Top > ScreenHeight)
 				return false;
 
+			// Render debug before enabling the clip
+			if(Params.m_DebugRenderOptions & 1)
+			{
+				char aDebugText[32];
+				str_format(aDebugText, sizeof(aDebugText), "Group %d", m_GroupId);
+				RenderMap()->RenderDebugClip(m_pGroup->m_ClipX, m_pGroup->m_ClipY, m_pGroup->m_ClipW, m_pGroup->m_ClipH, ColorRGBA(1.0f, 0.0f, 0.0f, 1.0f), Params.m_Zoom, aDebugText);
+			}
+
 			int ClipX = (int)std::round(Left * Graphics()->ScreenWidth() / ScreenWidth);
 			int ClipY = (int)std::round(Top * Graphics()->ScreenHeight() / ScreenHeight);
 
@@ -858,14 +866,11 @@ CRenderLayerQuads::CRenderLayerQuads(int GroupId, int LayerId, int Flags, CMapIt
 	m_pQuads = nullptr;
 }
 
-void CRenderLayerQuads::RenderQuadLayer(bool Force)
+void CRenderLayerQuads::RenderQuadLayer(float Alpha)
 {
 	CQuadLayerVisuals &Visuals = m_VisualQuad.value();
 	if(Visuals.m_BufferContainerIndex == -1)
 		return; // no visuals were created
-
-	if(!Force && (!g_Config.m_ClShowQuads || g_Config.m_ClOverlayEntities == 100))
-		return;
 
 	size_t QuadsRenderCount = 0;
 	size_t CurQuadOffset = 0;
@@ -877,6 +882,7 @@ void CRenderLayerQuads::RenderQuadLayer(bool Force)
 
 			ColorRGBA Color = ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f);
 			m_pEnvelopeEval->EnvelopeEval(pQuad->m_ColorEnvOffset, pQuad->m_ColorEnv, Color, 4);
+			Color.a *= Alpha;
 
 			const bool IsFullyTransparent = Color.a <= 0.0f;
 			const bool NeedsFlush = QuadsRenderCount == gs_GraphicsMaxQuadsRenderCount || IsFullyTransparent;
@@ -912,15 +918,17 @@ void CRenderLayerQuads::RenderQuadLayer(bool Force)
 	{
 		SQuadRenderInfo &QInfo = m_vQuadRenderInfo[0];
 
+		ColorRGBA Color = ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f);
 		if(m_QuadRenderGroup.m_ColorEnv >= 0)
 		{
-			ColorRGBA Color = ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f);
 			m_pEnvelopeEval->EnvelopeEval(m_QuadRenderGroup.m_ColorEnvOffset, m_QuadRenderGroup.m_ColorEnv, Color, 4);
-
-			if(Color.a <= 0.0f)
-				return;
-			QInfo.m_Color = Color;
 		}
+
+		Color.a *= Alpha;
+		if(Color.a <= 0.0f)
+			return;
+
+		QInfo.m_Color = Color;
 
 		if(m_QuadRenderGroup.m_PosEnv >= 0)
 		{
@@ -1102,6 +1110,16 @@ void CRenderLayerQuads::CQuadLayerVisuals::Unload()
 
 bool CRenderLayerQuads::CalculateEnvelopeClipping(int aEnvelopeOffsetMin[2], int aEnvelopeOffsetMax[2])
 {
+	if(m_QuadRenderGroup.m_PosEnv == -1)
+	{
+		for(int Channel = 0; Channel < 2; ++Channel)
+		{
+			aEnvelopeOffsetMin[Channel] = 0;
+			aEnvelopeOffsetMax[Channel] = 0;
+		}
+		return true;
+	}
+
 	int EnvStart, EnvNum;
 	m_pMap->GetType(MAPITEMTYPE_ENVELOPE, &EnvStart, &EnvNum);
 
@@ -1217,32 +1235,24 @@ void CRenderLayerQuads::CalculateClipping()
 void CRenderLayerQuads::Render(const CRenderLayerParams &Params)
 {
 	UseTexture(GetTexture());
-	if(Params.m_RenderType == ERenderType::RENDERTYPE_BACKGROUND_FORCE || Params.m_RenderType == ERenderType::RENDERTYPE_FULL_DESIGN)
+
+	bool Force = Params.m_RenderType == ERenderType::RENDERTYPE_BACKGROUND_FORCE || Params.m_RenderType == ERenderType::RENDERTYPE_FULL_DESIGN;
+	float Alpha = Force ? 1.f : (100 - Params.m_EntityOverlayVal) / 100.0f;
+	if(!Graphics()->IsQuadBufferingEnabled() || !Params.m_TileAndQuadBuffering)
 	{
-		if(g_Config.m_ClShowQuads || Params.m_RenderType == ERenderType::RENDERTYPE_FULL_DESIGN)
-		{
-			if(!Graphics()->IsQuadBufferingEnabled() || !Params.m_TileAndQuadBuffering)
-			{
-				Graphics()->BlendNormal();
-				RenderMap()->ForceRenderQuads(m_pQuads, m_pLayerQuads->m_NumQuads, LAYERRENDERFLAG_TRANSPARENT, m_pEnvelopeEval, 1.f);
-			}
-			else
-			{
-				RenderQuadLayer(true);
-			}
-		}
+		Graphics()->BlendNormal();
+		RenderMap()->ForceRenderQuads(m_pQuads, m_pLayerQuads->m_NumQuads, LAYERRENDERFLAG_TRANSPARENT, m_pEnvelopeEval, Alpha);
 	}
 	else
 	{
-		if(!Graphics()->IsQuadBufferingEnabled() || !Params.m_TileAndQuadBuffering)
-		{
-			Graphics()->BlendNormal();
-			RenderMap()->RenderQuads(m_pQuads, m_pLayerQuads->m_NumQuads, LAYERRENDERFLAG_TRANSPARENT, m_pEnvelopeEval);
-		}
-		else
-		{
-			RenderQuadLayer(false);
-		}
+		RenderQuadLayer(Alpha);
+	}
+
+	if((Params.m_DebugRenderOptions & 2) && m_QuadRenderGroup.m_Clipped)
+	{
+		char aDebugText[64];
+		str_format(aDebugText, sizeof(aDebugText), "Group %d, quad layer %d", m_GroupId, m_LayerId);
+		RenderMap()->RenderDebugClip(m_QuadRenderGroup.m_ClipX, m_QuadRenderGroup.m_ClipY, m_QuadRenderGroup.m_ClipWidth, m_QuadRenderGroup.m_ClipHeight, ColorRGBA(1.0f, 0.0f, 0.5f, 1.0f), Params.m_Zoom, aDebugText);
 	}
 }
 
@@ -1270,6 +1280,14 @@ bool CRenderLayerQuads::DoRender(const CRenderLayerParams &Params)
 		if(Right < 0.0f || Left > ScreenWidth || Bottom < 0.0f || Top > ScreenHeight)
 			return false;
 	}
+
+	// this option only deactivates quads in the background
+	if(Params.m_RenderType == ERenderType::RENDERTYPE_BACKGROUND || Params.m_RenderType == ERenderType::RENDERTYPE_BACKGROUND_FORCE)
+	{
+		if(!g_Config.m_ClShowQuads)
+			return false;
+	}
+
 	return true;
 }
 

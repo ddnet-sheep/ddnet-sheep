@@ -40,6 +40,7 @@ public:
 	bool m_RenderInvalidTiles;
 	bool m_TileAndQuadBuffering;
 	bool m_RenderTileBorder;
+	int m_DebugRenderOptions;
 };
 
 class CRenderLayer : public CRenderComponent
@@ -233,7 +234,7 @@ protected:
 		int m_BufferContainerIndex;
 		bool m_IsTextured;
 	};
-	void RenderQuadLayer(bool ForceRender = false);
+	void RenderQuadLayer(float Alpha = 1.0f);
 
 	std::optional<CRenderLayerQuads::CQuadLayerVisuals> m_VisualQuad;
 	CMapItemLayerQuads *m_pLayerQuads;

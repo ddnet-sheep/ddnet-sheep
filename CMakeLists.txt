@@ -2552,6 +2552,8 @@ if(CLIENT)
     tileart.cpp
   )
   set_src(GAME_MAP GLOB_RECURSE src/game/map
+    map_renderer.cpp
+    map_renderer.h
     render_component.cpp
     render_component.h
     render_interfaces.h
@@ -3035,6 +3037,7 @@ if((GTEST_FOUND OR DOWNLOAD_GTEST) AND SERVER)
     jsonwriter.cpp
     linereader.cpp
     mapbugs.cpp
+    mapitems.cpp
     math.cpp
     memory.cpp
     name_ban.cpp
