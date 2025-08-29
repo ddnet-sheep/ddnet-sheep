@@ -8,7 +8,7 @@
 
 class CSheepUpdate : public CComponent
 {
-    static constexpr const char *m_VersionUrl = "https://raw.githubusercontent.com/ianzano/sheep-client/refs/heads/master/version.json";
+    static constexpr const char *m_VersionUrl = "https://raw.githubusercontent.com/ddnet-sheep/ddnet-sheep/refs/heads/master/version.json";
     
 public:
     // this client
