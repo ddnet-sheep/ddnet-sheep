@@ -13,6 +13,10 @@
 #include <memory>
 #include <optional>
 
+//<sheep>
+#include <game/server/gamemodes/sheep/account.h>
+//</sheep>
+
 class CCharacter;
 class CGameContext;
 class IServer;
@@ -118,6 +122,9 @@ public:
 		int m_Max;
 	} m_Latency;
 
+	//<sheep>
+	std::shared_ptr<CAccountLoginResult> m_AccountLoginResult;
+	//</sheep>
 private:
 	const uint32_t m_UniqueClientId;
 	CCharacter *m_pCharacter;
@@ -145,7 +152,6 @@ private:
 	int m_OverrideEmote;
 	int m_OverrideEmoteReset;
 	bool m_Halloween;
-
 public:
 	enum
 	{

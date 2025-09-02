@@ -32,6 +32,9 @@
 #include "entities/character.h"
 #include "gamemodes/DDRace.h"
 #include "gamemodes/mod.h"
+//<sheep>
+#include <game/server/gamemodes/sheep/sheep.h>
+//</sheep>
 #include "player.h"
 #include "score.h"
 
@@ -642,54 +645,23 @@ void CGameContext::SendChat(int ChatterClientId, int Team, const char *pText, in
 			return;
 
 	//<sheep>
-	char aSheepDiscordBuf[256];
-	bool isDiscordMessage = str_startswith(pText, "[DC]");
-	if (!isDiscordMessage) {
-		str_format(aSheepDiscordBuf, sizeof(aSheepDiscordBuf), "__*%s*__", pText);
-	}
+	((CGameControllerSheep *)m_pController)->SendChat(ChatterClientId, Team, pText, SpamProtectionClientId, VersionFlags);
 	//</sheep>
 
 	char aBuf[256], aText[256];
 	str_copy(aText, pText, sizeof(aText));
 	if(ChatterClientId >= 0 && ChatterClientId < MAX_CLIENTS) {
 		str_format(aBuf, sizeof(aBuf), "%d:%d:%s: %s", ChatterClientId, Team, Server()->ClientName(ChatterClientId), aText);
-		//<sheep>
-		str_format(aSheepDiscordBuf, sizeof(aSheepDiscordBuf), "**%s > **%s", Server()->ClientName(ChatterClientId), aText);
-		//</sheep>
 	} else if(ChatterClientId == -2) {
 		str_format(aBuf, sizeof(aBuf), "### %s", aText);
 		str_copy(aText, aBuf, sizeof(aText));
 		ChatterClientId = -1;
 	}
 	else {
-		//<sheep>
-		if (isDiscordMessage) {
-			str_copy(aBuf, aText, sizeof(aBuf));
-		} else {
-		//</sheep>
-			str_format(aBuf, sizeof(aBuf), "*** %s", aText);
-		//<sheep>
-		}
-		//</sheep>
+		str_format(aBuf, sizeof(aBuf), "*** %s", aText);
 	}
-		
-	//<sheep>
-	if(!isDiscordMessage) {
-		m_SheepDiscordBot->message_create(dpp::message(m_SheepDiscordChannelId, aSheepDiscordBuf), [this](const dpp::confirmation_callback_t &event) {
-			if(event.is_error())
-			{
-				log_error("discord", "Failed to transmit message. Reason: %s", event.get_error().message.c_str());
-			}
-		});
-	}
-	//</sheep>
-
-	Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, Team != TEAM_ALL ? "teamchat" : 
-		//<sheep>
-		isDiscordMessage ? "discordchat" :
-		//</sheep>
-		"chat"
-	, aBuf);
+	
+	Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, Team != TEAM_ALL ? "teamchat" : "chat", aBuf);
 
 	if(Team == TEAM_ALL)
 	{
@@ -4109,10 +4081,17 @@ void CGameContext::OnInit(const void *pPersistentData)
 		}
 	}
 
+	//<sheep>
+	/*
+	//</sheep>
 	if(!str_comp(Config()->m_SvGametype, "mod"))
 		m_pController = new CGameControllerMod(this);
 	else
 		m_pController = new CGameControllerDDRace(this);
+	//<sheep>
+	*/
+	m_pController = new CGameControllerSheep(this);
+	//</sheep>
 
 	ReadCensorList();
 
@@ -4205,33 +4184,6 @@ void CGameContext::OnInit(const void *pPersistentData)
 	CreateAllEntities(true);
 
 	m_pAntibot->RoundStart(this);
-
-	//<sheep>
-	m_SheepDiscordBot = new dpp::cluster(m_SheepDiscordToken, dpp::i_default_intents | dpp::i_message_content);
-	m_SheepDiscordBot->start(dpp::st_return);
-
-	m_SheepDiscordBot->on_message_create([this](const dpp::message_create_t &event) {
-		std::string channelName;
-
-		if(event.msg.author.id == m_SheepDiscordBot->me.id)
-		{
-			return;
-		}
-
-		if(event.msg.channel_id != m_SheepDiscordChannelId)
-		{
-			return;
-		}
-
-		char aBuf[512];
-		str_format(aBuf, sizeof(aBuf), "[DC] %s: %s",
-			event.msg.author.global_name.c_str(),
-			event.msg.content.c_str()
-		);
-
-		SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
-	});
-	//</sheep>
 }
 
 void CGameContext::CreateAllEntities(bool Initial)
@@ -4517,14 +4469,6 @@ void CGameContext::OnShutdown(void *pPersistentData)
 	delete m_pController;
 	m_pController = nullptr;
 	Clear();
-
-	//<sheep>
-	if(m_SheepDiscordBot)
-	{
-		m_SheepDiscordBot->shutdown();
-		delete m_SheepDiscordBot;
-	}
-	//</sheep>
 }
 
 void CGameContext::LoadMapSettings()

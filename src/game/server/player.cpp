@@ -15,6 +15,10 @@
 #include <game/gamecore.h>
 #include <game/teamscore.h>
 
+//<sheep>
+#include <game/server/gamemodes/sheep/sheep.h>
+//</sheep>
+
 MACRO_ALLOC_POOL_ID_IMPL(CPlayer, MAX_CLIENTS)
 
 IServer *CPlayer::Server() const { return m_pGameServer->Server(); }
@@ -180,6 +184,10 @@ void CPlayer::Tick()
 		m_ChatScore--;
 
 	Server()->SetClientScore(m_ClientId, m_Score);
+
+	//<sheep>
+	((CGameControllerSheep *)GameServer()->m_pController)->TickPlayer(this);
+	//</sheep>
 
 	if(m_Moderating && m_Afk)
 	{

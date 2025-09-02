@@ -1,6 +1,5 @@
-/* (c) Shereef Marzouk. See "licence DDRace.txt" and the readme.txt in the root of the distribution for more information. */
-/* Based on Race mod stuff and tweaked by GreYFoX@GTi and others to fit our DDRace needs. */
-#include "DDRace.h"
+/* (c) Antonio Ianzano. See licence.txt and the readme.txt in the root of the distribution for more information. */
+#include "sheep.h"
 
 #include <engine/server.h>
 #include <engine/shared/config.h>
@@ -11,24 +10,74 @@
 #include <game/server/score.h>
 #include <game/version.h>
 
-#define GAME_TYPE_NAME "DDraceNetwork"
-#define TEST_TYPE_NAME "TestDDraceNetwork"
+#include <engine/server/server.h>
 
-CGameControllerDDRace::CGameControllerDDRace(class CGameContext *pGameServer) :
-	IGameController(pGameServer)
+#define GAME_TYPE_NAME "DDraceNetwork"
+
+CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
+	IGameController(pGameServer),
+	m_pPool(((CServer *)Server())->DbPool())
 {
-	m_pGameType = g_Config.m_SvTestingCommands ? TEST_TYPE_NAME : GAME_TYPE_NAME;
+
+	/*
+		CREATE TABLE `sheep_accounts` ( 
+			`name` VARCHAR(32) NOT NULL,
+			`ban_expiration` INT UNSIGNED NOT NULL DEFAULT 0 ,
+			`level` INT UNSIGNED NOT NULL DEFAULT 0 ,
+			`exp` INT NOT NULL DEFAULT 0 ,
+			`vip` INT UNSIGNED NOT NULL DEFAULT 0 ,
+			`vip_expiration` INT NOT NULL DEFAULT 0 ,
+			`staff_level` INT UNSIGNED NOT NULL DEFAULT 0 ,
+			`email` VARCHAR(255) NULL,
+			`email_verified` TINYINT NOT NULL DEFAULT 0 ,
+			PRIMARY KEY (`name`)
+		);
+	*/
+
+	m_pGameType = GAME_TYPE_NAME;
 	m_GameFlags = protocol7::GAMEFLAG_RACE;
+
+	m_DiscordBot = new dpp::cluster(m_DiscordToken, dpp::i_default_intents | dpp::i_message_content);
+	m_DiscordBot->start(dpp::st_return);
+
+	m_DiscordBot->on_message_create([this](const dpp::message_create_t &event) {
+		std::string channelName;
+
+		if(event.msg.author.id == m_DiscordBot->me.id) {
+			return;
+		}
+
+		if(event.msg.channel_id != m_DiscordChannelId) {
+			return;
+		}
+
+		char aBuf[512];
+		str_format(aBuf, sizeof(aBuf), "[DC] %s: %s",
+			event.msg.author.global_name.c_str(),
+			event.msg.content.c_str()
+		);
+
+		GameServer()->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
+	});
+
+	GameServer()->Console()->Register("login", "s[account name] s[password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConLogin, GameServer(), "Logs you into your account");
+	GameServer()->Console()->Register("logoff", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConLogout, GameServer(), "Logs you out of your your account");
 }
 
-CGameControllerDDRace::~CGameControllerDDRace() = default;
+CGameControllerSheep::~CGameControllerSheep() {
+	if(m_DiscordBot)
+	{
+		m_DiscordBot->shutdown();
+		delete m_DiscordBot;
+	}
+}
 
-CScore *CGameControllerDDRace::Score()
+CScore *CGameControllerSheep::Score()
 {
 	return GameServer()->Score();
 }
 
-void CGameControllerDDRace::HandleCharacterTiles(CCharacter *pChr, int MapIndex)
+void CGameControllerSheep::HandleCharacterTiles(CCharacter *pChr, int MapIndex)
 {
 	CPlayer *pPlayer = pChr->GetPlayer();
 	const int ClientId = pPlayer->GetCid();
@@ -112,12 +161,12 @@ void CGameControllerDDRace::HandleCharacterTiles(CCharacter *pChr, int MapIndex)
 	}
 }
 
-void CGameControllerDDRace::SetArmorProgress(CCharacter *pCharacter, int Progress)
+void CGameControllerSheep::SetArmorProgress(CCharacter *pCharacter, int Progress)
 {
 	pCharacter->SetArmor(std::clamp(10 - (Progress / 15), 0, 10));
 }
 
-void CGameControllerDDRace::OnPlayerConnect(CPlayer *pPlayer)
+void CGameControllerSheep::OnPlayerConnect(CPlayer *pPlayer)
 {
 	IGameController::OnPlayerConnect(pPlayer);
 	int ClientId = pPlayer->GetCid();
@@ -134,13 +183,10 @@ void CGameControllerDDRace::OnPlayerConnect(CPlayer *pPlayer)
 		char aBuf[512];
 		str_format(aBuf, sizeof(aBuf), "'%s' entered and joined the %s", Server()->ClientName(ClientId), GetTeamName(pPlayer->GetTeam()));
 		GameServer()->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
-
-		GameServer()->SendChatTarget(ClientId, "DDraceNetwork Mod. Version: " GAME_VERSION);
-		GameServer()->SendChatTarget(ClientId, "please visit DDNet.org or say /info and make sure to read our /rules");
 	}
 }
 
-void CGameControllerDDRace::OnPlayerDisconnect(CPlayer *pPlayer, const char *pReason)
+void CGameControllerSheep::OnPlayerDisconnect(CPlayer *pPlayer, const char *pReason)
 {
 	int ClientId = pPlayer->GetCid();
 	bool WasModerator = pPlayer->m_Moderating && Server()->ClientIngame(ClientId);
@@ -158,20 +204,20 @@ void CGameControllerDDRace::OnPlayerDisconnect(CPlayer *pPlayer, const char *pRe
 			Teams().SetClientInvited(Team, ClientId, false);
 }
 
-void CGameControllerDDRace::OnReset()
+void CGameControllerSheep::OnReset()
 {
 	IGameController::OnReset();
 	Teams().Reset();
 }
 
-void CGameControllerDDRace::Tick()
+void CGameControllerSheep::Tick()
 {
 	IGameController::Tick();
 	Teams().ProcessSaveTeam();
 	Teams().Tick();
 }
 
-void CGameControllerDDRace::DoTeamChange(class CPlayer *pPlayer, int Team, bool DoChatMsg)
+void CGameControllerSheep::DoTeamChange(class CPlayer *pPlayer, int Team, bool DoChatMsg)
 {
 	Team = ClampTeam(Team);
 	if(Team == pPlayer->GetTeam())
@@ -192,4 +238,37 @@ void CGameControllerDDRace::DoTeamChange(class CPlayer *pPlayer, int Team, bool 
 	}
 
 	IGameController::DoTeamChange(pPlayer, Team, DoChatMsg);
+}
+
+void CGameControllerSheep::SendChat(int ChatterClientId, int Team, const char *pText, int SpamProtectionClientId, int VersionFlags) {
+	char aBuf[256]; 
+	bool isDiscordMessage = str_startswith(pText, "[DC]");
+	if (!isDiscordMessage) {
+		str_format(aBuf, sizeof(aBuf), "__*%s*__", pText);
+	}
+
+	if(ChatterClientId >= 0 && ChatterClientId < MAX_CLIENTS) {
+		const char* pUsername = Server()->ClientName(ChatterClientId);
+		str_format(aBuf, sizeof(aBuf), "**%s > **%s", pUsername, pText);
+	}
+
+	if(!isDiscordMessage) {
+		m_DiscordBot->message_create(dpp::message(m_DiscordChannelId, aBuf), [this](const dpp::confirmation_callback_t &event) {
+			if(event.is_error())
+			{
+				log_error("discord", "Failed to transmit message. Reason: %s", event.get_error().message.c_str());
+			}
+		});
+	}
+}
+
+void CGameControllerSheep::TickPlayer(CPlayer *pPlayer) {
+	if (pPlayer->m_AccountLoginResult != nullptr && pPlayer->m_AccountLoginResult->m_Completed && !pPlayer->m_AccountLoginResult->m_Processed) {
+		if (pPlayer->m_AccountLoginResult->m_Success) {
+			GameServer()->SendChatTarget(pPlayer->GetCid(), "Successfully logged in.");
+		} else {
+			GameServer()->SendChatTarget(pPlayer->GetCid(), "Failed to log in.");
+		}
+		pPlayer->m_AccountLoginResult->m_Processed = true;
+	}
 }

@@ -3,15 +3,6 @@
 #ifndef GAME_SERVER_GAMECONTEXT_H
 #define GAME_SERVER_GAMECONTEXT_H
 
-//<sheep>
-#undef log_error
-#include <dpp/dpp.h>
-#define log_error(sys, ...) log_log(LEVEL_ERROR, sys, __VA_ARGS__)
-// #undef ERROR
-// #undef DELETE
-// #undef IMAGE_CURSOR
-//</sheep>
-
 #include <engine/console.h>
 #include <engine/server.h>
 
@@ -193,12 +184,6 @@ class CGameContext : public IGameServer
 		bool m_IsAfk;
 		int m_LastWhisperTo;
 	};
-
-	//<sheep>
-	dpp::cluster *m_SheepDiscordBot;
-	std::string m_SheepDiscordToken = "";
-	dpp::snowflake m_SheepDiscordChannelId = dpp::snowflake("1406771037466788010");
-	//</sheep>
 public:
 	IServer *Server() const { return m_pServer; }
 	IConfigManager *ConfigManager() const { return m_pConfigManager; }

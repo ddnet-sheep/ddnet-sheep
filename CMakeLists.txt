@@ -1142,7 +1142,9 @@ set(EXPECTED_DATA
   audio/wp_switch-02.wv
   audio/wp_switch-03.wv
   autoexec_server.cfg
+  #<sheep>
   autoexec_sheep.cfg
+  #</sheep>
   background_noise.png
   blob.png
   censorlist.txt
@@ -1575,8 +1577,14 @@ set(EXPECTED_DATA
   maps/dm8.map
   maps/dm9.map
   maps/license.txt
+  #<sheep>
+  maps/Multeasymap-DOD.map
+  #</sheep>
   maps7/Gold\ Mine.map
   maps7/LearnToPlay.map
+  #<sheep>
+  maps7/Multeasymap-DOD.map
+  #</sheep>
   maps7/Sunny\ Side\ Up.map
   maps7/Tsunami.map
   maps7/Tutorial.map
@@ -2795,6 +2803,13 @@ if(SERVER)
     gamemodes/DDRace.h
     gamemodes/mod.cpp
     gamemodes/mod.h
+    #<sheep>
+    gamemodes/sheep/account.cpp
+    gamemodes/sheep/account.h
+    gamemodes/sheep/item.h
+    gamemodes/sheep/sheep.cpp
+    gamemodes/sheep/sheep.h
+    #</sheep>
     gameworld.cpp
     gameworld.h
     mutes.cpp
