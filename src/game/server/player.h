@@ -15,6 +15,7 @@
 
 //<sheep>
 #include <game/server/gamemodes/sheep/account.h>
+#include <game/server/gamemodes/sheep/sql.h>
 //</sheep>
 
 class CCharacter;
@@ -124,6 +125,7 @@ public:
 
 	//<sheep>
 	std::shared_ptr<CAccountLoginResult> m_AccountLoginResult;
+	std::shared_ptr<CSqlSuccessResult> m_PasswordChangeSuccessResult;
 	//</sheep>
 private:
 	const uint32_t m_UniqueClientId;

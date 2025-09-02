@@ -19,9 +19,13 @@ public:
 
 	// database
     static bool ExecuteLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
+	static bool ExecuteRegister(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
+	static bool ExecuteChangePassword(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 
 	// commands
 	static void ConLogin(IConsole::IResult *pResult, void *pUserData);
+	static void ConRegister(IConsole::IResult *pResult, void *pUserData);
+	static void ConChangePassword(IConsole::IResult *pResult, void *pUserData);
     static void ConLogout(IConsole::IResult *pResult, void *pUserData);
 	
 	// custom hooks

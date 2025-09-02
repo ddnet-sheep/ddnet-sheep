@@ -1,8 +1,13 @@
 /* (c) Antonio Ianzano. See licence.txt and the readme.txt in the root of the distribution for more information. */
+#ifndef GAME_SERVER_GAMEMODES_SHEEP_ACCOUNT_H
+#define GAME_SERVER_GAMEMODES_SHEEP_ACCOUNT_H
+
 #include <engine/server/databases/connection.h>
 #include <engine/server/databases/connection_pool.h>
 
 #include <map>
+#include <base/hash.h>
+#include <base/hash_ctxt.h>
 #include "item.h"
 
 struct CAccountLoginResult : ISqlResult
@@ -17,6 +22,9 @@ struct CAccountLoginResult : ISqlResult
         m_EmailVerified(false)
 	{
 	}
+
+    char m_Username[64];
+    SHA256_DIGEST m_Password;
 
 	uint64_t m_BanExpiration;
 
@@ -36,9 +44,9 @@ struct CAccountLoginResult : ISqlResult
     std::map<EItem, uint64_t> m_Items;
 };
 
-struct CSqlAccountLoginRequest : ISqlData
+struct CSqlAccountCredentialsRequest : ISqlData
 {
-	CSqlAccountLoginRequest(std::shared_ptr<CAccountLoginResult> pResult) :
+	CSqlAccountCredentialsRequest(std::shared_ptr<ISqlResult> pResult) :
 		ISqlData(std::move(pResult))
 	{
 	}
@@ -46,3 +54,5 @@ struct CSqlAccountLoginRequest : ISqlData
 	char m_Username[64];
 	char m_Password[64];
 };
+
+#endif
