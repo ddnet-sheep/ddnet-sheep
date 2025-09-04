@@ -17,24 +17,28 @@ public:
 	CGameControllerSheep(class CGameContext *pGameServer);
 	~CGameControllerSheep();
 
-	// discord
+	// functions
 	void DiscordInit();
 	void DiscordShutdown();
-	static void ConChainSheepDiscordTokenChange(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	void SendDiscordChat(int ChatterClientId, int Team, const char *pText, int SpamProtectionClientId, int VersionFlags);
-
+	
+	void LoadItems();
+	
 	// database
     static bool ExecuteLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	static bool ExecuteRegister(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	static bool ExecutePassword(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
-
+	
 	// commands
 	static void ConLogin(IConsole::IResult *pResult, void *pUserData);
 	static void ConRegister(IConsole::IResult *pResult, void *pUserData);
 	static void ConPassword(IConsole::IResult *pResult, void *pUserData);
     static void ConLogout(IConsole::IResult *pResult, void *pUserData);
 	
-	// custom hooks
+	// chains
+	static void ConChainSheepDiscordTokenChange(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
+
+	// custom ddnet hooks
 	void SendChat(int ChatterClientId, int Team, const char *pText, int SpamProtectionClientId, int VersionFlags);
 	void TickPlayer(CPlayer *pPlayer);
 

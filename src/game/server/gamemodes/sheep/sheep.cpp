@@ -33,6 +33,21 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 			`email` VARCHAR(255) NULL,
 			`email_verified` TINYINT NOT NULL DEFAULT 0
 		);
+
+		CREATE TABLE `sheep_items` ( 
+			`id` INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
+			`name` VARCHAR(32) NOT NULL UNIQUE,
+			`description` VARCHAR(255) NOT NULL DEFAULT ""
+		);
+
+		CREATE TABLE `sheep_account_item` ( 
+			`account_id` INT NOT NULL,
+			`item_id` INT NOT NULL,
+			`amount` INT NOT NULL DEFAULT 1,
+			PRIMARY KEY (`account_id`, `item_id`),
+			CONSTRAINT `fk_account_id` FOREIGN KEY (`account_id`) REFERENCES `sheep_accounts` (`id`) ON DELETE CASCADE ON UPDATE NO ACTION,
+			CONSTRAINT `fk_item_id` FOREIGN KEY (`item_id`) REFERENCES `sheep_items` (`id`) ON DELETE CASCADE ON UPDATE NO ACTION
+		)
 	*/
 
 	m_pGameType = GAME_TYPE_NAME;
