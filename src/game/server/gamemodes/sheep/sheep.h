@@ -17,6 +17,12 @@ public:
 	CGameControllerSheep(class CGameContext *pGameServer);
 	~CGameControllerSheep();
 
+	// discord
+	void DiscordInit();
+	void DiscordShutdown();
+	static void ConChainSheepDiscordTokenChange(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
+	void SendDiscordChat(int ChatterClientId, int Team, const char *pText, int SpamProtectionClientId, int VersionFlags);
+
 	// database
     static bool ExecuteLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	static bool ExecuteRegister(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
@@ -48,8 +54,6 @@ public:
 private:
 	// discord
     dpp::cluster *m_DiscordBot;
-    std::string m_DiscordToken = "";
-    dpp::snowflake m_DiscordChannelId = dpp::snowflake("1406848451299377162");
 
 	// database
 	CDbConnectionPool *m_pPool;

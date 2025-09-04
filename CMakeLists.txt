@@ -2806,6 +2806,7 @@ if(SERVER)
     #<sheep>
     gamemodes/sheep/account.cpp
     gamemodes/sheep/account.h
+    gamemodes/sheep/discord.cpp
     gamemodes/sheep/item.h
     gamemodes/sheep/sheep.cpp
     gamemodes/sheep/sheep.h

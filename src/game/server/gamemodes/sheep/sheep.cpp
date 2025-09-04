@@ -37,41 +37,18 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 	m_pGameType = GAME_TYPE_NAME;
 	m_GameFlags = protocol7::GAMEFLAG_RACE;
 
-	m_DiscordBot = new dpp::cluster(m_DiscordToken, dpp::i_default_intents | dpp::i_message_content);
-	m_DiscordBot->start(dpp::st_return);
-
-	m_DiscordBot->on_message_create([this](const dpp::message_create_t &event) {
-		std::string channelName;
-
-		if(event.msg.author.id == m_DiscordBot->me.id) {
-			return;
-		}
-
-		if(event.msg.channel_id != m_DiscordChannelId) {
-			return;
-		}
-
-		char aBuf[512];
-		str_format(aBuf, sizeof(aBuf), "[DC] %s: %s",
-			event.msg.author.global_name.c_str(),
-			event.msg.content.c_str()
-		);
-
-		GameServer()->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
-	});
+	DiscordInit();
 
 	GameServer()->Console()->Register("login", "s[account name] s[password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConLogin, GameServer(), "Logs you into your account");
 	GameServer()->Console()->Register("register", "s[account name] s[password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConRegister, GameServer(), "Registers a new account");
 	GameServer()->Console()->Register("password", "s[old password] s[new password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConPassword, GameServer(), "Changes the password");
 	GameServer()->Console()->Register("logoff", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConLogout, GameServer(), "Logs you out of your your account");
+
+	GameServer()->Console()->Chain("sv_sheep_discord_token", ConChainSheepDiscordTokenChange, this);
 }
 
 CGameControllerSheep::~CGameControllerSheep() {
-	if(m_DiscordBot)
-	{
-		m_DiscordBot->shutdown();
-		delete m_DiscordBot;
-	}
+	DiscordShutdown();
 }
 
 CScore *CGameControllerSheep::Score()
@@ -243,25 +220,7 @@ void CGameControllerSheep::DoTeamChange(class CPlayer *pPlayer, int Team, bool D
 }
 
 void CGameControllerSheep::SendChat(int ChatterClientId, int Team, const char *pText, int SpamProtectionClientId, int VersionFlags) {
-	char aBuf[256]; 
-	bool isDiscordMessage = str_startswith(pText, "[DC]");
-	if (!isDiscordMessage) {
-		str_format(aBuf, sizeof(aBuf), "__*%s*__", pText);
-	}
-
-	if(ChatterClientId >= 0 && ChatterClientId < MAX_CLIENTS) {
-		const char* pUsername = Server()->ClientName(ChatterClientId);
-		str_format(aBuf, sizeof(aBuf), "**%s > **%s", pUsername, pText);
-	}
-
-	if(!isDiscordMessage) {
-		m_DiscordBot->message_create(dpp::message(m_DiscordChannelId, aBuf), [this](const dpp::confirmation_callback_t &event) {
-			if(event.is_error())
-			{
-				log_error("discord", "Failed to transmit message. Reason: %s", event.get_error().message.c_str());
-			}
-		});
-	}
+	SendDiscordChat(ChatterClientId, Team, pText, SpamProtectionClientId, VersionFlags);
 }
 
 void CGameControllerSheep::TickPlayer(CPlayer *pPlayer) {
