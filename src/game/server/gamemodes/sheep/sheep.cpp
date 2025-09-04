@@ -21,7 +21,9 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 
 	/*
 		CREATE TABLE `sheep_accounts` ( 
-			`name` VARCHAR(32) NOT NULL,
+			`id` INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
+			`name` VARCHAR(32) NOT NULL UNIQUE,
+			`password` char(64) NOT NULL,
 			`ban_expiration` INT UNSIGNED NOT NULL DEFAULT 0 ,
 			`level` INT UNSIGNED NOT NULL DEFAULT 0 ,
 			`exp` INT NOT NULL DEFAULT 0 ,
@@ -29,8 +31,7 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 			`vip_expiration` INT NOT NULL DEFAULT 0 ,
 			`staff_level` INT UNSIGNED NOT NULL DEFAULT 0 ,
 			`email` VARCHAR(255) NULL,
-			`email_verified` TINYINT NOT NULL DEFAULT 0 ,
-			PRIMARY KEY (`name`)
+			`email_verified` TINYINT NOT NULL DEFAULT 0
 		);
 	*/
 
