@@ -1,4 +1,4 @@
-/* (c) Antonio Ianzano. See licence.txt and the readme.txt in the root of the distribution for more information. */
+/* (c) Antonio Ianzano. See license.txt and the readme.txt in the root of the distribution for more information. */
 #ifndef GAME_SERVER_GAMEMODES_SHEEP_ACCOUNT_H
 #define GAME_SERVER_GAMEMODES_SHEEP_ACCOUNT_H
 
@@ -24,6 +24,8 @@ struct CAccountLoginResult : ISheepSqlResult
 	{
 	}
 
+    uint64_t m_AccountId;
+
     char m_Username[64];
     char m_PasswordHash[65];
 
@@ -42,7 +44,7 @@ struct CAccountLoginResult : ISheepSqlResult
 
     bool m_Processed = false;
 
-    std::map<EItem, uint64_t> m_Items;
+    std::unordered_map<EItemType, uint64_t> m_Items;
 };
 
 struct CSqlAccountCredentialsRequest : ISqlData

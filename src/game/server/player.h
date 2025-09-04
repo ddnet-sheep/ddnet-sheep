@@ -125,6 +125,7 @@ public:
 
 	//<sheep>
 	std::shared_ptr<CAccountLoginResult> m_AccountLoginResult;
+	std::shared_ptr<CAccountItemResult> m_AccountItemResult;
 	std::shared_ptr<CSqlSuccessResult> m_PasswordChangeSuccessResult;
 	//</sheep>
 private:

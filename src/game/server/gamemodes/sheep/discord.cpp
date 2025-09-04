@@ -1,4 +1,4 @@
-/* (c) Antonio Ianzano. See licence.txt and the readme.txt in the root of the distribution for more information. */
+/* (c) Antonio Ianzano. See license.txt and the readme.txt in the root of the distribution for more information. */
 #include "sheep.h"
 #include <engine/shared/config.h>
 #include <engine/server/server.h>

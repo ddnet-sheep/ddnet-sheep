@@ -1,4 +1,4 @@
-/* (c) Antonio Ianzano. See licence.txt and the readme.txt in the root of the distribution for more information. */
+/* (c) Antonio Ianzano. See license.txt and the readme.txt in the root of the distribution for more information. */
 #include "sheep.h"
 #include "sql.h"
 #include <game/server/player.h>
@@ -64,14 +64,14 @@ void GenerateAccountLoginResult(IDbConnection *pSqlServer, const ISqlData *pGame
 	
 	pSqlServer->GetString(9, pResult->m_PasswordHash, sizeof(pResult->m_PasswordHash));
 	
-    // m_Items
+	pResult->m_AccountId = pSqlServer->GetInt64(10);
 }
 
 bool CGameControllerSheep::ExecuteLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {
 	auto *pResult = dynamic_cast<CAccountLoginResult *>(pGameData->m_pResult.get());
 
 	if(!pSqlServer->PrepareStatement(
-		"SELECT ban_expiration, level, exp, vip, vip_expiration, staff_level, email, email_verified, password "
+		"SELECT ban_expiration, level, exp, vip, vip_expiration, staff_level, email, email_verified, password, id "
 		"FROM sheep_accounts WHERE name=?", 
 		pError, ErrorSize)
 	) {
@@ -139,7 +139,7 @@ bool CGameControllerSheep::ExecuteRegister(IDbConnection *pSqlServer, const ISql
 
 	if(!pSqlServer->PrepareStatement(
 		"INSERT INTO sheep_accounts (name, password) VALUES (?, ?) RETURNING "
-		"ban_expiration, level, exp, vip, vip_expiration, staff_level, email, email_verified, password", 
+		"ban_expiration, level, exp, vip, vip_expiration, staff_level, email, email_verified, password, id", 
 		pError, ErrorSize)
 	) {
 		str_format(pResult->m_Message, sizeof(pResult->m_Message), "Database error (1).");

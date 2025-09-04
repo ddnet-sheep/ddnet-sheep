@@ -1,4 +1,4 @@
-/* (c) Antonio Ianzano. See licence.txt and the readme.txt in the root of the distribution for more information. */
+/* (c) Antonio Ianzano. See license.txt and the readme.txt in the root of the distribution for more information. */
 #ifndef GAME_SERVER_GAMEMODES_SHEEP_H
 #define GAME_SERVER_GAMEMODES_SHEEP_H
 
@@ -6,6 +6,8 @@
 
 #include <game/server/gamecontroller.h>
 #include <engine/server/databases/connection.h>
+
+#include "item.h"
 
 #undef log_error
 #include <dpp/dpp.h>
@@ -23,6 +25,9 @@ public:
 	void SendDiscordChat(int ChatterClientId, int Team, const char *pText, int SpamProtectionClientId, int VersionFlags);
 	
 	void LoadItems();
+	static bool ExecuteLoadItems(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
+	void LoadAccountItem(class CPlayer* pPlayer);
+	static bool ExecuteLoadAccountItem(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	
 	// database
     static bool ExecuteLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
@@ -58,6 +63,9 @@ public:
 private:
 	// discord
     dpp::cluster *m_DiscordBot;
+
+	// items
+	std::shared_ptr<CItemsResult> m_ItemsResult;
 
 	// database
 	CDbConnectionPool *m_pPool;

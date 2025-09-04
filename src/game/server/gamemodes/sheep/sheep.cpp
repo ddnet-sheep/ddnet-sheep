@@ -1,4 +1,4 @@
-/* (c) Antonio Ianzano. See licence.txt and the readme.txt in the root of the distribution for more information. */
+/* (c) Antonio Ianzano. See license.txt and the readme.txt in the root of the distribution for more information. */
 #include "sheep.h"
 
 #include <engine/server.h>
@@ -61,6 +61,8 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 	GameServer()->Console()->Register("logoff", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConLogout, GameServer(), "Logs you out of your your account");
 
 	GameServer()->Console()->Chain("sv_sheep_discord_token", ConChainSheepDiscordTokenChange, this);
+
+	LoadItems();
 }
 
 CGameControllerSheep::~CGameControllerSheep() {
@@ -253,6 +255,7 @@ void CGameControllerSheep::TickPlayer(CPlayer *pPlayer) {
 		GameServer()->SendChatTarget(pPlayer->GetCid(), pPlayer->m_AccountLoginResult->m_Message);
 		if (pPlayer->m_AccountLoginResult->m_Success) {
 			pPlayer->m_AccountLoginResult->m_Processed = true;
+			LoadAccountItem(pPlayer);
 		} else {
 			pPlayer->m_AccountLoginResult = nullptr;
 		}
