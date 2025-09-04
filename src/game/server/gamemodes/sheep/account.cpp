@@ -11,9 +11,11 @@ SHA256_DIGEST HashPassword(const char *pPassword)
 	return sha256_finish(&Sha256Ctx);
 }
 
-bool VerifyPassword(CPlayer *pPlayer, const char *pPassword)
+bool VerifyPassword(const char *pExpected, const char* pPassword)
 {
-	return sha256_comp(pPlayer->m_AccountLoginResult->m_Password, HashPassword(pPassword)) != 0;
+	SHA256_DIGEST Expected;
+	sha256_from_str(&Expected, pExpected);
+	return sha256_comp(HashPassword(pPassword), Expected) == 0;
 }
 
 void CGameControllerSheep::ConLogin(IConsole::IResult *pResult, void *pUserData) {
@@ -40,47 +42,71 @@ void CGameControllerSheep::ConLogin(IConsole::IResult *pResult, void *pUserData)
 	pController->m_pPool->Execute(CGameControllerSheep::ExecuteLogin, std::move(Tmp), "account login");
 }
 
-bool AccountQuery(char* aBuf, IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {
-	if(!pSqlServer->PrepareStatement(aBuf, pError, ErrorSize))
-		return false;
-
-	const auto *pData = dynamic_cast<const CSqlAccountCredentialsRequest *>(pGameData);
-	pSqlServer->BindString(1, pData->m_Username);
-	pSqlServer->BindString(2, pData->m_Password);
-
-	bool End;
-	if(!pSqlServer->Step(&End, pError, ErrorSize) || End)
-		return false;
-	
+void GenerateAccountLoginResult(IDbConnection *pSqlServer, const ISqlData *pGameData) {
 	auto *pResult = dynamic_cast<CAccountLoginResult *>(pGameData->m_pResult.get());
+	const auto *pData = dynamic_cast<const CSqlAccountCredentialsRequest *>(pGameData);
+
 	str_copy(pResult->m_Username, pData->m_Username);
-	pResult->m_Password = HashPassword(pData->m_Password);
     pResult->m_BanExpiration = pSqlServer->GetInt(1);
     pResult->m_Level = pSqlServer->GetInt(2);
     pResult->m_Exp = pSqlServer->GetInt(3);
     pResult->m_Vip = pSqlServer->GetInt(4);
     pResult->m_VipExpiration = pSqlServer->GetInt(5);
     pResult->m_Staff = pSqlServer->GetInt(6);
-
+	
     if (!pSqlServer->IsNull(7)) {
-        char mBuf[255];
+		char mBuf[255];
         pSqlServer->GetString(7, mBuf, sizeof(mBuf));
         pResult->m_Email = mBuf;
     }
     
     pResult->m_EmailVerified = pSqlServer->GetInt(8) != 0;
-
+	
+	pSqlServer->GetString(9, pResult->m_PasswordHash, sizeof(pResult->m_PasswordHash));
+	
     // m_Items
-
-    return true;
 }
 
-bool CGameControllerSheep::ExecuteLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {	
-	return AccountQuery(
-		"SELECT ban_expiration, level, exp, vip, vip_expiration, staff_level, email, email_verified "
-		"FROM sheep_accounts WHERE name=? AND password=?", 
-		pSqlServer, pGameData, pError, ErrorSize
-	);
+bool CGameControllerSheep::ExecuteLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {
+	auto *pResult = dynamic_cast<CAccountLoginResult *>(pGameData->m_pResult.get());
+
+	if(!pSqlServer->PrepareStatement(
+		"SELECT ban_expiration, level, exp, vip, vip_expiration, staff_level, email, email_verified, password "
+		"FROM sheep_accounts WHERE name=?", 
+		pError, ErrorSize)
+	) {
+		str_format(pResult->m_Message, sizeof(pResult->m_Message), "Database error (1).");
+		return false;
+	}
+
+	const auto *pData = dynamic_cast<const CSqlAccountCredentialsRequest *>(pGameData);
+	pSqlServer->BindString(1, pData->m_Username);
+
+	bool End;
+	if(!pSqlServer->Step(&End, pError, ErrorSize) || End) {
+		str_format(pResult->m_Message, sizeof(pResult->m_Message), "User does not exist.");
+		return false;
+	}
+
+	char aPasswordHash[65];
+	pSqlServer->GetString(9, aPasswordHash, sizeof(aPasswordHash));
+
+	if (!VerifyPassword(aPasswordHash, pData->m_Password)) {
+		str_format(pResult->m_Message, sizeof(pResult->m_Message), "Invalid password.");
+		return false;
+	}
+
+	int BanExpiration = pSqlServer->GetInt(1);
+	if (BanExpiration != 0 && BanExpiration > time(0)) {
+		str_format(pResult->m_Message, sizeof(pResult->m_Message), "Banned.");
+		return false;
+	}
+
+	str_format(pResult->m_Message, sizeof(pResult->m_Message), "Successfully logged in.");
+
+	GenerateAccountLoginResult(pSqlServer, pGameData);
+
+	return true;
 }
 
 void CGameControllerSheep::ConRegister(IConsole::IResult *pResult, void *pUserData) {
@@ -101,19 +127,43 @@ void CGameControllerSheep::ConRegister(IConsole::IResult *pResult, void *pUserDa
 	
 	auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pPlayer->m_AccountLoginResult);
 	str_copy(Tmp->m_Username, pResult->GetString(0), sizeof(Tmp->m_Username));
-	str_format(Tmp->m_Password, sizeof(Tmp->m_Password), "%s", HashPassword(pResult->GetString(1)).data);
-	log_error("test", Tmp->m_Password);
+	str_format(Tmp->m_Password, sizeof(Tmp->m_Password), "%s", pResult->GetString(1));
+	// Tmp->m_Artificial = true;
 
 	CGameControllerSheep *pController = (CGameControllerSheep *)pSelf->m_pController;
 	pController->m_pPool->Execute(CGameControllerSheep::ExecuteRegister, std::move(Tmp), "account register");
 }
 
 bool CGameControllerSheep::ExecuteRegister(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {
-	return AccountQuery(
-		"INSERT INTO sheep_accounts (name, password) VALUES (?, SHA2(?, 256)) RETURNING "
-		"ban_expiration, level, exp, vip, vip_expiration, staff_level, email, email_verified", 
-		pSqlServer, pGameData, pError, ErrorSize
-	);
+	auto *pResult = dynamic_cast<CAccountLoginResult *>(pGameData->m_pResult.get());
+
+	if(!pSqlServer->PrepareStatement(
+		"INSERT INTO sheep_accounts (name, password) VALUES (?, ?) RETURNING "
+		"ban_expiration, level, exp, vip, vip_expiration, staff_level, email, email_verified, password", 
+		pError, ErrorSize)
+	) {
+		str_format(pResult->m_Message, sizeof(pResult->m_Message), "Database error (1).");
+		return false;
+	}
+
+	const auto *pData = dynamic_cast<const CSqlAccountCredentialsRequest *>(pGameData);
+	pSqlServer->BindString(1, pData->m_Username);
+
+	char aHash[65];
+	sha256_str(HashPassword(pData->m_Password), aHash, sizeof(aHash));
+	pSqlServer->BindString(2, aHash);
+
+	bool End;
+	if(!pSqlServer->Step(&End, pError, ErrorSize) || End) {
+		str_format(pResult->m_Message, sizeof(pResult->m_Message), "User does already exist.");
+		return false;
+	}
+
+	str_format(pResult->m_Message, sizeof(pResult->m_Message), "Successfully registered.");
+
+	GenerateAccountLoginResult(pSqlServer, pGameData);
+
+	return true;
 }
 
 void CGameControllerSheep::ConLogout(IConsole::IResult *pResult, void *pUserData) {
@@ -137,9 +187,9 @@ void CGameControllerSheep::ConLogout(IConsole::IResult *pResult, void *pUserData
 	pSelf->SendChatTarget(pPlayer->GetCid(), "You have been logged out.");
 }
 
-bool CGameControllerSheep::ExecuteChangePassword(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {
+bool CGameControllerSheep::ExecutePassword(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {
 	char aBuf[256];
-	str_format(aBuf, sizeof(aBuf), "UPDATE sheep_accounts SET password=? WHERE name=?");
+	str_format(aBuf, sizeof(aBuf), "UPDATE sheep_accounts SET password=SHA2(?, 256) WHERE name=?");
 	if(!pSqlServer->PrepareStatement(aBuf, pError, ErrorSize))
 		return false;
 
@@ -157,7 +207,7 @@ bool CGameControllerSheep::ExecuteChangePassword(IDbConnection *pSqlServer, cons
 	return pResult->m_Success;
 }
 
-void CGameControllerSheep::ConChangePassword(IConsole::IResult *pResult, void *pUserData) {
+void CGameControllerSheep::ConPassword(IConsole::IResult *pResult, void *pUserData) {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	if(!CheckClientId(pResult->m_ClientId))
 		return;
@@ -171,19 +221,17 @@ void CGameControllerSheep::ConChangePassword(IConsole::IResult *pResult, void *p
 		return;
 	}
 
-	if (!VerifyPassword(pPlayer, pResult->GetString(0))) {
+	if (!VerifyPassword(pPlayer->m_AccountLoginResult->m_PasswordHash, pResult->GetString(0))) {
 		pSelf->SendChatTarget(pResult->m_ClientId, "Current password is incorrect.");
 		return;
 	}
 
-	auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pPlayer->m_PasswordChangeSuccessResult);
-	
-	str_copy(Tmp->m_Username, pPlayer->m_AccountLoginResult->m_Username, sizeof(Tmp->m_Username));
+	pPlayer->m_PasswordChangeSuccessResult = std::make_shared<CSqlSuccessResult>();
 
-	char hash[64];
-	str_copy(hash, reinterpret_cast<const char*>(HashPassword(pResult->GetString(1)).data), sizeof(hash));
-	str_copy(Tmp->m_Password, hash, sizeof(Tmp->m_Password));
+	auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pPlayer->m_PasswordChangeSuccessResult);
+	str_copy(Tmp->m_Username, pPlayer->m_AccountLoginResult->m_Username, sizeof(Tmp->m_Username));
+	str_copy(Tmp->m_Password, pResult->GetString(1), sizeof(Tmp->m_Password));
 
 	CGameControllerSheep *pController = (CGameControllerSheep *)pSelf->m_pController;
-	pController->m_pPool->Execute(CGameControllerSheep::ExecuteChangePassword, std::move(Tmp), "account change password");
+	pController->m_pPool->Execute(CGameControllerSheep::ExecutePassword, std::move(Tmp), "account set password");
 }

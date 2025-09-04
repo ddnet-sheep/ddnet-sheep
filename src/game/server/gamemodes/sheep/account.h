@@ -9,8 +9,9 @@
 #include <base/hash.h>
 #include <base/hash_ctxt.h>
 #include "item.h"
+#include "sql.h"
 
-struct CAccountLoginResult : ISqlResult
+struct CAccountLoginResult : ISheepSqlResult
 {
 	CAccountLoginResult() :
 		m_BanExpiration(0),
@@ -24,7 +25,7 @@ struct CAccountLoginResult : ISqlResult
 	}
 
     char m_Username[64];
-    SHA256_DIGEST m_Password;
+    char m_PasswordHash[65];
 
 	uint64_t m_BanExpiration;
 

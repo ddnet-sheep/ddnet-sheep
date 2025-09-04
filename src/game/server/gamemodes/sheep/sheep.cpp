@@ -62,7 +62,7 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 
 	GameServer()->Console()->Register("login", "s[account name] s[password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConLogin, GameServer(), "Logs you into your account");
 	GameServer()->Console()->Register("register", "s[account name] s[password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConRegister, GameServer(), "Registers a new account");
-	GameServer()->Console()->Register("changepassword", "s[old password] s[new password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConChangePassword, GameServer(), "Changes the password");
+	GameServer()->Console()->Register("password", "s[old password] s[new password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConPassword, GameServer(), "Changes the password");
 	GameServer()->Console()->Register("logoff", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConLogout, GameServer(), "Logs you out of your your account");
 }
 
@@ -275,11 +275,10 @@ void CGameControllerSheep::TickPlayer(CPlayer *pPlayer) {
 	}
 
 	if (pPlayer->m_AccountLoginResult != nullptr && pPlayer->m_AccountLoginResult->m_Completed && !pPlayer->m_AccountLoginResult->m_Processed) {
+		GameServer()->SendChatTarget(pPlayer->GetCid(), pPlayer->m_AccountLoginResult->m_Message);
 		if (pPlayer->m_AccountLoginResult->m_Success) {
-			GameServer()->SendChatTarget(pPlayer->GetCid(), "Successfully logged in.");
 			pPlayer->m_AccountLoginResult->m_Processed = true;
 		} else {
-			GameServer()->SendChatTarget(pPlayer->GetCid(), "Failed to log in.");
 			pPlayer->m_AccountLoginResult = nullptr;
 		}
 	}
