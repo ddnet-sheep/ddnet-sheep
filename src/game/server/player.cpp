@@ -186,7 +186,7 @@ void CPlayer::Tick()
 	Server()->SetClientScore(m_ClientId, m_Score);
 
 	//<sheep>
-	((CGameControllerSheep *)GameServer()->m_pController)->TickPlayer(this);
+	((CGameControllerSheep *)GameServer()->m_pController)->OnPlayerTick(this);
 	//</sheep>
 
 	if(m_Moderating && m_Afk)

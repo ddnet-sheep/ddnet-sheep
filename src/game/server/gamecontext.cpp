@@ -2534,10 +2534,23 @@ void CGameContext::OnCallVoteNetMessage(const CNetMsg_Cl_CallVote *pMsg, int Cli
 
 void CGameContext::OnVoteNetMessage(const CNetMsg_Cl_Vote *pMsg, int ClientId)
 {
+	//<sheep>
+	/*
+	//</sheep>
 	if(!m_VoteCloseTime)
 		return;
+	//<sheep>
+	*/
+	//</sheep>
 
 	CPlayer *pPlayer = m_apPlayers[ClientId];
+
+	//<sheep>
+	if(!m_VoteCloseTime) {
+		((CGameControllerSheep *)m_pController)->OnCharacterVote(GetPlayerChar(ClientId), static_cast<EVoteButton>(pMsg->m_Vote));
+		return;
+	}
+	//</sheep>
 
 	if(g_Config.m_SvSpamprotection && pPlayer->m_LastVoteTry && pPlayer->m_LastVoteTry + Server()->TickSpeed() * 3 > Server()->Tick())
 		return;

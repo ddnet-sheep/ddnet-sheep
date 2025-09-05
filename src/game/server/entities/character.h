@@ -8,6 +8,10 @@
 #include <game/race_state.h>
 #include <game/server/save.h>
 
+//<sheep>
+#include <game/server/entities/sheep/weapon_drop.h>
+//</sheep>
+
 class CGameTeams;
 class CGameWorld;
 class IAntibot;
@@ -109,6 +113,12 @@ public:
 	void AddVelocity(vec2 Addition);
 	void ApplyMoveRestrictions();
 
+	//<sheep>
+	CNetObj_PlayerInput *Input() { return &m_Input; }
+	bool CanDropWeapon(EWeaponType Type) const;
+	void DropWeapon(EWeaponType Type, vec2 Vel, bool Death);
+	int m_VoteCooldown = 0;
+	//</sheep>
 private:
 	// player controlling this character
 	class CPlayer *m_pPlayer;

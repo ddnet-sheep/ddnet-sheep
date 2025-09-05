@@ -27,6 +27,9 @@ public:
 		ENTTYPE_PICKUP,
 		ENTTYPE_FLAG,
 		ENTTYPE_CHARACTER,
+		//<sheep>
+		ENTTYPE_WEAPON_DROP,
+		//</sheep>
 		NUM_ENTTYPES
 	};
 

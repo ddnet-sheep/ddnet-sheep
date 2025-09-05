@@ -22,6 +22,10 @@
 #include <game/server/score.h>
 #include <game/server/teams.h>
 
+//<sheep>
+#include <game/server/gamemodes/sheep/sheep.h>
+//</sheep>
+
 MACRO_ALLOC_POOL_ID_IMPL(CCharacter, MAX_CLIENTS)
 
 // Character, "physical" player's part
@@ -789,6 +793,10 @@ void CCharacter::Tick()
 
 	// handle Weapons
 	HandleWeapons();
+
+	//<sheep>
+	((CGameControllerSheep *)GameServer()->m_pController)->OnCharacterTick(this);
+	//</sheep>
 
 	DDRacePostCoreTick();
 

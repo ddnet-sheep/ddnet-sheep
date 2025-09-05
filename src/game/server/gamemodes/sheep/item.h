@@ -3,10 +3,13 @@
 #define GAME_SERVER_GAMEMODES_SHEEP_ITEM_H
 
 #include "sql.h"
+#include <map>
 
 enum class EItemType
 {
     ITEM_PLACEHOLDER,
+
+    
 };
 
 struct CItem {

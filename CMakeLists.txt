@@ -2141,6 +2141,9 @@ set_src(ENGINE_SHARED GLOB_RECURSE src/engine/shared
   ringbuffer.h
   serverinfo.cpp
   serverinfo.h
+  #<sheep>
+  sheep/config_variables.h
+  #</sheep>
   sixup_translate_snapshot.cpp
   snapshot.cpp
   snapshot.h
@@ -2791,6 +2794,11 @@ if(SERVER)
     entities/plasma.h
     entities/projectile.cpp
     entities/projectile.h
+    #<sheep>
+    entities/sheep/character.cpp
+    entities/sheep/weapon_drop.cpp
+    entities/sheep/weapon_drop.h
+    #</sheep>
     entity.cpp
     entity.h
     eventhandler.cpp
@@ -2811,6 +2819,7 @@ if(SERVER)
     gamemodes/sheep/item.cpp
     gamemodes/sheep/sheep.cpp
     gamemodes/sheep/sheep.h
+    gamemodes/sheep/vote.h
     #</sheep>
     gameworld.cpp
     gameworld.h

@@ -241,7 +241,7 @@ void CGameControllerSheep::SendChat(int ChatterClientId, int Team, const char *p
 	SendDiscordChat(ChatterClientId, Team, pText, SpamProtectionClientId, VersionFlags);
 }
 
-void CGameControllerSheep::TickPlayer(CPlayer *pPlayer) {
+void CGameControllerSheep::OnPlayerTick(CPlayer *pPlayer) {
 	if (pPlayer->m_PasswordChangeSuccessResult != nullptr && pPlayer->m_PasswordChangeSuccessResult->m_Completed) {
 		if (pPlayer->m_PasswordChangeSuccessResult->m_Success) {
 			GameServer()->SendChatTarget(pPlayer->GetCid(), "Password changed successfully.");
@@ -259,5 +259,29 @@ void CGameControllerSheep::TickPlayer(CPlayer *pPlayer) {
 		} else {
 			pPlayer->m_AccountLoginResult = nullptr;
 		}
+	}
+}
+
+void CGameControllerSheep::OnCharacterTick(CCharacter *pCharacter) {
+	if(pCharacter->m_VoteCooldown > 0)
+		pCharacter->m_VoteCooldown--;
+}
+
+
+void CGameControllerSheep::OnCharacterVote(CCharacter *pCharacter, EVoteButton Button)
+{
+	if(pCharacter->m_VoteCooldown > 0)
+		return;
+	pCharacter->m_VoteCooldown = Server()->TickSpeed() / 4;
+
+	switch (Button) {
+		case F3:
+			break;
+		case F4:
+			vec2 Dir = normalize(vec2(pCharacter->Input()->m_TargetX, pCharacter->Input()->m_TargetY));
+			EWeaponType Type = static_cast<EWeaponType>(pCharacter->Core()->m_ActiveWeapon);
+
+			pCharacter->DropWeapon(Type, Dir * vec2(5.0f, 8.0f), false);
+			break;
 	}
 }

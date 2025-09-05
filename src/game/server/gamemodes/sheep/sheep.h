@@ -8,6 +8,11 @@
 #include <engine/server/databases/connection.h>
 
 #include "item.h"
+#include "vote.h"
+
+#include <vector>
+
+#include <game/server/entities/sheep/weapon_drop.h>
 
 #undef log_error
 #include <dpp/dpp.h>
@@ -18,6 +23,9 @@ class CGameControllerSheep : public IGameController
 public:
 	CGameControllerSheep(class CGameContext *pGameServer);
 	~CGameControllerSheep();
+
+	// weapon drops
+	std::vector<CWeaponDrop*> m_vWeaponDrops = {};
 
 	// functions
 	void DiscordInit();
@@ -45,7 +53,9 @@ public:
 
 	// custom ddnet hooks
 	void SendChat(int ChatterClientId, int Team, const char *pText, int SpamProtectionClientId, int VersionFlags);
-	void TickPlayer(CPlayer *pPlayer);
+	void OnPlayerTick(CPlayer *pPlayer);
+	void OnCharacterTick(CCharacter *pCharacter);
+	void OnCharacterVote(CCharacter *pPlayer, EVoteButton Button);
 
 	// ddnet
 	CScore *Score();
@@ -71,4 +81,5 @@ private:
 	CDbConnectionPool *m_pPool;
 	CDbConnectionPool Pool();
 };
-#endif // GAME_SERVER_GAMEMODES_SHEEP_H
+
+#endif

@@ -779,5 +779,6 @@ MACRO_CONFIG_INT(ClVideoRecorderFPS, cl_video_recorder_fps, 60, 1, 1000, CFGFLAG
  * Add config variables for mods below this comment to avoid merge conflicts.
  */
 
-MACRO_CONFIG_STR(SvSheepDiscordToken, sv_sheep_discord_token, 128, "", CFGFLAG_SERVER | CFGFLAG_NONTEEHISTORIC, "Discord Bot Token")
-MACRO_CONFIG_STR(SvSheepDiscordServerChannelId, sv_sheep_discord_server_channel_id, 128, "", CFGFLAG_SERVER | CFGFLAG_NONTEEHISTORIC, "Discord Server Channel ID")
+//<sheep>
+#include "sheep/config_variables.h"
+//</sheep>
