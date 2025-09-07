@@ -167,20 +167,27 @@ void CGameControllerSheep::OnPlayerConnect(CPlayer *pPlayer)
 {
 	IGameController::OnPlayerConnect(pPlayer);
 	int ClientId = pPlayer->GetCid();
-
+	
 	// init the player
 	Score()->PlayerData(ClientId)->Reset();
-
+	
 	// Can't set score here as LoadScore() is threaded, run it in
 	// LoadScoreThreaded() instead
 	Score()->LoadPlayerData(ClientId);
+	
+	
+	pPlayer->SetTeam(TEAM_SPECTATORS);
+	// if(!Server()->ClientPrevIngame(ClientId))
+	// {
+	// 	char PlayerInfo[64] = "unknown";
+	// 	IServer::CClientInfo Info;
+	// 	if(Server()->GetClientInfo(ClientId, &Info) && Info.m_GotDDNetVersion)
+	// 		str_format(PlayerInfo, sizeof(PlayerInfo), "%s %d", ServerController()->GetCustomClient(ClientId), Info.m_DDNetVersion);
 
-	if(!Server()->ClientPrevIngame(ClientId))
-	{
-		char aBuf[512];
-		str_format(aBuf, sizeof(aBuf), "'%s' entered and joined the %s", Server()->ClientName(ClientId), GetTeamName(pPlayer->GetTeam()));
-		GameServer()->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
-	}
+	// 	char aBuf[512];
+	// 	str_format(aBuf, sizeof(aBuf), "'%s' joined the %s (%s)", Server()->ClientName(ClientId), GetTeamName(pPlayer->GetTeam()), PlayerInfo);
+	// 	GameServer()->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
+	// }
 }
 
 void CGameControllerSheep::OnPlayerDisconnect(CPlayer *pPlayer, const char *pReason)
@@ -188,7 +195,19 @@ void CGameControllerSheep::OnPlayerDisconnect(CPlayer *pPlayer, const char *pRea
 	int ClientId = pPlayer->GetCid();
 	bool WasModerator = pPlayer->m_Moderating && Server()->ClientIngame(ClientId);
 
-	IGameController::OnPlayerDisconnect(pPlayer, pReason);
+	pPlayer->OnDisconnect();
+	pPlayer->m_AccountLoginResult = nullptr;
+	if(Server()->ClientIngame(ClientId)) {
+		char aBuf[512];
+		if(pReason && *pReason)
+			str_format(aBuf, sizeof(aBuf), "'%s' has left the game (%s)", Server()->ClientName(ClientId), pReason);
+		else
+			str_format(aBuf, sizeof(aBuf), "'%s' has left the game", Server()->ClientName(ClientId));
+		GameServer()->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
+
+		str_format(aBuf, sizeof(aBuf), "leave player='%d:%s'", ClientId, Server()->ClientName(ClientId));
+		GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "game", aBuf);
+	}
 
 	if(!GameServer()->PlayerModerating() && WasModerator)
 		GameServer()->SendChat(-1, TEAM_ALL, "Server kick/spec votes are no longer actively moderated.");
@@ -256,6 +275,22 @@ void CGameControllerSheep::OnPlayerTick(CPlayer *pPlayer) {
 		if (pPlayer->m_AccountLoginResult->m_Success) {
 			pPlayer->m_AccountLoginResult->m_Processed = true;
 			LoadAccountItem(pPlayer);
+
+			if(pPlayer->GetTeam() == TEAM_SPECTATORS)
+				pPlayer->SetTeam(TEAM_FLOCK);
+
+			char PlayerInfo[64] = "unknown";
+			IServer::CClientInfo Info;
+			if(Server()->GetClientInfo(pPlayer->GetCid(), &Info) && Info.m_GotDDNetVersion)
+				str_format(PlayerInfo, sizeof(PlayerInfo), "%s %d", ServerController()->GetCustomClient(pPlayer->GetCid()), Info.m_DDNetVersion);
+
+			char Title[32] = "";
+			if(pPlayer->m_AccountLoginResult->m_Vip > 0)
+				str_format(Title, sizeof(Title), "VIP ");
+
+			char aBuf[512];
+			str_format(aBuf, sizeof(aBuf), "%s'%s' joined the %s (%s)", Title, Server()->ClientName(pPlayer->GetCid()), GetTeamName(pPlayer->GetTeam()), PlayerInfo);
+			GameServer()->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
 		} else {
 			pPlayer->m_AccountLoginResult = nullptr;
 		}

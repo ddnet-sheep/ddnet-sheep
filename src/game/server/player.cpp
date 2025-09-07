@@ -670,6 +670,13 @@ CCharacter *CPlayer::ForceSpawn(vec2 Pos)
 
 void CPlayer::SetTeam(int Team, bool DoChatMsg)
 {
+	//<sheep>
+	if(Team != TEAM_SPECTATORS && (m_AccountLoginResult == nullptr || !m_AccountLoginResult->m_Completed || !m_AccountLoginResult->m_Success)) {
+		GameServer()->SendChatTarget(m_ClientId, "You must be logged in to spawn.");
+		return;
+	}
+	//</sheep>
+
 	KillCharacter();
 
 	m_Team = Team;

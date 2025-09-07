@@ -183,8 +183,15 @@ void CGameControllerSheep::ConLogout(IConsole::IResult *pResult, void *pUserData
 	CGameControllerSheep *pController = (CGameControllerSheep *)pSelf->m_pController;
 
 	pPlayer->m_AccountLoginResult = nullptr;
-	pPlayer->KillCharacter();
+	pPlayer->SetTeam(TEAM_SPECTATORS);
 	pSelf->SendChatTarget(pPlayer->GetCid(), "You have been logged out.");
+	
+	char aBuf[512];
+	str_format(aBuf, sizeof(aBuf), "'%s' has left the game", pSelf->Server()->ClientName(pPlayer->GetCid()));
+	pSelf->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
+
+	str_format(aBuf, sizeof(aBuf), "leave player='%d:%s'", pPlayer->GetCid(), pSelf->Server()->ClientName(pPlayer->GetCid()));
+	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "game", aBuf);
 }
 
 bool CGameControllerSheep::ExecutePassword(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {

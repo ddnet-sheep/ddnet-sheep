@@ -14,6 +14,9 @@
 
 #include <game/server/entities/sheep/weapon_drop.h>
 
+#include <engine/server/server.h>
+#include <engine/server/sheep/server.h>
+
 #undef log_error
 #include <dpp/dpp.h>
 #define log_error(sys, ...) log_log(LEVEL_ERROR, sys, __VA_ARGS__)
@@ -70,6 +73,8 @@ public:
 	void Tick() override;
 
 	void DoTeamChange(class CPlayer *pPlayer, int Team, bool DoChatMsg = true) override;
+
+	CServerSheep *ServerController() { return ((CServer *)Server())->m_pController; }
 private:
 	// discord
     dpp::cluster *m_DiscordBot;

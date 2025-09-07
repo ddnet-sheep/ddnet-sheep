@@ -272,11 +272,19 @@ CServer::CServer()
 
 	m_aErrorShutdownReason[0] = 0;
 
+	//<sheep>
+	m_pController = new CServerSheep(this);
+	//</sheep>
+
 	Init();
 }
 
 CServer::~CServer()
 {
+	//<sheep>
+	delete m_pController;
+	//</sheep>
+
 	for(auto &pCurrentMapData : m_apCurrentMapData)
 	{
 		free(pCurrentMapData);
@@ -1684,6 +1692,10 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 
 	if(Sys)
 	{
+		//<sheep>
+		((CServerSheep *)m_pController)->OnSystemMessage(ClientId, Msg);
+		//</sheep>
+
 		// system message
 		if(Msg == NETMSG_CLIENTVER)
 		{

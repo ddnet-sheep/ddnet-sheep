@@ -2143,6 +2143,7 @@ set_src(ENGINE_SHARED GLOB_RECURSE src/engine/shared
   serverinfo.h
   #<sheep>
   sheep/config_variables.h
+  sheep/protocol_ex_msgs.h
   #</sheep>
   sixup_translate_snapshot.cpp
   snapshot.cpp
@@ -2761,6 +2762,10 @@ if(SERVER)
     server.h
     server_logger.cpp
     server_logger.h
+    #<sheep>
+    sheep/server.cpp
+    sheep/server.h
+    #</sheep>
     snap_id_pool.cpp
     snap_id_pool.h
     sql_string_helpers.cpp
