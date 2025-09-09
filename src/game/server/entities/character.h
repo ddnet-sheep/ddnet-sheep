@@ -113,11 +113,15 @@ public:
 	void AddVelocity(vec2 Addition);
 	void ApplyMoveRestrictions();
 
-	//<sheep>
-	CNetObj_PlayerInput *Input() { return &m_Input; }
-	bool CanDropWeapon(EWeaponType Type) const;
-	void DropWeapon(EWeaponType Type, vec2 Vel, bool Death);
+	//<sheep>]
 	int m_VoteCooldown = 0;
+
+	vec2 GetCursorPos();
+	bool HasLineOfSight(vec2 Pos);
+	void ForceSetPos(vec2 NewPos);
+
+	CNetObj_PlayerInput *Input() { return &m_Input; }
+	void SetReloadTimer(int Timer) { m_ReloadTimer = Timer; }
 	//</sheep>
 private:
 	// player controlling this character
@@ -251,7 +255,7 @@ public:
 	int GetLastWeapon() const { return m_LastWeapon; }
 	void SetLastWeapon(int LastWeap) { m_LastWeapon = LastWeap; }
 	int GetActiveWeapon() const { return m_Core.m_ActiveWeapon; }
-	void SetActiveWeapon(int ActiveWeap) { m_Core.m_ActiveWeapon = ActiveWeap; }
+	void SetActiveWeapon(int ActiveWeap) /*<sheep>*/;/*</sheep>{ m_Core.m_ActiveWeapon = ActiveWeap; }<sheep>*///</sheep>
 	void SetLastAction(int LastAction) { m_LastAction = LastAction; }
 	int GetArmor() const { return m_Armor; }
 	void SetArmor(int Armor) { m_Armor = Armor; }

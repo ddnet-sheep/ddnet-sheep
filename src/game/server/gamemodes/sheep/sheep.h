@@ -13,6 +13,8 @@
 #include <vector>
 
 #include <game/server/entities/sheep/weapon_drop.h>
+#include <game/server/entities/sheep/portal.h>
+#include <game/server/entities/sheep/lightsaber.h>
 
 #include <engine/server/server.h>
 #include <engine/server/sheep/server.h>
@@ -51,14 +53,21 @@ public:
 	static void ConPassword(IConsole::IResult *pResult, void *pUserData);
     static void ConLogout(IConsole::IResult *pResult, void *pUserData);
 	
+	static void ConGiveWeapon(IConsole::IResult *pResult, void *pUserData);
+
 	// chains
 	static void ConChainSheepDiscordTokenChange(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 
 	// custom ddnet hooks
 	void SendChat(int ChatterClientId, int Team, const char *pText, int SpamProtectionClientId, int VersionFlags);
+	
 	void OnPlayerTick(CPlayer *pPlayer);
+	
 	void OnCharacterTick(CCharacter *pCharacter);
 	void OnCharacterVote(CCharacter *pPlayer, EVoteButton Button);
+	bool OnCharacterWeaponFire(CCharacter *pCharacter, int Weapon, vec2 MouseTarget, vec2 Direction, vec2 ProjStartPos);
+	void OnCharacterWeaponDrop(CCharacter *pCharacter, int Type, vec2 Vel, bool Death);
+	void OnCharacterWeaponChanged(CCharacter *pCharacter);
 
 	// ddnet
 	CScore *Score();
@@ -75,11 +84,13 @@ public:
 	void DoTeamChange(class CPlayer *pPlayer, int Team, bool DoChatMsg = true) override;
 
 	CServerSheep *ServerController() { return ((CServer *)Server())->m_pController; }
+	
+	// client bound
+	CPortal *m_pPortals[MAX_CLIENTS] = {};
+	CLightsaber *m_pLightsabers[MAX_CLIENTS] = {};
 private:
-	// discord
+	// server bound
     dpp::cluster *m_DiscordBot;
-
-	// items
 	std::shared_ptr<CItemsResult> m_ItemsResult;
 
 	// database

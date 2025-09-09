@@ -11,6 +11,8 @@
 #include <game/version.h>
 
 #include <engine/server/server.h>
+#include <game/server/gamemodes/sheep/weapon.h>
+#include <game/server/entities/sheep/custom_projectile.h>
 
 #define GAME_TYPE_NAME "DDraceNetwork"
 
@@ -55,12 +57,14 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 
 	DiscordInit();
 
-	GameServer()->Console()->Register("login", "s[account name] s[password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConLogin, GameServer(), "Logs you into your account");
-	GameServer()->Console()->Register("register", "s[account name] s[password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConRegister, GameServer(), "Registers a new account");
-	GameServer()->Console()->Register("password", "s[old password] s[new password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConPassword, GameServer(), "Changes the password");
-	GameServer()->Console()->Register("logoff", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConLogout, GameServer(), "Logs you out of your your account");
+	GameServer()->Console()->Register("login", "s[account name] s[password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConLogin, GameServer(), "logs you into your account");
+	GameServer()->Console()->Register("register", "s[account name] s[password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConRegister, GameServer(), "registers a new account");
+	GameServer()->Console()->Register("password", "s[old password] s[new password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConPassword, GameServer(), "changes the password");
+	GameServer()->Console()->Register("logoff", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConLogout, GameServer(), "logs you out of your your account");
 
-	GameServer()->Console()->Chain("sv_sheep_discord_token", ConChainSheepDiscordTokenChange, this);
+	GameServer()->Console()->Register("giveweapon", "i[weapon]", CFGFLAG_SERVER, ConGiveWeapon, GameServer(), "adds or removes a weapon from a player");
+
+	GameServer()->Console()->Chain("sv_sheep_discord_token", ConChainSheepDiscordTokenChange, GameServer());
 
 	LoadItems();
 }
@@ -314,9 +318,98 @@ void CGameControllerSheep::OnCharacterVote(CCharacter *pCharacter, EVoteButton B
 			break;
 		case F4:
 			vec2 Dir = normalize(vec2(pCharacter->Input()->m_TargetX, pCharacter->Input()->m_TargetY));
-			EWeaponType Type = static_cast<EWeaponType>(pCharacter->Core()->m_ActiveWeapon);
+			int Type = pCharacter->Core()->m_ActiveWeapon;
 
-			pCharacter->DropWeapon(Type, Dir * vec2(5.0f, 8.0f), false);
+			OnCharacterWeaponDrop(pCharacter, Type, Dir * vec2(5.0f, 8.0f), false);
 			break;
+	}
+}
+
+void CGameControllerSheep::OnCharacterWeaponDrop(CCharacter *pCharacter, int Type, vec2 Vel, bool Death) {
+	if(!g_Config.m_SvSheepWeaponDrops || Type == WEAPON_NINJA || Type == WEAPON_GUN)
+		return;
+
+	CWeaponDrop *pWeaponDrop = new CWeaponDrop(
+		pCharacter->GameWorld(), 
+		pCharacter->GetPlayer(), 
+		pCharacter->m_Pos, 
+		pCharacter->Team(), 
+		pCharacter->m_TeleCheckpoint, 
+		Vel, 
+		300, 
+		Type
+	);
+	m_vWeaponDrops.push_back(pWeaponDrop);
+
+	if(!Death) {
+		GameServer()->CreateSound(pCharacter->m_Pos, SOUND_WEAPON_NOAMMO, pCharacter->TeamMask());
+		pCharacter->GiveWeapon(Type, true);
+	}
+
+	// select next droppable weapon, if none only then select the gun
+	for(int i = NUM_WEAPONS - 1; i >= 0; i--) {
+		if (i == WEAPON_GUN)
+			continue;
+		
+		if(pCharacter->Core()->m_aWeapons[i].m_Got) {
+			pCharacter->SetActiveWeapon(i);
+			return;
+		}
+	}
+	pCharacter->SetActiveWeapon(WEAPON_GUN);
+}
+
+bool CGameControllerSheep::OnCharacterWeaponFire(CCharacter *pCharacter, int Weapon, vec2 MouseTarget, vec2 Direction, vec2 ProjStartPos) {
+	int ClientId = pCharacter->GetPlayer()->GetCid();
+
+	switch(Weapon) {
+		case WEAPON_TELEKINESIS:
+			// pick up or throw entity
+			return true;
+		case WEAPON_HEARTGUN:
+			new CCustomProjectile(
+				pCharacter->GameWorld(),
+				ClientId, // owner
+				ProjStartPos, // pos
+				Direction, // dir
+				false, // explosive
+				false, // freeze
+				false, // unfreeze
+				POWERUP_HEALTH // type
+			);
+			GameServer()->CreateSound(pCharacter->m_Pos, SOUND_PICKUP_HEALTH, pCharacter->TeamMask());
+			return true;
+		case WEAPON_LIGHTSABER:
+			if(m_pLightsabers[ClientId] == nullptr)
+				m_pLightsabers[ClientId] = new CLightsaber(pCharacter->GameWorld(), ClientId, pCharacter->m_Pos);
+			m_pLightsabers[ClientId]->OnFire();
+			return true;
+		case WEAPON_PORTALGUN:
+			if(m_pPortals[ClientId] == nullptr)
+				m_pPortals[ClientId] = new CPortal(pCharacter->GameWorld(), ClientId, pCharacter->m_Pos);
+			m_pPortals[ClientId]->OnFire();
+			return true;
+	}
+
+	return false;
+}
+
+void CGameControllerSheep::OnCharacterWeaponChanged(CCharacter *pCharacter) {
+	int Weapon = pCharacter->GetActiveWeapon();
+
+	CPlayer* pPlayer = pCharacter->GetPlayer();
+	int ClientId = pPlayer->GetCid();
+
+	char aBuf[256];
+	str_format(aBuf, sizeof(aBuf), "> %d: %s (%d) <", Weapon, CWeapon::GetName(Weapon), pCharacter->GetWeaponAmmo(Weapon));
+	GameServer()->SendBroadcast(aBuf, ClientId, true);
+
+	for(int i = 0; i < MAX_CLIENTS; i++) {
+		CPlayer *pPl = GameServer()->m_apPlayers[i];
+		if(!pPl)
+			continue;
+
+		if(pPl->SpectatorId() == i)
+			GameServer()->SendBroadcast(aBuf, i, true);
 	}
 }

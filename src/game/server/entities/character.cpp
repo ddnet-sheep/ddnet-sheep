@@ -376,6 +376,11 @@ void CCharacter::DoWeaponSwitch()
 
 	// switch Weapon
 	SetWeapon(m_QueuedWeapon);
+
+	//<sheep>
+	CGameControllerSheep* pController = (CGameControllerSheep *)GameServer()->m_pController;
+	pController->OnCharacterWeaponChanged(this);
+	//</sheep>
 }
 
 void CCharacter::HandleWeaponSwitch()
@@ -479,8 +484,13 @@ void CCharacter::FireWeapon()
 	// check for ammo
 	if(!m_Core.m_aWeapons[m_Core.m_ActiveWeapon].m_Ammo)
 		return;
-
+		
 	vec2 ProjStartPos = m_Pos + Direction * GetProximityRadius() * 0.75f;
+		
+	//<sheep>
+	CGameControllerSheep* pController = (CGameControllerSheep *)GameServer()->m_pController;
+	if(!pController->OnCharacterWeaponFire(this, m_Core.m_ActiveWeapon, MouseTarget, Direction, ProjStartPos)) {
+	//</sheep>
 
 	switch(m_Core.m_ActiveWeapon)
 	{
@@ -619,6 +629,10 @@ void CCharacter::FireWeapon()
 	}
 	break;
 	}
+
+	//<sheep>
+	}
+	//</sheep>
 
 	m_AttackTick = Server()->Tick();
 
@@ -1046,6 +1060,9 @@ void CCharacter::SnapCharacter(int SnappingClient, int Id)
 	CCharacterCore *pCore;
 	int Tick, Emote = m_EmoteType, Weapon = m_Core.m_ActiveWeapon, AmmoCount = 0,
 		  Health = 0, Armor = 0;
+	//<sheep>
+	Weapon = CWeapon::GetBaseWeapon(Weapon);
+	//</sheep>
 	if(!m_ReckoningTick || GameServer()->m_World.m_Paused)
 	{
 		Tick = 0;
@@ -2561,3 +2578,31 @@ void CCharacter::SwapClients(int Client1, int Client2)
 	const int HookedPlayer = m_Core.HookedPlayer();
 	m_Core.SetHookedPlayer(HookedPlayer == Client1 ? Client2 : HookedPlayer == Client2 ? Client1 : HookedPlayer);
 }
+
+//<sheep>
+vec2 CCharacter::GetCursorPos()
+{
+	vec2 Target = vec2(Core()->m_Input.m_TargetX, Core()->m_Input.m_TargetY);
+	return GetPlayer()->m_CameraInfo.ConvertTargetToWorld(GetPos(), Target);
+}
+
+bool CCharacter::HasLineOfSight(vec2 Pos)
+{
+	vec2 tmp;
+	return GameServer()->Collision()->IntersectLine(m_Pos, Pos, &tmp, &tmp) == 0;
+}
+
+void CCharacter::SetActiveWeapon(int ActiveWeap)
+{
+	m_Core.m_ActiveWeapon = ActiveWeap;
+	CGameControllerSheep* pController = (CGameControllerSheep *)GameServer()->m_pController;
+	pController->OnCharacterWeaponChanged(this);
+}
+
+void CCharacter::ForceSetPos(vec2 NewPos)
+{
+	m_PrevPos = NewPos;
+	m_Pos = NewPos;
+	m_Core.m_Pos = NewPos;
+}
+//</sheep>

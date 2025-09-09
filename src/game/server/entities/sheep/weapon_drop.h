@@ -18,7 +18,7 @@ class CWeaponDrop : public CEntity
 	uint m_Lifetime; // In ticks
 	uint m_PickupDelay; // In ticks
 	
-    EWeaponType m_Type;
+    int m_Type;
 
 	std::vector<int> m_vIds = std::vector<int>();
 	int m_Team;
@@ -41,7 +41,7 @@ class CWeaponDrop : public CEntity
 
 	bool CollectItem();
 public:
-	CWeaponDrop(CGameWorld *pGameWorld, CPlayer* Dropper, vec2 Pos, int Team, int TeleCheckpoint, vec2 Vel, int Lifetime, EWeaponType Type);
+	CWeaponDrop(CGameWorld *pGameWorld, CPlayer* Dropper, vec2 Pos, int Team, int TeleCheckpoint, vec2 Vel, int Lifetime, int Type);
 
 	virtual void Tick() override;
 	virtual void Snap(int SnappingClient) override;

@@ -206,16 +206,7 @@ public:
 		int m_Ammo;
 		int m_Ammocost;
 		bool m_Got;
-	} m_aWeapons[
-		//<sheep>
-		/*
-		//</sheep>
-		NUM_WEAPONS
-		//<sheep>
-		*/
-		NUM_WEAPON_TYPES
-		//</sheep>
-	];
+	} m_aWeapons[NUM_WEAPONS];
 
 	// ninja
 	struct

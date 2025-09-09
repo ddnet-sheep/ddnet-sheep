@@ -24,8 +24,9 @@
 
 #include <base/log.h>
 
-static int GetNeededIds(EWeaponType Type) {
+static int GetNeededIds(int Type) {
 	switch(Type) {
+		case WEAPON_TELEKINESIS:
 		case WEAPON_HEARTGUN:
 		case WEAPON_LIGHTSABER:
 			return 1;
@@ -36,21 +37,7 @@ static int GetNeededIds(EWeaponType Type) {
 	}
 }
 
-static EWeaponType GetBaseWeapon(EWeaponType Type) {
-	switch(Type) {
-		case WEAPON_TELEKINESIS:
-			return static_cast<EWeaponType>(WEAPON_NINJA);
-		case WEAPON_HEARTGUN:
-		case WEAPON_LIGHTSABER:
-			return static_cast<EWeaponType>(WEAPON_GUN);
-		case WEAPON_PORTALGUN:
-			return static_cast<EWeaponType>(WEAPON_LASER);
-		default:
-			return Type;
-	}
-}
-
-CWeaponDrop::CWeaponDrop(CGameWorld *pGameWorld, CPlayer* Dropper, vec2 Pos, int Team, int TeleCheckpoint, vec2 Vel, int Lifetime, EWeaponType Type) :
+CWeaponDrop::CWeaponDrop(CGameWorld *pGameWorld, CPlayer* Dropper, vec2 Pos, int Team, int TeleCheckpoint, vec2 Vel, int Lifetime, int Type) :
 	CEntity(pGameWorld, CGameWorld::ENTTYPE_WEAPON_DROP, Pos, 28)
 {
     m_Dropper = Dropper;
@@ -320,7 +307,7 @@ void CWeaponDrop::Snap(int ClientId) {
 
 	CSnapContext SnapContext = CSnapContext(pPlayer->GetClientVersion(), Server()->IsSixup(ClientId), ClientId);
 
-	int WeaponId = GetBaseWeapon(m_Type);
+	int WeaponId = CWeapon::GetBaseWeapon(m_Type);
 	GameServer()->SnapPickup(SnapContext, GetId(), m_Pos, POWERUP_WEAPON, WeaponId, -1, PICKUPFLAG_NO_PREDICT);
 
 	vec2 Offset = vec2(0.0f, -32.0f);

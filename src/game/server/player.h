@@ -127,6 +127,9 @@ public:
 	std::shared_ptr<CAccountLoginResult> m_AccountLoginResult;
 	std::shared_ptr<CAccountItemResult> m_AccountItemResult;
 	std::shared_ptr<CSqlSuccessResult> m_PasswordChangeSuccessResult;
+
+	int NumDDraceHudRows();
+	void SendBroadcastHud(const char *pMessage);
 	//</sheep>
 private:
 	const uint32_t m_UniqueClientId;
