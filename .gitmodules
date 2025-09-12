@@ -2,3 +2,8 @@
 	path = ddnet-libs
 	url = https://github.com/ddnet/ddnet-libs
 	shallow = true
+#<sheep>
+[submodule "ddnet-libs-sheep/DPP"]
+	path = ddnet-libs-sheep/DPP
+	url = git@github.com:brainboxdotcc/DPP.git
+#</sheep>
