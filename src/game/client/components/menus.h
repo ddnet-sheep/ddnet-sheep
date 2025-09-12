@@ -20,6 +20,7 @@
 
 #include <game/client/component.h>
 #include <game/client/components/mapimages.h>
+#include <game/client/components/menus_ingame_touch_controls.h>
 #include <game/client/lineinput.h>
 #include <game/client/ui.h>
 #include <game/voting.h>
@@ -498,6 +499,12 @@ protected:
 	void PopupConfirmDiscardTouchControlsChanges();
 	void PopupConfirmResetTouchControls();
 	void PopupConfirmImportTouchControlsClipboard();
+	void PopupConfirmDeleteButton();
+	void PopupCancelDeselectButton();
+	void PopupConfirmSelectedNotVisible();
+	void PopupConfirmChangeSelectedButton();
+	void PopupCancelChangeSelectedButton();
+	void PopupConfirmTurnOffEditor();
 	void RenderPlayers(CUIRect MainView);
 	void RenderServerInfo(CUIRect MainView);
 	void RenderServerInfoMotd(CUIRect Motd);
@@ -656,7 +663,10 @@ public:
 		PAGE_GHOST,
 
 		PAGE_LENGTH,
+	};
 
+	enum
+	{
 		SETTINGS_LANGUAGE = 0,
 		SETTINGS_GENERAL,
 		SETTINGS_PLAYER,
@@ -669,7 +679,10 @@ public:
 		SETTINGS_ASSETS,
 
 		SETTINGS_LENGTH,
+	};
 
+	enum
+	{
 		BIG_TAB_NEWS = 0,
 		BIG_TAB_INTERNET,
 		BIG_TAB_LAN,
@@ -682,7 +695,10 @@ public:
 		BIG_TAB_DEMOS,
 
 		BIG_TAB_LENGTH,
+	};
 
+	enum
+	{
 		SMALL_TAB_HOME = 0,
 		SMALL_TAB_QUIT,
 		SMALL_TAB_SETTINGS,
@@ -776,7 +792,10 @@ public:
 		POPUP_RESTART,
 		POPUP_WARNING,
 		POPUP_SAVE_SKIN,
+	};
 
+	enum
+	{
 		// demo player states
 		DEMOPLAYER_NONE = 0,
 		DEMOPLAYER_SLICE_SAVE,
@@ -791,6 +810,8 @@ public:
 private:
 	CCommunityIcons m_CommunityIcons;
 	CMenusStart m_MenusStart;
+	CMenusIngameTouchControls m_MenusIngameTouchControls;
+	friend CMenusIngameTouchControls;
 
 	static int GhostlistFetchCallback(const CFsFileInfo *pInfo, int IsDir, int StorageType, void *pUser);
 

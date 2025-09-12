@@ -640,6 +640,8 @@ void CGameContext::SendChatTeam(int Team, const char *pText) const
 
 void CGameContext::SendChat(int ChatterClientId, int Team, const char *pText, int SpamProtectionClientId, int VersionFlags)
 {
+	dbg_assert(ChatterClientId >= -1 && ChatterClientId < MAX_CLIENTS, "ChatterClientId invalid: %d", ChatterClientId);
+
 	if(SpamProtectionClientId >= 0 && SpamProtectionClientId < MAX_CLIENTS)
 		if(ProcessSpamProtection(SpamProtectionClientId))
 			return;
@@ -648,20 +650,17 @@ void CGameContext::SendChat(int ChatterClientId, int Team, const char *pText, in
 	((CGameControllerSheep *)m_pController)->SendChat(ChatterClientId, Team, pText, SpamProtectionClientId, VersionFlags);
 	//</sheep>
 
-	char aBuf[256], aText[256];
+	char aText[256];
 	str_copy(aText, pText, sizeof(aText));
-	if(ChatterClientId >= 0 && ChatterClientId < MAX_CLIENTS) {
-		str_format(aBuf, sizeof(aBuf), "%d:%d:%s: %s", ChatterClientId, Team, Server()->ClientName(ChatterClientId), aText);
-	} else if(ChatterClientId == -2) {
-		str_format(aBuf, sizeof(aBuf), "### %s", aText);
-		str_copy(aText, aBuf, sizeof(aText));
-		ChatterClientId = -1;
+	const char *pTeamString = Team == TEAM_ALL ? "chat" : "teamchat";
+	if(ChatterClientId == -1)
+	{
+		log_info(pTeamString, "*** %s", aText);
 	}
-	else {
-		str_format(aBuf, sizeof(aBuf), "*** %s", aText);
+	else
+	{
+		log_info(pTeamString, "%d:%d:%s: %s", ChatterClientId, Team, Server()->ClientName(ChatterClientId), aText);
 	}
-	
-	Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, Team != TEAM_ALL ? "teamchat" : "chat", aBuf);
 
 	if(Team == TEAM_ALL)
 	{
@@ -686,6 +685,7 @@ void CGameContext::SendChat(int ChatterClientId, int Team, const char *pText, in
 				Server()->SendPackMsg(&Msg, MSGFLAG_VITAL | MSGFLAG_NORECORD, i);
 		}
 
+		char aBuf[sizeof(aText) + 8];
 		str_format(aBuf, sizeof(aBuf), "Chat: %s", aText);
 		LogEvent(aBuf, ChatterClientId);
 	}
@@ -1656,7 +1656,7 @@ void CGameContext::OnClientEnter(int ClientId)
 
 	for(int p = 0; p < protocol7::NUM_SKINPARTS; p++)
 	{
-		NewClientInfoMsg.m_apSkinPartNames[p] = pNewPlayer->m_TeeInfos.m_apSkinPartNames[p];
+		NewClientInfoMsg.m_apSkinPartNames[p] = pNewPlayer->m_TeeInfos.m_aaSkinPartNames[p];
 		NewClientInfoMsg.m_aUseCustomColors[p] = pNewPlayer->m_TeeInfos.m_aUseCustomColors[p];
 		NewClientInfoMsg.m_aSkinPartColors[p] = pNewPlayer->m_TeeInfos.m_aSkinPartColors[p];
 	}
@@ -1686,7 +1686,7 @@ void CGameContext::OnClientEnter(int ClientId)
 
 			for(int p = 0; p < protocol7::NUM_SKINPARTS; p++)
 			{
-				ClientInfoMsg.m_apSkinPartNames[p] = pPlayer->m_TeeInfos.m_apSkinPartNames[p];
+				ClientInfoMsg.m_apSkinPartNames[p] = pPlayer->m_TeeInfos.m_aaSkinPartNames[p];
 				ClientInfoMsg.m_aUseCustomColors[p] = pPlayer->m_TeeInfos.m_aUseCustomColors[p];
 				ClientInfoMsg.m_aSkinPartColors[p] = pPlayer->m_TeeInfos.m_aSkinPartColors[p];
 			}
@@ -2766,7 +2766,7 @@ void CGameContext::OnChangeInfoNetMessage(const CNetMsg_Cl_ChangeInfo *pMsg, int
 
 		for(int p = 0; p < protocol7::NUM_SKINPARTS; p++)
 		{
-			Info.m_apSkinPartNames[p] = pPlayer->m_TeeInfos.m_apSkinPartNames[p];
+			Info.m_apSkinPartNames[p] = pPlayer->m_TeeInfos.m_aaSkinPartNames[p];
 			Info.m_aSkinPartColors[p] = pPlayer->m_TeeInfos.m_aSkinPartColors[p];
 			Info.m_aUseCustomColors[p] = pPlayer->m_TeeInfos.m_aUseCustomColors[p];
 		}
@@ -2786,7 +2786,7 @@ void CGameContext::OnChangeInfoNetMessage(const CNetMsg_Cl_ChangeInfo *pMsg, int
 		Msg.m_ClientId = ClientId;
 		for(int p = 0; p < protocol7::NUM_SKINPARTS; p++)
 		{
-			Msg.m_apSkinPartNames[p] = pPlayer->m_TeeInfos.m_apSkinPartNames[p];
+			Msg.m_apSkinPartNames[p] = pPlayer->m_TeeInfos.m_aaSkinPartNames[p];
 			Msg.m_aSkinPartColors[p] = pPlayer->m_TeeInfos.m_aSkinPartColors[p];
 			Msg.m_aUseCustomColors[p] = pPlayer->m_TeeInfos.m_aUseCustomColors[p];
 		}
@@ -3895,7 +3895,6 @@ void CGameContext::RegisterChatCommands()
 	Console()->Register("help", "?r[command]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConHelp, this, "Shows help to command r, general help if left blank");
 	Console()->Register("info", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConInfo, this, "Shows info about this server");
 	Console()->Register("list", "?s[filter]", CFGFLAG_CHAT, ConList, this, "List connected players with optional case-insensitive substring matching filter");
-	Console()->Register("me", "r[message]", CFGFLAG_CHAT | CFGFLAG_SERVER | CFGFLAG_NONTEEHISTORIC, ConMe, this, "Like the famous irc command '/me says hi' will display '<yourname> says hi'");
 	Console()->Register("w", "s[player name] r[message]", CFGFLAG_CHAT | CFGFLAG_SERVER | CFGFLAG_NONTEEHISTORIC, ConWhisper, this, "Whisper something to someone (private message)");
 	Console()->Register("whisper", "s[player name] r[message]", CFGFLAG_CHAT | CFGFLAG_SERVER | CFGFLAG_NONTEEHISTORIC, ConWhisper, this, "Whisper something to someone (private message)");
 	Console()->Register("c", "r[message]", CFGFLAG_CHAT | CFGFLAG_SERVER | CFGFLAG_NONTEEHISTORIC, ConConverse, this, "Converse with the last person you whispered to (private message)");
@@ -5204,7 +5203,7 @@ void CGameContext::OnUpdatePlayerServerInfo(CJsonStringWriter *pJSonWriter, int 
 			pJSonWriter->BeginObject();
 
 			pJSonWriter->WriteAttribute("name");
-			pJSonWriter->WriteStrValue(TeeInfo.m_apSkinPartNames[i]);
+			pJSonWriter->WriteStrValue(TeeInfo.m_aaSkinPartNames[i]);
 
 			if(TeeInfo.m_aUseCustomColors[i])
 			{

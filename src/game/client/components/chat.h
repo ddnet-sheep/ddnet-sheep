@@ -12,7 +12,7 @@
 #include <game/client/component.h>
 #include <game/client/lineinput.h>
 #include <game/client/render.h>
-#include <game/generated/protocol7.h>
+#include <generated/protocol7.h>
 
 constexpr auto SAVES_FILE = "ddnet-saves.txt";
 
@@ -72,11 +72,17 @@ class CChat : public CComponent
 		//</sheep>
 		CLIENT_MSG = -2,
 		SERVER_MSG = -1,
+	};
 
+	enum
+	{
 		MODE_NONE = 0,
 		MODE_ALL,
 		MODE_TEAM,
+	};
 
+	enum
+	{
 		CHAT_SERVER = 0,
 		CHAT_HIGHLIGHT,
 		CHAT_CLIENT,

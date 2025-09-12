@@ -9,7 +9,9 @@
 #include <vector>
 
 #include <engine/shared/protocol.h>
-#include <game/generated/protocol.h>
+
+#include <generated/protocol.h>
+
 #include <game/teamscore.h>
 
 #include "prng.h"
@@ -158,7 +160,7 @@ public:
 		m_pPrng = nullptr;
 	}
 
-	int RandomOr0(int BelowThis)
+	int RandomOr0(int BelowThis) const
 	{
 		if(BelowThis <= 1 || !m_pPrng)
 		{
