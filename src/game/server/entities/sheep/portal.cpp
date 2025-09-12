@@ -10,7 +10,7 @@
 #include <game/gamecore.h>
 #include <game/teamscore.h>
 
-#include <game/generated/protocol.h>
+#include <generated/protocol.h>
 
 #include <engine/shared/protocol.h>
 

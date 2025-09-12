@@ -26,7 +26,7 @@
 
 static int GetNeededIds(int Type) {
 	switch(Type) {
-		case WEAPON_TELEKINESIS:
+		case WEAPON_GRAVITYGUN:
 		case WEAPON_HEARTGUN:
 		case WEAPON_LIGHTSABER:
 			return 1;

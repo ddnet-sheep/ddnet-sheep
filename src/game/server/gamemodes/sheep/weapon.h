@@ -2,7 +2,7 @@
 #ifndef GAME_SERVER_GAMEMODES_SHEEP_WEAPON_H
 #define GAME_SERVER_GAMEMODES_SHEEP_WEAPON_H
 
-#include <game/generated/protocol.h>
+#include <generated/protocol.h>
 
 class CWeapon {
 	public:
@@ -14,17 +14,17 @@ class CWeapon {
 				case WEAPON_GRENADE: return "Grenade";
 				case WEAPON_LASER: return "Laser";
 				case WEAPON_NINJA: return "Ninja";
-				case WEAPON_TELEKINESIS: return "Telekinesis";
-				case WEAPON_HEARTGUN: return "Heartgun";
+				case WEAPON_GRAVITYGUN: return "Gravity gun";
+				case WEAPON_HEARTGUN: return "Heart gun";
 				case WEAPON_LIGHTSABER: return "Lightsaber";
-				case WEAPON_PORTALGUN: return "Portalgun";
+				case WEAPON_PORTALGUN: return "Portal gun";
 				default: return "Unknown";
 			}
 		}
 
 		static int GetBaseWeapon(int Type) {
 			switch(Type) {
-				case WEAPON_TELEKINESIS:
+				case WEAPON_GRAVITYGUN:
 					return WEAPON_NINJA;
 				case WEAPON_HEARTGUN:
 				case WEAPON_LIGHTSABER:

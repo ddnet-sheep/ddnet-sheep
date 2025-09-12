@@ -9,8 +9,8 @@
 #include <game/server/gamemodes/sheep/sheep.h>
 #include <game/server/teams.h>
 
-#include <game/generated/protocol.h>
-#include <game/generated/server_data.h>
+#include <generated/protocol.h>
+#include <generated/server_data.h>
 
 #include <base/vmath.h>
 #include <game/gamecore.h>

@@ -363,7 +363,7 @@ bool CGameControllerSheep::OnCharacterWeaponFire(CCharacter *pCharacter, int Wea
 	int ClientId = pCharacter->GetPlayer()->GetCid();
 
 	switch(Weapon) {
-		case WEAPON_TELEKINESIS:
+		case WEAPON_GRAVITYGUN:
 			// pick up or throw entity
 			return true;
 		case WEAPON_HEARTGUN:

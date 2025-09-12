@@ -130,7 +130,19 @@ def main():
 			print("")
 
 		EmitEnum([f"SOUND_{i.name.value.upper()}" for i in content.container.sounds.items], "NUM_SOUNDS")
-		EmitEnum([f"WEAPON_{i.name.value.upper()}" for i in content.container.weapons.id.items], "NUM_WEAPONS")
+		#<sheep>
+		sheep_weapons = [
+			"LIGHTSABER",
+			"PORTALGUN",
+			"GRAVITYGUN",
+			"HEARTGUN"
+		]
+		#</sheep>
+		EmitEnum([f"WEAPON_{i.name.value.upper()}" for i in content.container.weapons.id.items] 
+		#<sheep>
+		+ [f"WEAPON_{i}" for i in sheep_weapons]
+		#</sheep>
+		, "NUM_WEAPONS")
 
 		print("""
 
