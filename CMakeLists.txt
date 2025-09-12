@@ -2800,7 +2800,12 @@ if(SERVER)
     entities/projectile.cpp
     entities/projectile.h
     #<sheep>
-    entities/sheep/character.cpp
+    entities/sheep/custom_projectile.cpp
+    entities/sheep/custom_projectile.h
+    entities/sheep/lightsaber.cpp
+    entities/sheep/lightsaber.h
+    entities/sheep/portal.cpp
+    entities/sheep/portal.h
     entities/sheep/weapon_drop.cpp
     entities/sheep/weapon_drop.h
     #</sheep>
@@ -2820,11 +2825,14 @@ if(SERVER)
     gamemodes/sheep/account.cpp
     gamemodes/sheep/account.h
     gamemodes/sheep/discord.cpp
-    gamemodes/sheep/item.h
     gamemodes/sheep/item.cpp
+    gamemodes/sheep/item.h
     gamemodes/sheep/sheep.cpp
     gamemodes/sheep/sheep.h
+    gamemodes/sheep/sql.h
     gamemodes/sheep/vote.h
+    gamemodes/sheep/weapon.cpp
+    gamemodes/sheep/weapon.h
     #</sheep>
     gameworld.cpp
     gameworld.h
