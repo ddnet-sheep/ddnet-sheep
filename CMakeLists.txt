@@ -1578,12 +1578,14 @@ set(EXPECTED_DATA
   maps/dm9.map
   maps/license.txt
   #<sheep>
-  maps/Multeasymap-DOD.map
+  #TODO: Include current sheep map
+  #maps/Multeasymap-DOD.map
   #</sheep>
   maps7/Gold\ Mine.map
   maps7/LearnToPlay.map
   #<sheep>
-  maps7/Multeasymap-DOD.map
+  #TODO: Include current sheep map
+  #maps7/Multeasymap-DOD.map
   #</sheep>
   maps7/Sunny\ Side\ Up.map
   maps7/Tsunami.map
