@@ -105,12 +105,18 @@ void CGameControllerSheep::PostPlayerLogout(CPlayer *pPlayer, const char *pReaso
 
 	// leave message
 	if(Server()->ClientIngame(ClientId) && !pPlayer->m_AccountLoginResult->m_Vanish) {
+		char aTitle[33];
+		if(pPlayer->m_AccountLoginResult->m_Title[0] != '\0') {
+			str_format(aTitle, sizeof(aTitle), "%s ", pPlayer->m_AccountLoginResult->m_Title);
+		} else {
+			aTitle[0] = '\0';
+		}
 		if(pReason && *pReason)
-			str_format(aBuf, sizeof(aBuf), "'%s' left the game (%s)", Server()->ClientName(ClientId), pReason);
+			str_format(aBuf, sizeof(aBuf), "%s'%s' left the game (%s)", aTitle, Server()->ClientName(ClientId), pReason);
 		else
-			str_format(aBuf, sizeof(aBuf), "'%s' left the game", Server()->ClientName(ClientId));
-		
-		GameServer()->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);	
+			str_format(aBuf, sizeof(aBuf), "%s'%s' left the game", aTitle, Server()->ClientName(ClientId));
+
+		GameServer()->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
 	}
 }
 
