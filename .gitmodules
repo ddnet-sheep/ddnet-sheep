@@ -7,3 +7,6 @@
 	path = ddnet-libs-sheep/DPP
 	url = git@github.com:brainboxdotcc/DPP.git
 #</sheep>
+[submodule "data/ddnet-maps"]
+	path = data/ddnet-maps
+	url = git@github.com:ddnet/ddnet-maps.git
