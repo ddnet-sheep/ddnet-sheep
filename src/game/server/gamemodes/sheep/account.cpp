@@ -182,7 +182,7 @@ bool CGameControllerSheep::ExecuteLogin(IDbConnection *pSqlServer, const ISqlDat
 		"FROM sheep_accounts WHERE name=?", 
 		pError, ErrorSize)
 	) {
-		str_format(pResult->m_Message, sizeof(pResult->m_Message), "Database error (1).");
+		str_copy(pResult->m_Message, "Database error (1).");
 		return false;
 	}
 
@@ -191,7 +191,7 @@ bool CGameControllerSheep::ExecuteLogin(IDbConnection *pSqlServer, const ISqlDat
 
 	bool End;
 	if(!pSqlServer->Step(&End, pError, ErrorSize) || End) {
-		str_format(pResult->m_Message, sizeof(pResult->m_Message), "User does not exist.");
+		str_copy(pResult->m_Message, "User does not exist.");
 		return false;
 	}
 
@@ -199,17 +199,17 @@ bool CGameControllerSheep::ExecuteLogin(IDbConnection *pSqlServer, const ISqlDat
 	pSqlServer->GetString(9, aPasswordHash, sizeof(aPasswordHash));
 
 	if (!VerifyPassword(aPasswordHash, pData->m_Password)) {
-		str_format(pResult->m_Message, sizeof(pResult->m_Message), "Invalid password.");
+		str_copy(pResult->m_Message, "Invalid password.");
 		return false;
 	}
 
 	int BanExpiration = pSqlServer->GetInt(1);
 	if (BanExpiration != 0 && BanExpiration > time(0)) {
-		str_format(pResult->m_Message, sizeof(pResult->m_Message), "Banned.");
+		str_copy(pResult->m_Message, "Banned.");
 		return false;
 	}
 
-	str_format(pResult->m_Message, sizeof(pResult->m_Message), "Successfully logged in.");
+	str_copy(pResult->m_Message, "Successfully logged in.");
 
 	GenerateAccountLoginResult(pSqlServer, pGameData);
 
@@ -249,7 +249,7 @@ bool CGameControllerSheep::ExecuteRegister(IDbConnection *pSqlServer, const ISql
 		"ban_expiration, level, exp, vip, vip_expiration, staff_level, email, email_verified, password, id, invisible, vanish, title", 
 		pError, ErrorSize)
 	) {
-		str_format(pResult->m_Message, sizeof(pResult->m_Message), "Database error (1).");
+		str_copy(pResult->m_Message, "Database error (1).");
 		return false;
 	}
 
@@ -262,11 +262,11 @@ bool CGameControllerSheep::ExecuteRegister(IDbConnection *pSqlServer, const ISql
 
 	bool End;
 	if(!pSqlServer->Step(&End, pError, ErrorSize) || End) {
-		str_format(pResult->m_Message, sizeof(pResult->m_Message), "User does already exist.");
+		str_copy(pResult->m_Message, "User does already exist.");
 		return false;
 	}
 
-	str_format(pResult->m_Message, sizeof(pResult->m_Message), "Successfully registered.");
+	str_copy(pResult->m_Message, "Successfully registered.");
 
 	GenerateAccountLoginResult(pSqlServer, pGameData);
 
@@ -298,7 +298,7 @@ void CGameControllerSheep::ConLogout(IConsole::IResult *pResult, void *pUserData
 
 bool CGameControllerSheep::ExecutePassword(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {
 	char aBuf[256];
-	str_format(aBuf, sizeof(aBuf), "UPDATE sheep_accounts SET password=SHA2(?, 256) WHERE name=?");
+	str_copy(aBuf, "UPDATE sheep_accounts SET password=SHA2(?, 256) WHERE name=?");
 	if(!pSqlServer->PrepareStatement(aBuf, pError, ErrorSize))
 		return false;
 
