@@ -64,6 +64,9 @@ public:
 	// chains
 	static void ConChainSheepDiscordTokenChange(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 
+	// sheep hooks
+	void OnPlayerLogin(CPlayer *pPlayer);
+
 	// custom ddnet hooks
 	void SendChat(int ChatterClientId, int Team, const char *pText, int SpamProtectionClientId, int VersionFlags);
 	void OnPostGlobalSnap();

@@ -246,7 +246,7 @@ void CGameControllerSheep::Snap(int SnappingClient) {\
 			auto *pClientInfo = Server()->SnapNewItem<CNetObj_ClientInfo>(ClientId);
 			StrToInts(pClientInfo->m_aName, std::size(pClientInfo->m_aName), pFakePlayerMessageItem->pName);
 			StrToInts(pClientInfo->m_aClan, std::size(pClientInfo->m_aClan), "");
-			StrToInts(pClientInfo->m_aSkin, std::size(pClientInfo->m_aSkin), "nanami");
+			StrToInts(pClientInfo->m_aSkin, std::size(pClientInfo->m_aSkin), "sheep");
 			pClientInfo->m_Country = -1;
 			pClientInfo->m_UseCustomColor = 0;
 			pClientInfo->m_ColorBody = 0;
@@ -278,7 +278,7 @@ void CGameControllerSheep::OnPostGlobalSnap() {
 		Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, -1);
 			
 		log_info("discordchat", "%d:%d:%s: %s", pFakePlayerMessageItem->ClientId, Msg.m_Team, pFakePlayerMessageItem->pName, pFakePlayerMessageItem->pMessage);
-		
+
 		m_FakePlayerMessageQueue.erase(pFakePlayerMessageItem);
 	}
 }
@@ -324,26 +324,56 @@ void CGameControllerSheep::OnPlayerTick(CPlayer *pPlayer) {
 		GameServer()->SendChatTarget(pPlayer->GetCid(), pPlayer->m_AccountLoginResult->m_Message);
 		if (pPlayer->m_AccountLoginResult->m_Success) {
 			pPlayer->m_AccountLoginResult->m_Processed = true;
-			LoadAccountItem(pPlayer);
-
-			if(pPlayer->GetTeam() == TEAM_SPECTATORS)
-				pPlayer->SetTeam(TEAM_FLOCK);
-
-			char PlayerInfo[64] = "unknown";
-			IServer::CClientInfo Info;
-			if(Server()->GetClientInfo(pPlayer->GetCid(), &Info) && Info.m_GotDDNetVersion)
-				str_format(PlayerInfo, sizeof(PlayerInfo), "%s %d", ServerController()->GetCustomClient(pPlayer->GetCid()), Info.m_DDNetVersion);
-
-			char Title[32] = "";
-			if(pPlayer->m_AccountLoginResult->m_Vip > 0)
-				str_format(Title, sizeof(Title), "VIP ");
-
-			char aBuf[512];
-			str_format(aBuf, sizeof(aBuf), "%s'%s' joined the %s (%s)", Title, Server()->ClientName(pPlayer->GetCid()), GetTeamName(pPlayer->GetTeam()), PlayerInfo);
-			GameServer()->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
+			OnPlayerLogin(pPlayer);
 		} else {
 			pPlayer->m_AccountLoginResult = nullptr;
 		}
+	}
+}
+
+void CGameControllerSheep::OnPlayerLogin(CPlayer *pPlayer) {
+	int ClientId = pPlayer->GetCid();
+	CServer::CClient* pClient = &((CServer*)Server())->m_aClients[ClientId];
+
+	LoadAccountItem(pPlayer);
+
+	if(pPlayer->GetTeam() == TEAM_SPECTATORS)
+		pPlayer->SetTeam(TEAM_FLOCK);
+
+	char PlayerInfo[64] = "unknown";
+	IServer::CClientInfo Info;
+	if(Server()->GetClientInfo(ClientId, &Info) && Info.m_GotDDNetVersion)
+		str_format(PlayerInfo, sizeof(PlayerInfo), "%s %d", ServerController()->GetCustomClient(ClientId), Info.m_DDNetVersion);
+
+	char Title[32] = "";
+	if(pPlayer->m_AccountLoginResult->m_Vip > 0)
+		str_format(Title, sizeof(Title), "VIP> ");
+
+	char aBuf[512];
+	str_format(aBuf, sizeof(aBuf), "%s'%s' joined the %s (%s)", Title, Server()->ClientName(ClientId), GetTeamName(pPlayer->GetTeam()), PlayerInfo);
+	GameServer()->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
+
+	// rcon auth
+	if (pPlayer->m_AccountLoginResult->m_Staff > 0) {
+		bool Sixup = Server()->IsSixup(ClientId);
+		if(!Sixup) {
+			CMsgPacker Msgp(NETMSG_RCON_AUTH_STATUS, true);
+			Msgp.AddInt(1); //authed
+			Msgp.AddInt(1); //cmdlist
+			Server()->SendMsg(&Msgp, MSGFLAG_VITAL, ClientId);
+		} else {
+			CMsgPacker Msgp(protocol7::NETMSG_RCON_AUTH_ON, true, true);
+			Server()->SendMsg(&Msgp, MSGFLAG_VITAL, ClientId);
+		}
+
+		int AuthLevel = AUTHED_ADMIN;
+
+		pClient->m_Authed = AuthLevel; // Keeping m_Authed around is unwise...
+		CServer* pServer = (CServer*)Server();
+		pClient->m_AuthKey = pServer->m_AuthManager.DefaultKey(AuthLevel);
+
+		// DDRace
+		GameServer()->OnSetAuthed(ClientId, AuthLevel);
 	}
 }
 
