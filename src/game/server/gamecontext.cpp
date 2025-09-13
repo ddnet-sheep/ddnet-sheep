@@ -4561,6 +4561,9 @@ void CGameContext::OnPostGlobalSnap()
 		if(pPlayer && pPlayer->GetCharacter())
 			pPlayer->GetCharacter()->PostGlobalSnap();
 	}
+	//<sheep>
+	((CGameControllerSheep *)m_pController)->OnPostGlobalSnap();
+	//</sheep>
 	m_Events.Clear();
 }
 

@@ -204,9 +204,9 @@ void CGameControllerSheep::OnPlayerDisconnect(CPlayer *pPlayer, const char *pRea
 	if(Server()->ClientIngame(ClientId)) {
 		char aBuf[512];
 		if(pReason && *pReason)
-			str_format(aBuf, sizeof(aBuf), "'%s' has left the game (%s)", Server()->ClientName(ClientId), pReason);
+			str_format(aBuf, sizeof(aBuf), "'%s' left the game (%s)", Server()->ClientName(ClientId), pReason);
 		else
-			str_format(aBuf, sizeof(aBuf), "'%s' has left the game", Server()->ClientName(ClientId));
+			str_format(aBuf, sizeof(aBuf), "'%s' left the game", Server()->ClientName(ClientId));
 		GameServer()->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
 
 		str_format(aBuf, sizeof(aBuf), "leave player='%d:%s'", ClientId, Server()->ClientName(ClientId));
@@ -224,17 +224,63 @@ void CGameControllerSheep::OnPlayerDisconnect(CPlayer *pPlayer, const char *pRea
 			Teams().SetClientInvited(Team, ClientId, false);
 }
 
-void CGameControllerSheep::OnReset()
-{
+void CGameControllerSheep::OnReset() {
 	IGameController::OnReset();
 	Teams().Reset();
 }
-
-void CGameControllerSheep::Tick()
-{
+ 
+void CGameControllerSheep::Tick() {
 	IGameController::Tick();
 	Teams().ProcessSaveTeam();
 	Teams().Tick();
+}
+
+void CGameControllerSheep::Snap(int SnappingClient) {\
+	IGameController::Snap(SnappingClient);
+
+	for(auto pFakePlayerMessageItem = m_FakePlayerMessageQueue.begin(); pFakePlayerMessageItem < m_FakePlayerMessageQueue.end(); pFakePlayerMessageItem++) {
+		for(int ClientId = 0; ClientId < MAX_CLIENTS; ClientId++) {
+			if(GameServer()->m_apPlayers[ClientId] || !Server()->ClientSlotEmpty(ClientId))
+				continue;
+
+			auto *pClientInfo = Server()->SnapNewItem<CNetObj_ClientInfo>(ClientId);
+			StrToInts(pClientInfo->m_aName, std::size(pClientInfo->m_aName), pFakePlayerMessageItem->pName);
+			StrToInts(pClientInfo->m_aClan, std::size(pClientInfo->m_aClan), "");
+			StrToInts(pClientInfo->m_aSkin, std::size(pClientInfo->m_aSkin), "nanami");
+			pClientInfo->m_Country = -1;
+			pClientInfo->m_UseCustomColor = 0;
+			pClientInfo->m_ColorBody = 0;
+			pClientInfo->m_ColorFeet = 0;
+
+			auto *pPlayerInfo = Server()->SnapNewItem<CNetObj_PlayerInfo>(ClientId);
+			pPlayerInfo->m_Latency = 0;
+			pPlayerInfo->m_Score = 0;
+			pPlayerInfo->m_Team = TEAM_SPECTATORS;
+			pPlayerInfo->m_Local = 0;
+			pPlayerInfo->m_ClientId = ClientId;
+
+			pFakePlayerMessageItem->ClientId = ClientId;
+			break;
+		}
+	}
+}
+
+void CGameControllerSheep::OnPostGlobalSnap() {
+	for(auto pFakePlayerMessageItem = m_FakePlayerMessageQueue.begin(); pFakePlayerMessageItem < m_FakePlayerMessageQueue.end(); pFakePlayerMessageItem++) {
+		if(pFakePlayerMessageItem->ClientId == -1)
+			continue;
+
+			
+		CNetMsg_Sv_Chat Msg;
+		Msg.m_Team = 0;	
+		Msg.m_ClientId = pFakePlayerMessageItem->ClientId;
+		Msg.m_pMessage = pFakePlayerMessageItem->pMessage;
+		Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, -1);
+			
+		log_info("discordchat", "%d:%d:%s: %s", pFakePlayerMessageItem->ClientId, Msg.m_Team, pFakePlayerMessageItem->pName, pFakePlayerMessageItem->pMessage);
+		
+		m_FakePlayerMessageQueue.erase(pFakePlayerMessageItem);
+	}
 }
 
 void CGameControllerSheep::DoTeamChange(class CPlayer *pPlayer, int Team, bool DoChatMsg)

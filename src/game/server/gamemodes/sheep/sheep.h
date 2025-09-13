@@ -23,6 +23,12 @@
 #include <dpp/dpp.h>
 #define log_error(sys, ...) log_log(LEVEL_ERROR, sys, __VA_ARGS__)
 
+struct CFakePlayerMessage {
+	const char* pName;
+	const char* pMessage;
+	int ClientId = -1;
+};
+
 class CGameControllerSheep : public IGameController
 {
 public:
@@ -60,7 +66,8 @@ public:
 
 	// custom ddnet hooks
 	void SendChat(int ChatterClientId, int Team, const char *pText, int SpamProtectionClientId, int VersionFlags);
-	
+	void OnPostGlobalSnap();
+
 	void OnPlayerTick(CPlayer *pPlayer);
 	
 	void OnCharacterTick(CCharacter *pCharacter);
@@ -80,6 +87,7 @@ public:
 
 	void OnReset() override;
 	void Tick() override;
+	void Snap(int SnappingClient) override;
 
 	void DoTeamChange(class CPlayer *pPlayer, int Team, bool DoChatMsg = true) override;
 
@@ -92,6 +100,7 @@ private:
 	// server bound
     dpp::cluster *m_DiscordBot;
 	std::shared_ptr<CItemsResult> m_ItemsResult;
+	std::vector<CFakePlayerMessage> m_FakePlayerMessageQueue;
 
 	// database
 	CDbConnectionPool *m_pPool;

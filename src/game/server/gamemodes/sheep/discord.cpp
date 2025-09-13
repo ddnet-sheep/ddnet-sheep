@@ -19,13 +19,7 @@ void CGameControllerSheep::DiscordInit() {
 			return;
 		}
 
-		char aBuf[512];
-		str_format(aBuf, sizeof(aBuf), "[DC] %s: %s",
-			event.msg.author.global_name.c_str(),
-			event.msg.content.c_str()
-		);
-
-		GameServer()->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
+		m_FakePlayerMessageQueue.push_back({event.msg.author.global_name.c_str(), event.msg.content.c_str()});
 	});
 }
 
