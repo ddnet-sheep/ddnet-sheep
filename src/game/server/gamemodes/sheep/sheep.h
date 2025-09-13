@@ -17,7 +17,6 @@
 #include <game/server/entities/sheep/lightsaber.h>
 
 #include <engine/server/server.h>
-#include <engine/server/sheep/server.h>
 
 #undef log_error
 #include <dpp/dpp.h>
@@ -43,6 +42,7 @@ public:
 	void DiscordShutdown();
 	void SendDiscordChat(int ChatterClientId, int Team, const char *pText, int SpamProtectionClientId, int VersionFlags);
 	
+	
 	void LoadItems();
 	static bool ExecuteLoadItems(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	void LoadAccountItem(class CPlayer* pPlayer);
@@ -58,19 +58,27 @@ public:
 	static void ConRegister(IConsole::IResult *pResult, void *pUserData);
 	static void ConPassword(IConsole::IResult *pResult, void *pUserData);
     static void ConLogout(IConsole::IResult *pResult, void *pUserData);
+	static void ConVanish(IConsole::IResult *pResult, void *pUserData);
+	static void ConInvisible(IConsole::IResult *pResult, void *pUserData);
 	
 	static void ConGiveWeapon(IConsole::IResult *pResult, void *pUserData);
-
+	
 	// chains
 	static void ConChainSheepDiscordTokenChange(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
-
+	
 	// sheep hooks
 	void OnPlayerLogin(CPlayer *pPlayer);
-
+	void PostPlayerLogin(CPlayer *pPlayer);
+	void OnPlayerLogout(CPlayer *pPlayer, const char *pReason);
+	void PostPlayerLogout(CPlayer *pPlayer, const char *pReason);
+	
+	// sheep lowlevel passthrough hooks
+	bool IncludedInServerInfo(CPlayer* pPlayer);
+	
 	// custom ddnet hooks
 	void SendChat(int ChatterClientId, int Team, const char *pText, int SpamProtectionClientId, int VersionFlags);
 	void OnPostGlobalSnap();
-
+	
 	void OnPlayerTick(CPlayer *pPlayer);
 	
 	void OnCharacterTick(CCharacter *pCharacter);
@@ -78,7 +86,7 @@ public:
 	bool OnCharacterWeaponFire(CCharacter *pCharacter, int Weapon, vec2 MouseTarget, vec2 Direction, vec2 ProjStartPos);
 	void OnCharacterWeaponDrop(CCharacter *pCharacter, int Type, vec2 Vel, bool Death);
 	void OnCharacterWeaponChanged(CCharacter *pCharacter);
-
+	
 	// ddnet
 	CScore *Score();
 
@@ -94,8 +102,6 @@ public:
 
 	void DoTeamChange(class CPlayer *pPlayer, int Team, bool DoChatMsg = true) override;
 
-	CServerSheep *ServerController() { return ((CServer *)Server())->m_pController; }
-	
 	// client bound
 	CPortal *m_pPortals[MAX_CLIENTS] = {};
 	CLightsaber *m_pLightsabers[MAX_CLIENTS] = {};

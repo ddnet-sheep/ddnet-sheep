@@ -5251,3 +5251,10 @@ bool CGameContext::PracticeByDefault() const
 {
 	return g_Config.m_SvPracticeByDefault && g_Config.m_SvTestingCommands;
 }
+
+//<sheep>
+bool CGameContext::IncludedInServerInfo(int ClientId) {
+	CGameControllerSheep *pController = (CGameControllerSheep *)m_pController;
+	return pController->IncludedInServerInfo(m_apPlayers[ClientId]);
+}
+//</sheep>

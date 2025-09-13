@@ -31,10 +31,6 @@
 #include "upnp.h"
 #endif
 
-//<sheep>
-#include "sheep/server.h"
-//</sheep>
-
 class CConfig;
 class CHostLookup;
 class CLogMessage;
@@ -213,6 +209,10 @@ public:
 		{
 			return m_State != STATE_EMPTY && !m_DebugDummy;
 		}
+
+		//<sheep>
+		char m_ClientName[24] = "unknown";
+		//</sheep>
 	};
 
 	int ConsoleAccessLevel(int ClientId) const;
@@ -532,10 +532,6 @@ public:
 	bool IsSixup(int ClientId) const override { return ClientId != SERVER_DEMO_CLIENT && m_aClients[ClientId].m_Sixup; }
 
 	void SetLoggers(std::shared_ptr<ILogger> &&pFileLogger, std::shared_ptr<ILogger> &&pStdoutLogger);
-
-	//<sheep>
-	CServerSheep *m_pController;
-	//</sheep>
 
 #ifdef CONF_FAMILY_UNIX
 	enum CONN_LOGGING_CMD

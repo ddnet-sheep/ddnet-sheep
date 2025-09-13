@@ -1579,13 +1579,13 @@ set(EXPECTED_DATA
   maps/license.txt
   #<sheep>
   #TODO: Include current sheep map
-  #maps/Multeasymap-DOD.map
+  maps/Multeasymap-DOD.map
   #</sheep>
   maps7/Gold\ Mine.map
   maps7/LearnToPlay.map
   #<sheep>
   #TODO: Include current sheep map
-  #maps7/Multeasymap-DOD.map
+  maps7/Multeasymap-DOD.map
   #</sheep>
   maps7/Sunny\ Side\ Up.map
   maps7/Tsunami.map
@@ -2773,10 +2773,6 @@ if(SERVER)
     server.h
     server_logger.cpp
     server_logger.h
-    #<sheep>
-    sheep/server.cpp
-    sheep/server.h
-    #</sheep>
     snap_id_pool.cpp
     snap_id_pool.h
     sql_string_helpers.cpp

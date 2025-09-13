@@ -20,7 +20,9 @@ struct CAccountLoginResult : ISheepSqlResult
         m_Vip(0),
         m_VipExpiration(0),
         m_Staff(0),
-        m_EmailVerified(false)
+        m_EmailVerified(false),
+        m_Invisible(false),
+        m_Vanish(false)
 	{
 	}
 
@@ -41,6 +43,11 @@ struct CAccountLoginResult : ISheepSqlResult
 
     std::string m_Email;
     bool m_EmailVerified;
+
+    bool m_Invisible; // invisible physically
+    bool m_Vanish; // silent join and not visible in the player list
+
+    char m_Title[32];
 
     bool m_Processed = false;
 

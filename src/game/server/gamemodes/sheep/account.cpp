@@ -18,6 +18,102 @@ bool VerifyPassword(const char *pExpected, const char* pPassword)
 	return sha256_comp(HashPassword(pPassword), Expected) == 0;
 }
 
+void CGameControllerSheep::OnPlayerLogin(CPlayer *pPlayer) {
+	int ClientId = pPlayer->GetCid();
+	CServer *pServer = (CServer*)Server();
+	CServer::CClient* pClient = &pServer->m_aClients[ClientId];
+
+	LoadAccountItem(pPlayer);
+
+	if(pPlayer->GetTeam() == TEAM_SPECTATORS)
+		pPlayer->SetTeam(TEAM_FLOCK);
+
+	// rcon auth
+	if (pPlayer->m_AccountLoginResult->m_Staff > 0) {
+		if(!Server()->IsSixup(ClientId)) {
+			CMsgPacker Msgp(NETMSG_RCON_AUTH_STATUS, true);
+			Msgp.AddInt(1); //authed
+			Msgp.AddInt(1); //cmdlist
+			Server()->SendMsg(&Msgp, MSGFLAG_VITAL, ClientId);
+		} else {
+			CMsgPacker Msgp(protocol7::NETMSG_RCON_AUTH_ON, true, true);
+			Server()->SendMsg(&Msgp, MSGFLAG_VITAL, ClientId);
+		}
+
+		int AuthLevel = AUTHED_ADMIN;
+
+		pClient->m_Authed = AuthLevel; // Keeping m_Authed around is unwise...
+		CServer* pServer = (CServer*)Server();
+		pClient->m_AuthKey = pServer->m_AuthManager.DefaultKey(AuthLevel);
+
+		// DDRace
+		GameServer()->OnSetAuthed(ClientId, AuthLevel);
+	}
+}
+
+void CGameControllerSheep::PostPlayerLogin(CPlayer *pPlayer) {
+	int ClientId = pPlayer->GetCid();
+	CServer *pServer = (CServer*)Server();
+	CServer::CClient* pClient = &pServer->m_aClients[ClientId];
+
+	// join message
+	if (!pPlayer->m_AccountLoginResult->m_Vanish) {
+		char PlayerInfo[64] = "unknown";
+		IServer::CClientInfo Info;
+		if(Server()->GetClientInfo(ClientId, &Info) && Info.m_GotDDNetVersion)
+			str_format(PlayerInfo, sizeof(PlayerInfo), "%s %d", pServer->m_aClients[ClientId].m_ClientName, Info.m_DDNetVersion);
+
+		char aBuf[512];
+		char aTitle[33];
+		if(pPlayer->m_AccountLoginResult->m_Title[0] != '\0') {
+			str_format(aTitle, sizeof(aTitle), "%s ", pPlayer->m_AccountLoginResult->m_Title);
+		} else {
+			aTitle[0] = '\0';
+		}
+		str_format(aBuf, sizeof(aBuf), "%s'%s' joined the %s (%s)", aTitle, Server()->ClientName(ClientId), GetTeamName(pPlayer->GetTeam()), PlayerInfo);
+		GameServer()->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
+	}
+}
+
+void CGameControllerSheep::OnPlayerLogout(CPlayer *pPlayer, const char *pReason) {
+	int ClientId = pPlayer->GetCid();
+	CServer *pServer = (CServer*)Server();
+	CServer::CClient* pClient = &pServer->m_aClients[ClientId];
+
+	if(!Server()->IsSixup(ClientId)) {
+		CMsgPacker Msgp(NETMSG_RCON_AUTH_STATUS, true);
+		Msgp.AddInt(0); //authed
+		Msgp.AddInt(0); //cmdlist
+		Server()->SendMsg(&Msgp, MSGFLAG_VITAL, ClientId);
+	} else {
+		CMsgPacker Msgp(protocol7::NETMSG_RCON_AUTH_OFF, true, true);
+		Server()->SendMsg(&Msgp, MSGFLAG_VITAL, ClientId);
+	}
+
+	int AuthLevel = AUTHED_NO;
+
+	pClient->m_Authed = AuthLevel; // Keeping m_Authed around is unwise...
+	pClient->m_AuthKey = -1;
+
+	// DDRace
+	GameServer()->OnSetAuthed(ClientId, AuthLevel);
+}
+
+void CGameControllerSheep::PostPlayerLogout(CPlayer *pPlayer, const char *pReason) {
+	int ClientId = pPlayer->GetCid();
+	char aBuf[512];
+
+	// leave message
+	if(Server()->ClientIngame(ClientId) && !pPlayer->m_AccountLoginResult->m_Vanish) {
+		if(pReason && *pReason)
+			str_format(aBuf, sizeof(aBuf), "'%s' left the game (%s)", Server()->ClientName(ClientId), pReason);
+		else
+			str_format(aBuf, sizeof(aBuf), "'%s' left the game", Server()->ClientName(ClientId));
+		
+		GameServer()->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);	
+	}
+}
+
 void CGameControllerSheep::ConLogin(IConsole::IResult *pResult, void *pUserData) {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	if(!CheckClientId(pResult->m_ClientId))
@@ -65,13 +161,18 @@ void GenerateAccountLoginResult(IDbConnection *pSqlServer, const ISqlData *pGame
 	pSqlServer->GetString(9, pResult->m_PasswordHash, sizeof(pResult->m_PasswordHash));
 	
 	pResult->m_AccountId = pSqlServer->GetInt64(10);
+
+	pResult->m_Invisible = pSqlServer->GetInt(11) != 0;
+	pResult->m_Vanish = pSqlServer->GetInt(12) != 0;
+
+	pSqlServer->GetString(13, pResult->m_Title, sizeof(pResult->m_Title));
 }
 
 bool CGameControllerSheep::ExecuteLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {
 	auto *pResult = dynamic_cast<CAccountLoginResult *>(pGameData->m_pResult.get());
 
 	if(!pSqlServer->PrepareStatement(
-		"SELECT ban_expiration, level, exp, vip, vip_expiration, staff_level, email, email_verified, password, id "
+		"SELECT ban_expiration, level, exp, vip, vip_expiration, staff_level, email, email_verified, password, id, invisible, vanish, title "
 		"FROM sheep_accounts WHERE name=?", 
 		pError, ErrorSize)
 	) {
@@ -139,7 +240,7 @@ bool CGameControllerSheep::ExecuteRegister(IDbConnection *pSqlServer, const ISql
 
 	if(!pSqlServer->PrepareStatement(
 		"INSERT INTO sheep_accounts (name, password) VALUES (?, ?) RETURNING "
-		"ban_expiration, level, exp, vip, vip_expiration, staff_level, email, email_verified, password, id", 
+		"ban_expiration, level, exp, vip, vip_expiration, staff_level, email, email_verified, password, id, invisible, vanish, title", 
 		pError, ErrorSize)
 	) {
 		str_format(pResult->m_Message, sizeof(pResult->m_Message), "Database error (1).");
@@ -180,18 +281,13 @@ void CGameControllerSheep::ConLogout(IConsole::IResult *pResult, void *pUserData
 		return;
 	}
 		
-	CGameControllerSheep *pController = (CGameControllerSheep *)pSelf->m_pController;
-
-	pPlayer->m_AccountLoginResult = nullptr;
 	pPlayer->SetTeam(TEAM_SPECTATORS);
-	pSelf->SendChatTarget(pPlayer->GetCid(), "You have been logged out.");
 	
-	char aBuf[512];
-	str_format(aBuf, sizeof(aBuf), "'%s' has left the game", pSelf->Server()->ClientName(pPlayer->GetCid()));
-	pSelf->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
+	CGameControllerSheep *pController = (CGameControllerSheep *)pSelf->m_pController;
+	pController->OnPlayerLogout(pPlayer, "logged out");
+	pPlayer->m_AccountLoginResult = nullptr;
 
-	str_format(aBuf, sizeof(aBuf), "leave player='%d:%s'", pPlayer->GetCid(), pSelf->Server()->ClientName(pPlayer->GetCid()));
-	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "game", aBuf);
+	pSelf->SendChatTarget(pPlayer->GetCid(), "You have been logged out.");
 }
 
 bool CGameControllerSheep::ExecutePassword(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {
@@ -241,4 +337,54 @@ void CGameControllerSheep::ConPassword(IConsole::IResult *pResult, void *pUserDa
 
 	CGameControllerSheep *pController = (CGameControllerSheep *)pSelf->m_pController;
 	pController->m_pPool->Execute(CGameControllerSheep::ExecutePassword, std::move(Tmp), "account set password");
+}
+
+void CGameControllerSheep::ConVanish(IConsole::IResult *pResult, void *pUserData) {
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if(!CheckClientId(pResult->m_ClientId))
+		return;
+
+	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientId];
+	if(!pPlayer)
+		return;
+
+	if (pPlayer->m_AccountLoginResult == nullptr || pPlayer->m_AccountLoginResult->m_Staff < 1) {
+		pSelf->SendChatTarget(pResult->m_ClientId, "You are not authorized to do that.");
+		return;
+	}
+
+	CGameControllerSheep *pController = (CGameControllerSheep *)pSelf->m_pController;
+	if (pPlayer->m_AccountLoginResult->m_Vanish) {
+		pPlayer->m_AccountLoginResult->m_Vanish = !pPlayer->m_AccountLoginResult->m_Vanish;
+		pController->PostPlayerLogin(pPlayer);
+	} else {
+		pController->PostPlayerLogout(pPlayer, nullptr);
+		pPlayer->m_AccountLoginResult->m_Vanish = !pPlayer->m_AccountLoginResult->m_Vanish;
+	}
+
+	pSelf->SendChatTarget(pResult->m_ClientId, pPlayer->m_AccountLoginResult->m_Vanish ? "You are now vanished." : "You are no longer vanished.");
+
+	CServer *pServer = (CServer *)pSelf->Server();
+	pServer->m_ServerInfoNeedsUpdate = true;
+}
+
+void CGameControllerSheep::ConInvisible(IConsole::IResult *pResult, void *pUserData) {
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if(!CheckClientId(pResult->m_ClientId))
+		return;
+
+	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientId];
+	if(!pPlayer)
+		return;
+
+	if (pPlayer->m_AccountLoginResult == nullptr || pPlayer->m_AccountLoginResult->m_Staff < 1) {
+		pSelf->SendChatTarget(pResult->m_ClientId, "You are not authorized to do that.");
+		return;
+	}
+
+	pPlayer->m_AccountLoginResult->m_Invisible = !pPlayer->m_AccountLoginResult->m_Invisible;
+	pSelf->SendChatTarget(pResult->m_ClientId, pPlayer->m_AccountLoginResult->m_Invisible ? "You are now invisible." : "You are no longer invisible.");
+
+	// CServer *pServer = (CServer *)pSelf->Server();
+	// pServer->m_ServerInfoNeedsUpdate = true;
 }

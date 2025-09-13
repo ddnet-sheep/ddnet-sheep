@@ -390,6 +390,10 @@ public:
 	 * @param i The client id.
 	 */
 	virtual void OnUpdatePlayerServerInfo(CJsonStringWriter *pJSonWriter, int Id) = 0;
+
+	//<sheep>
+	virtual bool IncludedInServerInfo(int ClientId) = 0;
+	//</sheep>
 };
 
 extern IGameServer *CreateGameServer();

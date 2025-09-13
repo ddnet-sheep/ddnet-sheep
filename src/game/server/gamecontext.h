@@ -630,6 +630,10 @@ public:
 	void OnSetAuthed(int ClientId, int Level) override;
 
 	void ResetTuning();
+
+	//<sheep>
+	bool IncludedInServerInfo(int ClientId) override;
+	//</sheep>
 };
 
 static inline bool CheckClientId(int ClientId)

@@ -327,6 +327,14 @@ void CPlayer::Snap(int SnappingClient)
 	if(!pClientInfo)
 		return;
 
+	//<sheep>
+	CPlayer *pSnappingPlayer = GameServer()->m_apPlayers[SnappingClient];
+	if(
+		m_AccountLoginResult != nullptr && m_AccountLoginResult->m_Invisible && SnappingClient != id && SnappingClient >= 0
+		&& pSnappingPlayer->m_AccountLoginResult != nullptr && pSnappingPlayer->m_AccountLoginResult->m_Staff < m_AccountLoginResult->m_Staff)
+		return;
+	//</sheep>
+
 	StrToInts(pClientInfo->m_aName, std::size(pClientInfo->m_aName), Server()->ClientName(m_ClientId));
 	StrToInts(pClientInfo->m_aClan, std::size(pClientInfo->m_aClan), Server()->ClientClan(m_ClientId));
 	pClientInfo->m_Country = Server()->ClientCountry(m_ClientId);

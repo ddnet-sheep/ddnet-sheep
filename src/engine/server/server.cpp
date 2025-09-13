@@ -272,19 +272,11 @@ CServer::CServer()
 
 	m_aErrorShutdownReason[0] = 0;
 
-	//<sheep>
-	m_pController = new CServerSheep(this);
-	//</sheep>
-
 	Init();
 }
 
 CServer::~CServer()
 {
-	//<sheep>
-	delete m_pController;
-	//</sheep>
-
 	for(auto &pCurrentMapData : m_apCurrentMapData)
 	{
 		free(pCurrentMapData);
@@ -1709,10 +1701,6 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 
 	if(Sys)
 	{
-		//<sheep>
-		((CServerSheep *)m_pController)->OnSystemMessage(ClientId, Msg);
-		//</sheep>
-
 		// system message
 		if(Msg == NETMSG_CLIENTVER)
 		{
@@ -2128,6 +2116,22 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 		}
 		else
 		{
+			//<sheep>
+			switch(Msg) {
+				case NETMSG_IAM_QXD: str_copy(m_aClients[ClientId].m_ClientName, "E-Client"); break;
+				case NETMSG_IAM_AIODOB: str_copy(m_aClients[ClientId].m_ClientName, "A-Client"); break;
+				case NETMSG_IAM_TATER: str_copy(m_aClients[ClientId].m_ClientName, "T-Client"); break;
+				case NETMSG_IAM_CHILLERBOT: str_copy(m_aClients[ClientId].m_ClientName, "ChillerBot"); break;
+				case NETMSG_IAM_CACTUS: str_copy(m_aClients[ClientId].m_ClientName, "Cactus"); break;
+				case NETMSG_IAM_FEX: str_copy(m_aClients[ClientId].m_ClientName, "FeX"); break;
+				case NETMSG_IAM_STA: str_copy(m_aClients[ClientId].m_ClientName, "Sta"); break;
+				case NETMSG_IAM_SCLIENT: str_copy(m_aClients[ClientId].m_ClientName, "S-Client"); break;
+				case NETMSG_IAM_NOFIS: str_copy(m_aClients[ClientId].m_ClientName, "Nofis"); break;
+				case NETMSG_IAM_JSCLIENT: str_copy(m_aClients[ClientId].m_ClientName, "JS-Client"); break;
+				case NETMSG_IAM_PULSE: str_copy(m_aClients[ClientId].m_ClientName, "Pulse"); break;
+			}
+			//</sheep>
+
 			if(Config()->m_Debug)
 			{
 				constexpr int MaxDumpedDataSize = 32;
@@ -2222,7 +2226,11 @@ void CServer::CacheServerInfo(CCache *pCache, int Type, bool SendClients)
 	int PlayerCount = 0, ClientCount = 0;
 	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
-		if(m_aClients[i].IncludedInServerInfo())
+		if(m_aClients[i].IncludedInServerInfo()
+		// <sheep>
+		&& GameServer()->IncludedInServerInfo(i)
+		// </sheep>
+		)
 		{
 			if(GameServer()->IsClientPlayer(i))
 				PlayerCount++;
@@ -2354,7 +2362,11 @@ void CServer::CacheServerInfo(CCache *pCache, int Type, bool SendClients)
 
 	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
-		if(m_aClients[i].IncludedInServerInfo())
+		if(m_aClients[i].IncludedInServerInfo()
+		// <sheep>
+		&& GameServer()->IncludedInServerInfo(i)
+		// </sheep>
+		)
 		{
 			if(Remaining == 0)
 			{
@@ -2436,7 +2448,11 @@ void CServer::CacheServerInfoSixup(CCache *pCache, bool SendClients, int MaxCons
 	int PlayerCount = 0, ClientCount = 0, ClientCountAll = 0;
 	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
-		if(m_aClients[i].IncludedInServerInfo())
+		if(m_aClients[i].IncludedInServerInfo()
+		// <sheep>
+		&& GameServer()->IncludedInServerInfo(i)
+		// </sheep>
+		)
 		{
 			ClientCountAll++;
 			if(i < MaxConsideredClients)
@@ -2485,7 +2501,11 @@ void CServer::CacheServerInfoSixup(CCache *pCache, bool SendClients, int MaxCons
 	{
 		for(int i = 0; i < MaxConsideredClients; i++)
 		{
-			if(m_aClients[i].IncludedInServerInfo())
+			if(m_aClients[i].IncludedInServerInfo()
+			// <sheep>
+			&& GameServer()->IncludedInServerInfo(i)
+			// </sheep>
+			)
 			{
 				Packer.AddString(ClientName(i), MAX_NAME_LENGTH); // client name
 				Packer.AddString(ClientClan(i), MAX_CLAN_LENGTH); // client clan
@@ -2612,7 +2632,11 @@ void CServer::UpdateRegisterServerInfo()
 	int PlayerCount = 0, ClientCount = 0;
 	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
-		if(m_aClients[i].IncludedInServerInfo())
+		if(m_aClients[i].IncludedInServerInfo()
+		// <sheep>
+		&& GameServer()->IncludedInServerInfo(i)
+		// </sheep>
+		)
 		{
 			if(GameServer()->IsClientPlayer(i))
 				PlayerCount++;
@@ -2669,7 +2693,11 @@ void CServer::UpdateRegisterServerInfo()
 
 	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
-		if(m_aClients[i].IncludedInServerInfo())
+		if(m_aClients[i].IncludedInServerInfo()
+		// <sheep>
+		&& GameServer()->IncludedInServerInfo(i)
+		// </sheep>
+		)
 		{
 			JsonWriter.BeginObject();
 

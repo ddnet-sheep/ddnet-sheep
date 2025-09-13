@@ -33,7 +33,10 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 			`vip_expiration` INT NOT NULL DEFAULT 0 ,
 			`staff_level` INT UNSIGNED NOT NULL DEFAULT 0 ,
 			`email` VARCHAR(255) NULL,
-			`email_verified` TINYINT NOT NULL DEFAULT 0
+			`email_verified` TINYINT NOT NULL DEFAULT 0,
+			`invisible` TINYINT NOT NULL DEFAULT 0,
+			`vanish` TINYINT NOT NULL DEFAULT 0,
+			`title` VARCHAR(32) NOT NULL DEFAULT ""
 		);
 
 		CREATE TABLE `sheep_items` ( 
@@ -60,9 +63,11 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 	GameServer()->Console()->Register("login", "s[account name] s[password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConLogin, GameServer(), "logs you into your account");
 	GameServer()->Console()->Register("register", "s[account name] s[password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConRegister, GameServer(), "registers a new account");
 	GameServer()->Console()->Register("password", "s[old password] s[new password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConPassword, GameServer(), "changes the password");
-	GameServer()->Console()->Register("logoff", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConLogout, GameServer(), "logs you out of your your account");
+	GameServer()->Console()->Register("logout", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConLogout, GameServer(), "logs you out of your your account");
 
 	GameServer()->Console()->Register("giveweapon", "i[weapon]", CFGFLAG_SERVER, ConGiveWeapon, GameServer(), "adds or removes a weapon from a player");
+	GameServer()->Console()->Register("vanish", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConVanish, GameServer(), "toggles the vanish state");
+	GameServer()->Console()->Register("invisible", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConInvisible, GameServer(), "toggles the invisible state");
 
 	GameServer()->Console()->Chain("sv_sheep_discord_token", ConChainSheepDiscordTokenChange, GameServer());
 
@@ -179,19 +184,7 @@ void CGameControllerSheep::OnPlayerConnect(CPlayer *pPlayer)
 	// LoadScoreThreaded() instead
 	Score()->LoadPlayerData(ClientId);
 	
-	
 	pPlayer->SetTeam(TEAM_SPECTATORS);
-	// if(!Server()->ClientPrevIngame(ClientId))
-	// {
-	// 	char PlayerInfo[64] = "unknown";
-	// 	IServer::CClientInfo Info;
-	// 	if(Server()->GetClientInfo(ClientId, &Info) && Info.m_GotDDNetVersion)
-	// 		str_format(PlayerInfo, sizeof(PlayerInfo), "%s %d", ServerController()->GetCustomClient(ClientId), Info.m_DDNetVersion);
-
-	// 	char aBuf[512];
-	// 	str_format(aBuf, sizeof(aBuf), "'%s' joined the %s (%s)", Server()->ClientName(ClientId), GetTeamName(pPlayer->GetTeam()), PlayerInfo);
-	// 	GameServer()->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
-	// }
 }
 
 void CGameControllerSheep::OnPlayerDisconnect(CPlayer *pPlayer, const char *pReason)
@@ -200,25 +193,23 @@ void CGameControllerSheep::OnPlayerDisconnect(CPlayer *pPlayer, const char *pRea
 	bool WasModerator = pPlayer->m_Moderating && Server()->ClientIngame(ClientId);
 
 	pPlayer->OnDisconnect();
-	pPlayer->m_AccountLoginResult = nullptr;
-	if(Server()->ClientIngame(ClientId)) {
-		char aBuf[512];
-		if(pReason && *pReason)
-			str_format(aBuf, sizeof(aBuf), "'%s' left the game (%s)", Server()->ClientName(ClientId), pReason);
-		else
-			str_format(aBuf, sizeof(aBuf), "'%s' left the game", Server()->ClientName(ClientId));
-		GameServer()->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
+	
+	char aBuf[512];
+	str_format(aBuf, sizeof(aBuf), "leave player='%d:%s'", ClientId, Server()->ClientName(ClientId));
+	GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "game", aBuf);
 
-		str_format(aBuf, sizeof(aBuf), "leave player='%d:%s'", ClientId, Server()->ClientName(ClientId));
-		GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "game", aBuf);
+	if(pPlayer->m_AccountLoginResult != nullptr) {
+		OnPlayerLogout(pPlayer, pReason);
+		PostPlayerLogout(pPlayer, pReason);
+		pPlayer->m_AccountLoginResult = nullptr;
 	}
 
 	if(!GameServer()->PlayerModerating() && WasModerator)
 		GameServer()->SendChat(-1, TEAM_ALL, "Server kick/spec votes are no longer actively moderated.");
-
+	
 	if(g_Config.m_SvTeam != SV_TEAM_FORCED_SOLO)
 		Teams().SetForceCharacterTeam(ClientId, TEAM_FLOCK);
-
+	
 	for(int Team = TEAM_FLOCK + 1; Team < TEAM_SUPER; Team++)
 		if(Teams().IsInvited(Team, ClientId))
 			Teams().SetClientInvited(Team, ClientId, false);
@@ -325,55 +316,10 @@ void CGameControllerSheep::OnPlayerTick(CPlayer *pPlayer) {
 		if (pPlayer->m_AccountLoginResult->m_Success) {
 			pPlayer->m_AccountLoginResult->m_Processed = true;
 			OnPlayerLogin(pPlayer);
+			PostPlayerLogin(pPlayer);
 		} else {
 			pPlayer->m_AccountLoginResult = nullptr;
 		}
-	}
-}
-
-void CGameControllerSheep::OnPlayerLogin(CPlayer *pPlayer) {
-	int ClientId = pPlayer->GetCid();
-	CServer::CClient* pClient = &((CServer*)Server())->m_aClients[ClientId];
-
-	LoadAccountItem(pPlayer);
-
-	if(pPlayer->GetTeam() == TEAM_SPECTATORS)
-		pPlayer->SetTeam(TEAM_FLOCK);
-
-	char PlayerInfo[64] = "unknown";
-	IServer::CClientInfo Info;
-	if(Server()->GetClientInfo(ClientId, &Info) && Info.m_GotDDNetVersion)
-		str_format(PlayerInfo, sizeof(PlayerInfo), "%s %d", ServerController()->GetCustomClient(ClientId), Info.m_DDNetVersion);
-
-	char Title[32] = "";
-	if(pPlayer->m_AccountLoginResult->m_Vip > 0)
-		str_format(Title, sizeof(Title), "VIP> ");
-
-	char aBuf[512];
-	str_format(aBuf, sizeof(aBuf), "%s'%s' joined the %s (%s)", Title, Server()->ClientName(ClientId), GetTeamName(pPlayer->GetTeam()), PlayerInfo);
-	GameServer()->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
-
-	// rcon auth
-	if (pPlayer->m_AccountLoginResult->m_Staff > 0) {
-		bool Sixup = Server()->IsSixup(ClientId);
-		if(!Sixup) {
-			CMsgPacker Msgp(NETMSG_RCON_AUTH_STATUS, true);
-			Msgp.AddInt(1); //authed
-			Msgp.AddInt(1); //cmdlist
-			Server()->SendMsg(&Msgp, MSGFLAG_VITAL, ClientId);
-		} else {
-			CMsgPacker Msgp(protocol7::NETMSG_RCON_AUTH_ON, true, true);
-			Server()->SendMsg(&Msgp, MSGFLAG_VITAL, ClientId);
-		}
-
-		int AuthLevel = AUTHED_ADMIN;
-
-		pClient->m_Authed = AuthLevel; // Keeping m_Authed around is unwise...
-		CServer* pServer = (CServer*)Server();
-		pClient->m_AuthKey = pServer->m_AuthManager.DefaultKey(AuthLevel);
-
-		// DDRace
-		GameServer()->OnSetAuthed(ClientId, AuthLevel);
 	}
 }
 
@@ -381,7 +327,6 @@ void CGameControllerSheep::OnCharacterTick(CCharacter *pCharacter) {
 	if(pCharacter->m_VoteCooldown > 0)
 		pCharacter->m_VoteCooldown--;
 }
-
 
 void CGameControllerSheep::OnCharacterVote(CCharacter *pCharacter, EVoteButton Button)
 {
@@ -488,4 +433,8 @@ void CGameControllerSheep::OnCharacterWeaponChanged(CCharacter *pCharacter) {
 		if(pPl->SpectatorId() == i)
 			GameServer()->SendBroadcast(aBuf, i, true);
 	}
+}
+
+bool CGameControllerSheep::IncludedInServerInfo(CPlayer* pPlayer) {
+	return pPlayer->m_AccountLoginResult != nullptr && pPlayer->m_AccountLoginResult->m_Processed && !pPlayer->m_AccountLoginResult->m_Vanish;
 }
