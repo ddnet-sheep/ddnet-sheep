@@ -60,14 +60,20 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 
 	DiscordInit();
 
+	// user commands
 	GameServer()->Console()->Register("login", "s[account name] s[password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConLogin, GameServer(), "logs you into your account");
 	GameServer()->Console()->Register("register", "s[account name] s[password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConRegister, GameServer(), "registers a new account");
 	GameServer()->Console()->Register("password", "s[old password] s[new password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConPassword, GameServer(), "changes the password");
 	GameServer()->Console()->Register("logout", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConLogout, GameServer(), "logs you out of your your account");
 
-	GameServer()->Console()->Register("giveweapon", "i[weapon]", CFGFLAG_SERVER, ConGiveWeapon, GameServer(), "adds or removes a weapon from a player");
-	GameServer()->Console()->Register("vanish", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConVanish, GameServer(), "toggles the vanish state");
-	GameServer()->Console()->Register("invisible", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConInvisible, GameServer(), "toggles the invisible state");
+	// admin commands
+	GameServer()->Console()->Register("weapon", "?s[user] s[weapon]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConWeapon, GameServer(), "toggles a weapon");
+	GameServer()->Console()->Register("vanish", "?s[user]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConVanish, GameServer(), "toggles the vanish state");
+	GameServer()->Console()->Register("invisible", "?s[user]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConInvisible, GameServer(), "toggles the invisible state");
+	GameServer()->Console()->Register("ignoreinvisible", "?s[user]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConIgnoreInvisible, GameServer(), "toggles the ignore invisible state");
+	// GameServer()->Console()->Register("sync", "?s[client]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConSync, GameServer(), "reloads the account data");
+	// GameServer()->Console()->Register("forcelogout", "?v[client id]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConForceLogout, GameServer(), "forces a player to logout");
+	// GameServer()->Console()->Register("forcelogin", "?v[client id]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConForceLogin, GameServer(), "forces a player to login");
 
 	GameServer()->Console()->Chain("sv_sheep_discord_token", ConChainSheepDiscordTokenChange, GameServer());
 
@@ -422,7 +428,11 @@ void CGameControllerSheep::OnCharacterWeaponChanged(CCharacter *pCharacter) {
 	int ClientId = pPlayer->GetCid();
 
 	char aBuf[256];
-	str_format(aBuf, sizeof(aBuf), "> %d: %s (%d) <", Weapon, CWeapon::GetName(Weapon), pCharacter->GetWeaponAmmo(Weapon));
+	int Ammo = pCharacter->GetWeaponAmmo(Weapon);
+	if(Ammo < 0)
+		str_format(aBuf, sizeof(aBuf), "> %s", CWeapon::GetName(Weapon));
+	else
+		str_format(aBuf, sizeof(aBuf), "> %s (%d)", CWeapon::GetName(Weapon), Ammo);
 	GameServer()->SendBroadcast(aBuf, ClientId, true);
 
 	for(int i = 0; i < MAX_CLIENTS; i++) {

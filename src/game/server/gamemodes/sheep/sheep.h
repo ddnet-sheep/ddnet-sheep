@@ -2,29 +2,31 @@
 #ifndef GAME_SERVER_GAMEMODES_SHEEP_H
 #define GAME_SERVER_GAMEMODES_SHEEP_H
 
+#include <vector>
+
+
 #include <base/log.h>
 
-#include <game/server/gamecontroller.h>
+#include <engine/server/server.h>
 #include <engine/server/databases/connection.h>
+
+#include <game/server/gamecontroller.h>
 
 #include "item.h"
 #include "vote.h"
-
-#include <vector>
+#include "commands.h"
 
 #include <game/server/entities/sheep/weapon_drop.h>
 #include <game/server/entities/sheep/portal.h>
 #include <game/server/entities/sheep/lightsaber.h>
-
-#include <engine/server/server.h>
 
 #undef log_error
 #include <dpp/dpp.h>
 #define log_error(sys, ...) log_log(LEVEL_ERROR, sys, __VA_ARGS__)
 
 struct CFakePlayerMessage {
-	const char* pName;
-	const char* pMessage;
+	char pName[64];
+	char pMessage[256];
 	int ClientId = -1;
 };
 
@@ -53,15 +55,21 @@ public:
 	static bool ExecuteRegister(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	static bool ExecutePassword(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	
-	// commands
+	// user commands
 	static void ConLogin(IConsole::IResult *pResult, void *pUserData);
 	static void ConRegister(IConsole::IResult *pResult, void *pUserData);
 	static void ConPassword(IConsole::IResult *pResult, void *pUserData);
     static void ConLogout(IConsole::IResult *pResult, void *pUserData);
+	
+	// admin commands
+	static void ConIgnoreInvisible(IConsole::IResult *pResult, void *pUserData);
 	static void ConVanish(IConsole::IResult *pResult, void *pUserData);
 	static void ConInvisible(IConsole::IResult *pResult, void *pUserData);
 	
-	static void ConGiveWeapon(IConsole::IResult *pResult, void *pUserData);
+	// static void ConSync(IConsole::IResult *pResult, void *pUserData);
+	static void ConForceLogout(IConsole::IResult *pResult, void *pUserData);
+	static void ConForceLogin(IConsole::IResult *pResult, void *pUserData);
+	static void ConWeapon(IConsole::IResult *pResult, void *pUserData);
 	
 	// chains
 	static void ConChainSheepDiscordTokenChange(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);

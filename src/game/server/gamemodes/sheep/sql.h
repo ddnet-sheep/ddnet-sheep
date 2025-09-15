@@ -5,13 +5,11 @@
 #include <engine/server/databases/connection.h>
 #include <engine/server/databases/connection_pool.h>
 
-struct ISheepSqlResult : ISqlResult
-{
+struct ISheepSqlResult : ISqlResult {
 	char m_Message[255];
 };
 
-struct CSqlSuccessResult : ISheepSqlResult
-{
+struct CSqlSuccessResult : ISheepSqlResult {
 	CSqlSuccessResult() :
         m_Success(false)
 	{

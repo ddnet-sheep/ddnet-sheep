@@ -290,6 +290,7 @@ if(NOT MSVC AND NOT HAIKU)
   # Disable exceptions as DDNet does not use them.
   #<sheep>
   #add_cxx_compiler_flag_if_supported(OUR_FLAGS -fno-exceptions)
+  add_cxx_compiler_flag_if_supported(OUR_FLAGS -Wno-dev) #TODO: remove when all maps have been added
   #</sheep>
 
   # Inaccurate floating point numbers cause problems on mingw-w64-gcc when
@@ -1403,7 +1404,7 @@ set(EXPECTED_DATA
   countryflags/index.txt
   #<sheep>
   #TODO: include all maps
-  #ddnet-maps/types/brutal/maps/...
+  ddnet-maps/types/novice/maps/Multeasymap.map
   #</sheep>
   deadtee.png
   debug_font.png

@@ -13,7 +13,7 @@
 
 struct CAccountLoginResult : ISheepSqlResult
 {
-	CAccountLoginResult() :
+	CAccountLoginResult(bool Artificial = false) :
 		m_BanExpiration(0),
         m_Level(0),
         m_Exp(0),
@@ -22,7 +22,10 @@ struct CAccountLoginResult : ISheepSqlResult
         m_Staff(0),
         m_EmailVerified(false),
         m_Invisible(false),
-        m_Vanish(false)
+        m_Vanish(false),
+        m_IgnoreInvisible(false),
+        m_Artificial(Artificial),
+        m_Processed(Artificial)
 	{
 	}
 
@@ -45,10 +48,13 @@ struct CAccountLoginResult : ISheepSqlResult
     bool m_EmailVerified;
 
     bool m_Invisible; // invisible physically
+    bool m_IgnoreInvisible;
+
     bool m_Vanish; // silent join and not visible in the player list
 
     char m_Title[32];
 
+    bool m_Artificial;
     bool m_Processed = false;
 
     std::unordered_map<EItemType, uint64_t> m_Items;

@@ -2,6 +2,7 @@
 #include "sheep.h"
 #include "sql.h"
 #include <game/server/player.h>
+#include <engine/shared/config.h>
 
 SHA256_DIGEST HashPassword(const char *pPassword)
 {
@@ -45,6 +46,13 @@ void CGameControllerSheep::OnPlayerLogin(CPlayer *pPlayer) {
 		pClient->m_Authed = AuthLevel; // Keeping m_Authed around is unwise...
 		CServer* pServer = (CServer*)Server();
 		pClient->m_AuthKey = pServer->m_AuthManager.DefaultKey(AuthLevel);
+
+		pServer->m_aClients[ClientId].m_pRconCmdToSend = pServer->Console()->FirstCommandInfo(pServer->ConsoleAccessLevel(ClientId), CFGFLAG_SERVER);
+		pServer->SendRconCmdGroupStart(ClientId);
+		if(pServer->m_aClients[ClientId].m_pRconCmdToSend == nullptr)
+		{
+			pServer->SendRconCmdGroupEnd(ClientId);
+		}
 
 		// DDRace
 		GameServer()->OnSetAuthed(ClientId, AuthLevel);
@@ -121,26 +129,19 @@ void CGameControllerSheep::PostPlayerLogout(CPlayer *pPlayer, const char *pReaso
 }
 
 void CGameControllerSheep::ConLogin(IConsole::IResult *pResult, void *pUserData) {
-	CGameContext *pSelf = (CGameContext *)pUserData;
-	if(!CheckClientId(pResult->m_ClientId))
+	if (!CCommands::CommandValidateGuestForSelf(pResult, pUserData))
 		return;
-
-	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientId];
-	if(!pPlayer)
-		return;
-
-	if (pPlayer->m_AccountLoginResult != nullptr) {
-		pSelf->SendChatTarget(pResult->m_ClientId, "You are already logged in.");
-		return;
-	}
+	
+	CPlayer *pPlayer = CCommands::GetCaller(pResult, pUserData);
 
 	pPlayer->m_AccountLoginResult = std::make_shared<CAccountLoginResult>();
 	
 	auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pPlayer->m_AccountLoginResult);
 	str_copy(Tmp->m_Username, pResult->GetString(0), sizeof(Tmp->m_Username));
 	str_copy(Tmp->m_Password, pResult->GetString(1), sizeof(Tmp->m_Password));
-
-	CGameControllerSheep *pController = (CGameControllerSheep *)pSelf->m_pController;
+	
+	CGameContext *pGameServer = (CGameContext *)pUserData;
+	CGameControllerSheep *pController = (CGameControllerSheep *)pGameServer->m_pController;
 	pController->m_pPool->Execute(CGameControllerSheep::ExecuteLogin, std::move(Tmp), "account login");
 }
 
@@ -246,7 +247,7 @@ bool CGameControllerSheep::ExecuteRegister(IDbConnection *pSqlServer, const ISql
 
 	if(!pSqlServer->PrepareStatement(
 		"INSERT INTO sheep_accounts (name, password) VALUES (?, ?) RETURNING "
-		"ban_expiration, level, exp, vip, vip_expiration, staff_level, email, email_verified, password, id, invisible, vanish, title", 
+		"ban_expiration, level, exp, vip, vip_expiration, staff_level, email, email_verified, password, id, invisible, vanish, title, ignore_invisible ", 
 		pError, ErrorSize)
 	) {
 		str_copy(pResult->m_Message, "Database error (1).");
@@ -313,84 +314,114 @@ bool CGameControllerSheep::ExecutePassword(IDbConnection *pSqlServer, const ISql
 	auto *pResult = dynamic_cast<CSqlSuccessResult *>(pGameData->m_pResult.get());
 	pResult->m_Success = NumUpdated != 0;
 
+	// TODO: change to sync logic, make instant sync
+
 	return pResult->m_Success;
 }
 
 void CGameControllerSheep::ConPassword(IConsole::IResult *pResult, void *pUserData) {
-	CGameContext *pSelf = (CGameContext *)pUserData;
-	if(!CheckClientId(pResult->m_ClientId))
+	if(!CCommands::CommandValidateAuthForSelf(pResult, pUserData))
 		return;
+	
+	CGameContext *pGameServer = (CGameContext *)pUserData;
+	CPlayer *pVictim = pGameServer->m_apPlayers[pResult->m_ClientId];
 
-	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientId];
-	if(!pPlayer)
-		return;
-
-	if (pPlayer->m_AccountLoginResult == nullptr) {
-		pSelf->SendChatTarget(pResult->m_ClientId, "You are not logged in.");
+	if (!VerifyPassword(pVictim->m_AccountLoginResult->m_PasswordHash, pResult->GetString(0))) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "Current password is incorrect.");
 		return;
 	}
 
-	if (!VerifyPassword(pPlayer->m_AccountLoginResult->m_PasswordHash, pResult->GetString(0))) {
-		pSelf->SendChatTarget(pResult->m_ClientId, "Current password is incorrect.");
-		return;
-	}
+	// TODO: change to sync logic, make instant sync
 
-	pPlayer->m_PasswordChangeSuccessResult = std::make_shared<CSqlSuccessResult>();
+	pVictim->m_PasswordChangeSuccessResult = std::make_shared<CSqlSuccessResult>();
 
-	auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pPlayer->m_PasswordChangeSuccessResult);
-	str_copy(Tmp->m_Username, pPlayer->m_AccountLoginResult->m_Username, sizeof(Tmp->m_Username));
+	auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pVictim->m_PasswordChangeSuccessResult);
+	str_copy(Tmp->m_Username, pVictim->m_AccountLoginResult->m_Username, sizeof(Tmp->m_Username));
 	str_copy(Tmp->m_Password, pResult->GetString(1), sizeof(Tmp->m_Password));
 
-	CGameControllerSheep *pController = (CGameControllerSheep *)pSelf->m_pController;
+	CGameControllerSheep *pController = (CGameControllerSheep *)pGameServer->m_pController;
 	pController->m_pPool->Execute(CGameControllerSheep::ExecutePassword, std::move(Tmp), "account set password");
 }
 
 void CGameControllerSheep::ConVanish(IConsole::IResult *pResult, void *pUserData) {
-	CGameContext *pSelf = (CGameContext *)pUserData;
-	if(!CheckClientId(pResult->m_ClientId))
+	if(!CCommands::CommandValidateStaffForVictim(pResult, pUserData))
 		return;
+	
+	CGameContext *pGameServer = (CGameContext *)pUserData;
+	CPlayer *pVictim = CCommands::GetVictimOrCaller(pResult, pUserData);
+	CGameControllerSheep *pController = (CGameControllerSheep *)pGameServer->m_pController;
 
-	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientId];
-	if(!pPlayer)
-		return;
-
-	if (pPlayer->m_AccountLoginResult == nullptr || pPlayer->m_AccountLoginResult->m_Staff < 1) {
-		pSelf->SendChatTarget(pResult->m_ClientId, "You are not authorized to do that.");
-		return;
-	}
-
-	CGameControllerSheep *pController = (CGameControllerSheep *)pSelf->m_pController;
-	if (pPlayer->m_AccountLoginResult->m_Vanish) {
-		pPlayer->m_AccountLoginResult->m_Vanish = !pPlayer->m_AccountLoginResult->m_Vanish;
-		pController->PostPlayerLogin(pPlayer);
+	if (pVictim->m_AccountLoginResult->m_Vanish) {
+		pVictim->m_AccountLoginResult->m_Vanish = !pVictim->m_AccountLoginResult->m_Vanish;
+		pController->PostPlayerLogin(pVictim);
 	} else {
-		pController->PostPlayerLogout(pPlayer, nullptr);
-		pPlayer->m_AccountLoginResult->m_Vanish = !pPlayer->m_AccountLoginResult->m_Vanish;
+		pController->PostPlayerLogout(pVictim, nullptr);
+		pVictim->m_AccountLoginResult->m_Vanish = !pVictim->m_AccountLoginResult->m_Vanish;
 	}
 
-	pSelf->SendChatTarget(pResult->m_ClientId, pPlayer->m_AccountLoginResult->m_Vanish ? "You are now vanished." : "You are no longer vanished.");
+	if (pVictim->GetCid() != pResult->m_ClientId) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, pVictim->m_AccountLoginResult->m_Vanish ? "They are now vanished." : "They are no longer vanished.");
+	}
+	pGameServer->SendChatTarget(pVictim->GetCid(), pVictim->m_AccountLoginResult->m_Vanish ? "You are now vanished." : "You are no longer vanished.");
 
-	CServer *pServer = (CServer *)pSelf->Server();
+	CServer *pServer = (CServer *)pGameServer->Server();
 	pServer->m_ServerInfoNeedsUpdate = true;
 }
 
 void CGameControllerSheep::ConInvisible(IConsole::IResult *pResult, void *pUserData) {
-	CGameContext *pSelf = (CGameContext *)pUserData;
-	if(!CheckClientId(pResult->m_ClientId))
+	if(!CCommands::CommandValidateStaffForVictim(pResult, pUserData))
 		return;
+	
+	CGameContext *pGameServer = (CGameContext *)pUserData;
+	CPlayer *pVictim = CCommands::GetVictimOrCaller(pResult, pUserData);
+	CGameControllerSheep *pController = (CGameControllerSheep *)pGameServer->m_pController;
 
-	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientId];
-	if(!pPlayer)
-		return;
-
-	if (pPlayer->m_AccountLoginResult == nullptr || pPlayer->m_AccountLoginResult->m_Staff < 1) {
-		pSelf->SendChatTarget(pResult->m_ClientId, "You are not authorized to do that.");
-		return;
+	pVictim->m_AccountLoginResult->m_Invisible = !pVictim->m_AccountLoginResult->m_Invisible;
+	if (pVictim->GetCid() != pResult->m_ClientId) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, pVictim->m_AccountLoginResult->m_Invisible ? "They are now invisible." : "They are no longer invisible.");
 	}
-
-	pPlayer->m_AccountLoginResult->m_Invisible = !pPlayer->m_AccountLoginResult->m_Invisible;
-	pSelf->SendChatTarget(pResult->m_ClientId, pPlayer->m_AccountLoginResult->m_Invisible ? "You are now invisible." : "You are no longer invisible.");
-
-	// CServer *pServer = (CServer *)pSelf->Server();
-	// pServer->m_ServerInfoNeedsUpdate = true;
+	pGameServer->SendChatTarget(pVictim->GetCid(), pVictim->m_AccountLoginResult->m_Invisible ? "You are now invisible." : "You are no longer invisible.");
 }
+
+void CGameControllerSheep::ConIgnoreInvisible(IConsole::IResult *pResult, void *pUserData) {
+	if(!CCommands::CommandValidateStaffForVictim(pResult, pUserData))
+		return;
+	
+	CGameContext *pGameServer = (CGameContext *)pUserData;
+	CPlayer *pVictim = CCommands::GetVictimOrCaller(pResult, pUserData);
+	CGameControllerSheep *pController = (CGameControllerSheep *)pGameServer->m_pController;
+
+	pVictim->m_AccountLoginResult->m_IgnoreInvisible = !pVictim->m_AccountLoginResult->m_IgnoreInvisible;
+	if (pVictim->GetCid() != pResult->m_ClientId) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, pVictim->m_AccountLoginResult->m_IgnoreInvisible ? "They are now ignoring invisible players." : "They are no longer ignoring invisible players.");
+	}
+	pGameServer->SendChatTarget(pVictim->GetCid(), pVictim->m_AccountLoginResult->m_IgnoreInvisible ? "You are now ignoring invisible players." : "You are no longer ignoring invisible players.");
+}
+
+// void CGameControllerSheep::ConSync(IConsole::IResult *pResult, void *pUserData) {
+// 	CGameContext *pGameServer = (CGameContext *)pUserData;
+// 	if(!CCommands::ValidateStaff(pResult, pUserData, 1)) {
+// 		pGameServer->SendChatTarget(pResult->m_ClientId, "You are not authorized to do that.");
+// 		return;
+// 	}
+
+// 	CPlayer *pVictim = CCommands::GetVictimOrCaller(pResult, pUserData);
+// 	if(!pVictim) {
+// 		pGameServer->SendChatTarget(pResult->m_ClientId, "Invalid client id.");
+// 		return;
+// 	}
+
+// 	if(!CCommands::ValidateAuthenticated(pVictim)) {
+// 		pGameServer->SendChatTarget(pResult->m_ClientId, "The player is not logged in.");
+// 		return;
+// 	}
+
+// 	pVictim->m_AccountLoginResult = std::make_shared<CAccountLoginResult>(true);
+	
+// 	auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pVictim->m_AccountLoginResult);
+// 	str_copy(Tmp->m_Username, pResult->GetString(0), sizeof(Tmp->m_Username));
+// 	str_copy(Tmp->m_Password, pResult->GetString(1), sizeof(Tmp->m_Password));
+
+// 	CGameControllerSheep *pController = (CGameControllerSheep *)pGameServer->m_pController;
+// 	pController->m_pPool->Execute(CGameControllerSheep::ExecuteLogin, std::move(Tmp), "account login");
+// }

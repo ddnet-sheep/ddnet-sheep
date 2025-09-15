@@ -1,23 +1,43 @@
 #include "sheep.h"
 #include <game/server/entities/character.h>
 
-void CGameControllerSheep::ConGiveWeapon(IConsole::IResult *pResult, void *pUserData) {
-    CGameContext *pSelf = (CGameContext *)pUserData;
-	if(!CheckClientId(pResult->m_ClientId))
-		return;
-        
-	CCharacter *pChr = pSelf->GetPlayerChar(pResult->m_ClientId);
-	if(!pChr)
-		return;
+void CGameControllerSheep::ConWeapon(IConsole::IResult *pResult, void *pUserData) {
+	CPlayer* pVictim;
+	if (pResult->NumArguments() > 1) {
+		if(!CCommands::CommandValidateStaffForVictim(pResult, pUserData))
+			return;
+		pVictim = CCommands::GetVictimOrCaller(pResult, pUserData);
+	} else {
+		if(!CCommands::ValidateStaff(pResult, pUserData, 1))
+			return;
+		pVictim = CCommands::GetCaller(pResult, pUserData);
+	}
 
-	int WeaponId = pResult->GetInteger(0);
-    if(std::clamp(WeaponId, -1, NUM_WEAPONS - 1) != WeaponId) {
-        pSelf->SendChatTarget(pResult->m_ClientId, "Invalid weapon ID");
-        return;
-    }
+	CCharacter *pVictimChar = pVictim->GetCharacter();
+	CGameContext *pGameServer = (CGameContext *)pUserData;
 
-	const bool GotWeapon = pChr->GetWeaponGot(WeaponId);
-	pChr->GiveWeapon(WeaponId, GotWeapon);
+	if(!pVictimChar) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "The player is not spawned");
+		return;
+	}
+
+	int WeaponId = CWeapon::GetId(pResult->GetString(pResult->NumArguments() - 1));
+	if(std::clamp(WeaponId, -1, NUM_WEAPONS - 1) != WeaponId) {
+		char aBuf[256] = "Invalid weapon. Available weapons: ";
+		for (int i = 0; i < NUM_WEAPONS; i++) {
+			str_append(aBuf, CWeapon::GetName(i), sizeof(aBuf));
+			if (i == NUM_WEAPONS - 1) break;
+			str_append(aBuf, ", ", sizeof(aBuf));
+		}
+
+		pGameServer->SendChatTarget(pResult->m_ClientId, aBuf);
+		return;
+	}
+
+	const bool GotWeapon = pVictimChar->GetWeaponGot(WeaponId);
+	pVictimChar->GiveWeapon(WeaponId, GotWeapon);
 	if(!GotWeapon)
-		pChr->SetActiveWeapon(WeaponId);
+		pVictimChar->SetActiveWeapon(WeaponId);
+
+	pGameServer->SendChatTarget(pResult->m_ClientId, GotWeapon ? "Removed weapon" : "Gave weapon");
 }

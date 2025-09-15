@@ -72,11 +72,11 @@ bool CGameControllerSheep::ExecuteLoadAccountItem(IDbConnection *pSqlServer, con
         pResult->m_AccountItem[item.m_Type] = item;
     } while(!End);
 
-    for (const auto& [type, item] : pResult->m_AccountItem) {
-        char aBuf[512];
-        str_format(aBuf, sizeof(aBuf), "Loaded account item %d: %d", static_cast<int>(type), item.m_Amount);
-        log_error("sheep", aBuf);
-    }
+    // for (const auto& [type, item] : pResult->m_AccountItem) {
+    //     char aBuf[512];
+    //     str_format(aBuf, sizeof(aBuf), "Loaded account item %d: %d", static_cast<int>(type), item.m_Amount);
+    //     log_error("sheep", aBuf);
+    // }
 
 	return true;
 }

@@ -331,7 +331,7 @@ void CPlayer::Snap(int SnappingClient)
 	CPlayer *pSnappingPlayer = GameServer()->m_apPlayers[SnappingClient];
 	if(
 		m_AccountLoginResult != nullptr && m_AccountLoginResult->m_Invisible && SnappingClient != id && SnappingClient >= 0
-		&& pSnappingPlayer->m_AccountLoginResult != nullptr && pSnappingPlayer->m_AccountLoginResult->m_Staff < m_AccountLoginResult->m_Staff)
+		&& pSnappingPlayer->m_AccountLoginResult != nullptr && !pSnappingPlayer->m_AccountLoginResult->m_IgnoreInvisible)
 		return;
 	//</sheep>
 

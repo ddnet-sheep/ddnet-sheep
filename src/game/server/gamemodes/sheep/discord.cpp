@@ -19,7 +19,10 @@ void CGameControllerSheep::DiscordInit() {
 			return;
 		}
 
-		m_FakePlayerMessageQueue.push_back({event.msg.author.global_name.c_str(), event.msg.content.c_str()});
+		CFakePlayerMessage Message;
+		str_copy(Message.pName, event.msg.author.global_name.c_str());
+		str_copy(Message.pMessage, event.msg.content.c_str());
+		m_FakePlayerMessageQueue.push_back(Message);
 	});
 }
 
