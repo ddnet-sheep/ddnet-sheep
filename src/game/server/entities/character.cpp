@@ -1219,6 +1219,13 @@ bool CCharacter::CanSnapCharacter(int SnappingClient)
 	else if(pSnapChar && !pSnapChar->m_Core.m_Super && !CanCollide(SnappingClient) && (pSnapPlayer->m_ShowOthers == SHOW_OTHERS_OFF || (pSnapPlayer->m_ShowOthers == SHOW_OTHERS_ONLY_TEAM && !SameTeam(SnappingClient))))
 		return false;
 
+	//<sheep>
+	CPlayer *pSnappingPlayer = GameServer()->m_apPlayers[SnappingClient];
+	if(GetPlayer()->m_AccountLoginResult != nullptr && GetPlayer()->m_AccountLoginResult->m_Invisible && SnappingClient != GetPlayer()->GetCid() && SnappingClient >= 0
+		&& pSnappingPlayer->m_AccountLoginResult != nullptr && !pSnappingPlayer->m_AccountLoginResult->m_IgnoreInvisible)
+		return false;
+	//</sheep>
+
 	return true;
 }
 

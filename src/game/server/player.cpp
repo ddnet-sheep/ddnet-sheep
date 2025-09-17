@@ -327,14 +327,6 @@ void CPlayer::Snap(int SnappingClient)
 	if(!pClientInfo)
 		return;
 
-	//<sheep>
-	CPlayer *pSnappingPlayer = GameServer()->m_apPlayers[SnappingClient];
-	if(
-		m_AccountLoginResult != nullptr && m_AccountLoginResult->m_Invisible && SnappingClient != id && SnappingClient >= 0
-		&& pSnappingPlayer->m_AccountLoginResult != nullptr && !pSnappingPlayer->m_AccountLoginResult->m_IgnoreInvisible)
-		return;
-	//</sheep>
-
 	StrToInts(pClientInfo->m_aName, std::size(pClientInfo->m_aName), Server()->ClientName(m_ClientId));
 	StrToInts(pClientInfo->m_aClan, std::size(pClientInfo->m_aClan), Server()->ClientClan(m_ClientId));
 	pClientInfo->m_Country = Server()->ClientCountry(m_ClientId);
@@ -385,6 +377,21 @@ void CPlayer::Snap(int SnappingClient)
 			// In older versions the SPECTATORS TEAM was also used if the own player is in PAUSE_PAUSED or if any player is in PAUSE_SPEC.
 			pPlayerInfo->m_Team = (m_Paused != PAUSE_PAUSED || m_ClientId != SnappingClient) && m_Paused < PAUSE_SPEC ? m_Team : TEAM_SPECTATORS;
 		}
+
+		//<sheep>
+		CPlayer *pSnappingPlayer = GameServer()->m_apPlayers[SnappingClient];
+		if(m_AccountLoginResult && m_AccountLoginResult->m_Vanish) {
+			if(pSnappingPlayer->m_AccountLoginResult && pSnappingPlayer->m_AccountLoginResult->m_Staff >= m_AccountLoginResult->m_Staff) {
+				// same staff level or higher
+				char aClan[12];
+				str_format(aClan, sizeof(aClan), "*v* %s", Server()->ClientClan(m_ClientId));
+				StrToInts(pClientInfo->m_aClan, std::size(pClientInfo->m_aClan), aClan);
+			} else {
+				// pPlayerInfo->m_ClientId = MAX_CLIENTS;
+				pPlayerInfo->m_Team = NUM_TEAMS;
+			}			
+		}
+		//</sheep>
 	}
 	else
 	{
