@@ -29,7 +29,8 @@ constexpr float MinPortalRad = 15.0f;
 constexpr int FadeOutTicks = SERVER_TICK_SPEED;
 constexpr int GrowTicks = SERVER_TICK_SPEED / 4;
 constexpr float MaxDistanceFromPlayer = 1500.0f;
-constexpr int Lifetime = 12.5 * SERVER_TICK_SPEED;
+constexpr float Lifetime = INFINITY;
+//constexpr int Lifetime = 12.5 * SERVER_TICK_SPEED;
 
 CPortal::CPortal(CGameWorld *pGameWorld, int Owner, vec2 Pos) :
 	CEntity(pGameWorld, CGameWorld::ENTTYPE_PORTAL, Pos)
@@ -278,8 +279,15 @@ bool CPortal::TrySetPortal()
 		m_Lifetime = Lifetime;
 		m_State = STATE_BOTH_SET;
 	}
-	else if(m_State == STATE_BOTH_SET)
-		return false;
+	else if(m_State == STATE_BOTH_SET) {
+		m_apData[0].m_Pos = m_apData[1].m_Pos;
+		m_apData[0].m_Team = m_apData[1].m_Team;
+
+		GameServer()->CreateDeath(m_apData[1].m_Pos, m_Owner, m_TeamMask);
+
+		m_apData[1].m_Pos = CursorPos;
+		m_apData[1].m_Team = pOwnerChr->Team();
+	}
 	return true;
 }
 
