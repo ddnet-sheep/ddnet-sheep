@@ -61,8 +61,8 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 	DiscordInit();
 
 	// user commands
-	GameServer()->Console()->Register("login", "s[account name] s[password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConLogin, GameServer(), "logs you into your account");
-	GameServer()->Console()->Register("register", "s[account name] s[password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConRegister, GameServer(), "registers a new account");
+	GameServer()->Console()->Register("login", "s[user|password] ?s[password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConLogin, GameServer(), "logs you into your account");
+	GameServer()->Console()->Register("register", "s[user|password] ?s[password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConRegister, GameServer(), "registers a new account");
 	GameServer()->Console()->Register("password", "s[old password] s[new password]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConPassword, GameServer(), "changes the password");
 	GameServer()->Console()->Register("logout", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConLogout, GameServer(), "logs you out of your your account");
 

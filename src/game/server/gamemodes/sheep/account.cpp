@@ -132,15 +132,38 @@ void CGameControllerSheep::ConLogin(IConsole::IResult *pResult, void *pUserData)
 	if (!CCommands::CommandValidateGuestForSelf(pResult, pUserData))
 		return;
 	
+	CGameContext *pGameServer = (CGameContext *)pUserData;
+	char aUsername[64];
+	char aPassword[64];
+	switch(pResult->NumArguments()) {
+		case 2:
+			str_copy(aUsername, pResult->GetString(0), sizeof(aUsername));
+			str_copy(aPassword, pResult->GetString(1), sizeof(aPassword));
+			break;
+		case 1:
+			str_copy(aUsername, pGameServer->Server()->ClientName(pResult->m_ClientId), sizeof(aUsername));
+			str_copy(aPassword, pResult->GetString(0), sizeof(aPassword));
+			break;
+		default:
+			pGameServer->SendChatTarget(pResult->m_ClientId, "Usage: /login <password> or /login <username> <password>");
+			return;
+	}
+
+	for (CPlayer *pPlayer : pGameServer->m_apPlayers) {
+		if (pPlayer && pPlayer->m_AccountLoginResult != nullptr && !strcmp(pPlayer->m_AccountLoginResult->m_Username, aUsername)) {
+			pGameServer->SendChatTarget(pResult->m_ClientId, "This account is already logged in.");
+			return;
+		}
+	}
+
 	CPlayer *pPlayer = CCommands::GetCaller(pResult, pUserData);
 
 	pPlayer->m_AccountLoginResult = std::make_shared<CAccountLoginResult>();
 	
 	auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pPlayer->m_AccountLoginResult);
-	str_copy(Tmp->m_Username, pResult->GetString(0), sizeof(Tmp->m_Username));
-	str_copy(Tmp->m_Password, pResult->GetString(1), sizeof(Tmp->m_Password));
+	str_copy(Tmp->m_Username, aUsername, sizeof(Tmp->m_Username));
+	str_copy(Tmp->m_Password, aPassword, sizeof(Tmp->m_Password));
 	
-	CGameContext *pGameServer = (CGameContext *)pUserData;
 	CGameControllerSheep *pController = (CGameControllerSheep *)pGameServer->m_pController;
 	pController->m_pPool->Execute(CGameControllerSheep::ExecuteLogin, std::move(Tmp), "account login");
 }
@@ -218,18 +241,27 @@ bool CGameControllerSheep::ExecuteLogin(IDbConnection *pSqlServer, const ISqlDat
 }
 
 void CGameControllerSheep::ConRegister(IConsole::IResult *pResult, void *pUserData) {
-	CGameContext *pSelf = (CGameContext *)pUserData;
-	if(!CheckClientId(pResult->m_ClientId))
-		return;
-
-	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientId];
-	if(!pPlayer)
+	if (!CCommands::CommandValidateGuestForSelf(pResult, pUserData))
 		return;
 	
-	if (pPlayer->m_AccountLoginResult != nullptr) {
-		pSelf->SendChatTarget(pResult->m_ClientId, "You are already logged in.");
-		return;
+	CGameContext *pGameServer = (CGameContext *)pUserData;
+	char aUsername[64];
+	char aPassword[64];
+	switch(pResult->NumArguments()) {
+		case 2:
+			str_copy(aUsername, pResult->GetString(0), sizeof(aUsername));
+			str_copy(aPassword, pResult->GetString(1), sizeof(aPassword));
+			break;
+		case 1:
+			str_copy(aUsername, pGameServer->Server()->ClientName(pResult->m_ClientId), sizeof(aUsername));
+			str_copy(aPassword, pResult->GetString(0), sizeof(aPassword));
+			break;
+		default:
+			pGameServer->SendChatTarget(pResult->m_ClientId, "Usage: /register <password> or /register <username> <password>");
+			return;
 	}
+
+	CPlayer *pPlayer = CCommands::GetCaller(pResult, pUserData);
 
 	pPlayer->m_AccountLoginResult = std::make_shared<CAccountLoginResult>();
 	
@@ -238,7 +270,7 @@ void CGameControllerSheep::ConRegister(IConsole::IResult *pResult, void *pUserDa
 	str_format(Tmp->m_Password, sizeof(Tmp->m_Password), "%s", pResult->GetString(1));
 	// Tmp->m_Artificial = true;
 
-	CGameControllerSheep *pController = (CGameControllerSheep *)pSelf->m_pController;
+	CGameControllerSheep *pController = (CGameControllerSheep *)pGameServer->m_pController;
 	pController->m_pPool->Execute(CGameControllerSheep::ExecuteRegister, std::move(Tmp), "account register");
 }
 

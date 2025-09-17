@@ -381,7 +381,7 @@ void CPlayer::Snap(int SnappingClient)
 		//<sheep>
 		CPlayer *pSnappingPlayer = GameServer()->m_apPlayers[SnappingClient];
 		if(m_AccountLoginResult && m_AccountLoginResult->m_Vanish) {
-			if(pSnappingPlayer->m_AccountLoginResult && pSnappingPlayer->m_AccountLoginResult->m_Staff >= m_AccountLoginResult->m_Staff) {
+			if(pSnappingPlayer->m_AccountLoginResult && pSnappingPlayer->m_AccountLoginResult->m_Staff > 0 && pSnappingPlayer->m_AccountLoginResult->m_Staff >= m_AccountLoginResult->m_Staff) {
 				// same staff level or higher
 				char aClan[12];
 				str_format(aClan, sizeof(aClan), "*v* %s", Server()->ClientClan(m_ClientId));
