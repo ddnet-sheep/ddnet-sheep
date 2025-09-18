@@ -361,6 +361,10 @@ void CPlayer::Snap(int SnappingClient)
 	if(SnappingClient != m_ClientId && g_Config.m_SvHideScore)
 		Score = -9999;
 
+	//<sheep>
+	CPlayer *pSnappingPlayer = GameServer()->m_apPlayers[SnappingClient];
+	//</sheep>
+
 	if(!Server()->IsSixup(SnappingClient))
 	{
 		CNetObj_PlayerInfo *pPlayerInfo = Server()->SnapNewItem<CNetObj_PlayerInfo>(id);
@@ -379,7 +383,7 @@ void CPlayer::Snap(int SnappingClient)
 		}
 
 		//<sheep>
-		CPlayer *pSnappingPlayer = GameServer()->m_apPlayers[SnappingClient];
+		// TODO: implement this for protocol7 too
 		if(m_AccountLoginResult && m_AccountLoginResult->m_Vanish) {
 			if(pSnappingPlayer->m_AccountLoginResult && pSnappingPlayer->m_AccountLoginResult->m_Staff > 0 && pSnappingPlayer->m_AccountLoginResult->m_Staff >= m_AccountLoginResult->m_Staff) {
 				// same staff level or higher
