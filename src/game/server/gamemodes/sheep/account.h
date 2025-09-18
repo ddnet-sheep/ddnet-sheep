@@ -11,9 +11,28 @@
 #include "item.h"
 #include "sql.h"
 
+struct CSqlAccountCredentialsRequest : ISqlData
+{
+	CSqlAccountCredentialsRequest(std::shared_ptr<ISqlResult> pResult) :
+		ISqlData(std::move(pResult))
+	{
+	}
+
+    enum EType {
+        TYPE_PASSWORD,
+        TYPE_IP,
+        TYPE_FORCED
+    };
+
+    EType m_Type = TYPE_PASSWORD;
+	char m_Username[64] = "";
+	char m_Password[64] = "";
+    char m_IP[64] = "";
+};
+
 struct CAccountLoginResult : ISheepSqlResult
 {
-	CAccountLoginResult(bool Artificial = false) :
+	CAccountLoginResult() :
 		m_BanExpiration(0),
         m_Level(0),
         m_Exp(0),
@@ -24,14 +43,13 @@ struct CAccountLoginResult : ISheepSqlResult
         m_Invisible(false),
         m_Vanish(false),
         m_IgnoreInvisible(false),
-        m_Artificial(Artificial),
-        m_Processed(Artificial), 
-        m_Autologin(false),
+        m_Processed(false), 
+        m_Type(CSqlAccountCredentialsRequest::TYPE_PASSWORD),
         m_Title("")
 	{
 	}
 
-    bool m_Autologin;
+    CSqlAccountCredentialsRequest::EType m_Type;
     
     uint64_t m_AccountId;
 
@@ -58,22 +76,9 @@ struct CAccountLoginResult : ISheepSqlResult
 
     char m_Title[32];
 
-    bool m_Artificial;
     bool m_Processed = false;
 
     std::unordered_map<EItemType, uint64_t> m_Items;
-};
-
-struct CSqlAccountCredentialsRequest : ISqlData
-{
-	CSqlAccountCredentialsRequest(std::shared_ptr<ISqlResult> pResult) :
-		ISqlData(std::move(pResult))
-	{
-	}
-
-	char m_Username[64] = "";
-	char m_Password[64] = "";
-    char m_IP[64] = "";
 };
 
 #endif

@@ -34,6 +34,7 @@ enum CAccountActions {
 	ACTION_ENTER,
 	ACTION_JOIN,
 	ACTION_ENTER_AND_JOIN,
+	ACTION_LOGOUT,
 	ACTION_LEAVE
 };
 
@@ -60,7 +61,6 @@ public:
 	
 	// database
     static bool ExecuteLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
-	static bool ExecuteAutoLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	static bool ExecuteRegister(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	static bool ExecutePassword(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	
@@ -85,7 +85,7 @@ public:
 	
 	// sheep hooks
 	void OnPlayerLogin(CPlayer *pPlayer, bool Autologin);
-	void OnPlayerLogout(CPlayer *pPlayer, const char *pReason);
+	void OnPlayerLogout(CPlayer *pPlayer, const char *pReason, bool Silent);
 	
 	// sheep lowlevel passthrough hooks
 	bool IncludedInServerInfo(CPlayer* pPlayer);

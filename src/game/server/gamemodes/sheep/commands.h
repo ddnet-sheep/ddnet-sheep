@@ -37,8 +37,8 @@ public:
         return nullptr;
     }
 
-	static CPlayer *GetVictimOrCaller(IConsole::IResult *pResult, void *pUserData) {
-        if(!pResult->NumArguments())
+	static CPlayer *GetVictimOrCaller(IConsole::IResult *pResult, void *pUserData, int MaxArgs = 1) {
+        if(pResult->NumArguments() < MaxArgs)
             return GetCaller(pResult, pUserData);
 
         return ParseVictim((char*)pResult->GetString(0), pUserData);

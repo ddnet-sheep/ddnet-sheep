@@ -68,13 +68,13 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 	GameServer()->Console()->Register("logout", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConLogout, GameServer(), "logs you out of your your account");
 
 	// admin commands
-	GameServer()->Console()->Register("weapon", "?s[user] s[weapon]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConWeapon, GameServer(), "toggles a weapon");
+	GameServer()->Console()->Register("weapon", "s[user|weapon] ?s[weapon]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConWeapon, GameServer(), "toggles a weapon");
 	GameServer()->Console()->Register("vanish", "?s[user]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConVanish, GameServer(), "toggles the vanish state");
 	GameServer()->Console()->Register("invisible", "?s[user]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConInvisible, GameServer(), "toggles the invisible state");
 	GameServer()->Console()->Register("ignoreinvisible", "?s[user]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConIgnoreInvisible, GameServer(), "toggles the ignore invisible state");
 	// GameServer()->Console()->Register("sync", "?s[client]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConSync, GameServer(), "reloads the account data");
-	// GameServer()->Console()->Register("forcelogout", "?v[client id]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConForceLogout, GameServer(), "forces a player to logout");
-	// GameServer()->Console()->Register("forcelogin", "?v[client id]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConForceLogin, GameServer(), "forces a player to login");
+	GameServer()->Console()->Register("forcelogout", "s[user]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConForceLogout, GameServer(), "forces a player to logout");
+	GameServer()->Console()->Register("forcelogin", "s[user] ?s[account]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConForceLogin, GameServer(), "forces a player to login");
 
 	GameServer()->Console()->Chain("sv_sheep_discord_token", ConChainSheepDiscordTokenChange, GameServer());
 
@@ -205,9 +205,10 @@ void CGameControllerSheep::OnPlayerConnect(CPlayer *pPlayer)
 		pPlayer->m_AccountLoginResult = std::make_shared<CAccountLoginResult>();
 		
 		auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pPlayer->m_AccountLoginResult);
+		Tmp->m_Type = CSqlAccountCredentialsRequest::TYPE_IP;
 		str_copy(Tmp->m_Username, Server()->ClientName(ClientId), sizeof(Tmp->m_Username));
 		str_copy(Tmp->m_IP, Server()->ClientAddrString(ClientId, false), sizeof(Tmp->m_IP));
-		m_pPool->Execute(CGameControllerSheep::ExecuteAutoLogin, std::move(Tmp), "auto account login");
+		m_pPool->Execute(CGameControllerSheep::ExecuteLogin, std::move(Tmp), "auto account login");
 	}
 }
 
@@ -223,7 +224,6 @@ void CGameControllerSheep::OnPlayerDisconnect(CPlayer *pPlayer, const char *pRea
 	GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "game", aBuf);
 
 	if(pPlayer->m_AccountLoginResult != nullptr) {
-		OnPlayerLogout(pPlayer, pReason);
 		SendActionMessage(pPlayer, ACTION_LEAVE, (char*)pReason);
 		pPlayer->m_AccountLoginResult = nullptr;
 	}
@@ -338,11 +338,11 @@ void CGameControllerSheep::OnPlayerTick(CPlayer *pPlayer) {
 	if (pPlayer->m_AccountLoginResult != nullptr && pPlayer->m_AccountLoginResult->m_Completed && !pPlayer->m_AccountLoginResult->m_Processed) {
 		if (pPlayer->m_AccountLoginResult->m_Success) {
 			pPlayer->m_AccountLoginResult->m_Processed = true;
-			OnPlayerLogin(pPlayer, pPlayer->m_AccountLoginResult->m_Autologin);
+			OnPlayerLogin(pPlayer, pPlayer->m_AccountLoginResult->m_Type == CSqlAccountCredentialsRequest::TYPE_IP);
 			GameServer()->SendChatTarget(pPlayer->GetCid(), pPlayer->m_AccountLoginResult->m_Message);
 		} else {
 			GameServer()->SendChatTarget(pPlayer->GetCid(), pPlayer->m_AccountLoginResult->m_Message);
-			if(pPlayer->m_AccountLoginResult->m_Autologin) {
+			if(pPlayer->m_AccountLoginResult->m_Type == CSqlAccountCredentialsRequest::TYPE_IP) {
 				SendActionMessage(pPlayer, ACTION_ENTER);
 			}
 			pPlayer->m_AccountLoginResult = nullptr;

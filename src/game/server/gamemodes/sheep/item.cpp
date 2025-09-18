@@ -33,11 +33,11 @@ bool CGameControllerSheep::ExecuteLoadItems(IDbConnection *pSqlServer, const ISq
         pResult->m_Items[item.m_Type] = item;
     } while(!End);
 
-    for (const auto& [type, item] : pResult->m_Items) {
-        char aBuf[512];
-        str_format(aBuf, sizeof(aBuf), "Loaded item %d: %s - %s", static_cast<int>(type), item.m_Name, item.m_Description);
-        log_error("sheep", aBuf);
-    }
+    // for (const auto& [type, item] : pResult->m_Items) {
+    //     char aBuf[512];
+    //     str_format(aBuf, sizeof(aBuf), "Loaded item %d: %s - %s", static_cast<int>(type), item.m_Name, item.m_Description);
+    //     log_error("sheep", aBuf);
+    // }
 
 	return true;
 }
