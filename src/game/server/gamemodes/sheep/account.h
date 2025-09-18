@@ -25,10 +25,14 @@ struct CAccountLoginResult : ISheepSqlResult
         m_Vanish(false),
         m_IgnoreInvisible(false),
         m_Artificial(Artificial),
-        m_Processed(Artificial)
+        m_Processed(Artificial), 
+        m_Autologin(false),
+        m_Title("")
 	{
 	}
 
+    bool m_Autologin;
+    
     uint64_t m_AccountId;
 
     char m_Username[64];
@@ -67,8 +71,9 @@ struct CSqlAccountCredentialsRequest : ISqlData
 	{
 	}
 
-	char m_Username[64];
-	char m_Password[64];
+	char m_Username[64] = "";
+	char m_Password[64] = "";
+    char m_IP[64] = "";
 };
 
 #endif

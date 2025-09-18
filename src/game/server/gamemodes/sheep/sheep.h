@@ -30,6 +30,13 @@ struct CFakePlayerMessage {
 	int ClientId = -1;
 };
 
+enum CAccountActions {
+	ACTION_ENTER,
+	ACTION_JOIN,
+	ACTION_ENTER_AND_JOIN,
+	ACTION_LEAVE
+};
+
 class CGameControllerSheep : public IGameController
 {
 public:
@@ -44,7 +51,8 @@ public:
 	void DiscordShutdown();
 	void SendDiscordChat(int ChatterClientId, int Team, const char *pText, int SpamProtectionClientId, int VersionFlags);
 	
-	
+	void SendActionMessage(CPlayer *pPlayer, enum CAccountActions Action, char* pExtra = "");
+
 	void LoadItems();
 	static bool ExecuteLoadItems(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	void LoadAccountItem(class CPlayer* pPlayer);
@@ -52,6 +60,7 @@ public:
 	
 	// database
     static bool ExecuteLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
+	static bool ExecuteAutoLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	static bool ExecuteRegister(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	static bool ExecutePassword(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	
@@ -75,10 +84,8 @@ public:
 	static void ConChainSheepDiscordTokenChange(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	
 	// sheep hooks
-	void OnPlayerLogin(CPlayer *pPlayer);
-	void PostPlayerLogin(CPlayer *pPlayer);
+	void OnPlayerLogin(CPlayer *pPlayer, bool Autologin);
 	void OnPlayerLogout(CPlayer *pPlayer, const char *pReason);
-	void PostPlayerLogout(CPlayer *pPlayer, const char *pReason);
 	
 	// sheep lowlevel passthrough hooks
 	bool IncludedInServerInfo(CPlayer* pPlayer);

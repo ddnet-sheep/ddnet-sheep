@@ -36,7 +36,8 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 			`email_verified` TINYINT NOT NULL DEFAULT 0,
 			`invisible` TINYINT NOT NULL DEFAULT 0,
 			`vanish` TINYINT NOT NULL DEFAULT 0,
-			`title` VARCHAR(32) NOT NULL DEFAULT ""
+			`title` VARCHAR(32) NOT NULL DEFAULT "",
+			`ip` VARCHAR(64) NOT NULL DEFAULT ""
 		);
 
 		CREATE TABLE `sheep_items` ( 
@@ -191,6 +192,23 @@ void CGameControllerSheep::OnPlayerConnect(CPlayer *pPlayer)
 	Score()->LoadPlayerData(ClientId);
 	
 	pPlayer->SetTeam(TEAM_SPECTATORS);
+
+	// try autologin
+	if(!pPlayer->m_AccountLoginResult) {
+		for (CPlayer *pPlayer : GameServer()->m_apPlayers) {
+			if (pPlayer && pPlayer->m_AccountLoginResult && !strcmp(pPlayer->m_AccountLoginResult->m_Username, Server()->ClientName(ClientId))) {
+				GameServer()->SendChatTarget(ClientId, "Autologin: This account is already logged in.");
+				return;
+			}
+		}
+
+		pPlayer->m_AccountLoginResult = std::make_shared<CAccountLoginResult>();
+		
+		auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pPlayer->m_AccountLoginResult);
+		str_copy(Tmp->m_Username, Server()->ClientName(ClientId), sizeof(Tmp->m_Username));
+		str_copy(Tmp->m_IP, Server()->ClientAddrString(ClientId, false), sizeof(Tmp->m_IP));
+		m_pPool->Execute(CGameControllerSheep::ExecuteAutoLogin, std::move(Tmp), "auto account login");
+	}
 }
 
 void CGameControllerSheep::OnPlayerDisconnect(CPlayer *pPlayer, const char *pReason)
@@ -206,7 +224,7 @@ void CGameControllerSheep::OnPlayerDisconnect(CPlayer *pPlayer, const char *pRea
 
 	if(pPlayer->m_AccountLoginResult != nullptr) {
 		OnPlayerLogout(pPlayer, pReason);
-		PostPlayerLogout(pPlayer, pReason);
+		SendActionMessage(pPlayer, ACTION_LEAVE, (char*)pReason);
 		pPlayer->m_AccountLoginResult = nullptr;
 	}
 
@@ -318,12 +336,15 @@ void CGameControllerSheep::OnPlayerTick(CPlayer *pPlayer) {
 	}
 
 	if (pPlayer->m_AccountLoginResult != nullptr && pPlayer->m_AccountLoginResult->m_Completed && !pPlayer->m_AccountLoginResult->m_Processed) {
-		GameServer()->SendChatTarget(pPlayer->GetCid(), pPlayer->m_AccountLoginResult->m_Message);
 		if (pPlayer->m_AccountLoginResult->m_Success) {
 			pPlayer->m_AccountLoginResult->m_Processed = true;
-			OnPlayerLogin(pPlayer);
-			PostPlayerLogin(pPlayer);
+			OnPlayerLogin(pPlayer, pPlayer->m_AccountLoginResult->m_Autologin);
+			GameServer()->SendChatTarget(pPlayer->GetCid(), pPlayer->m_AccountLoginResult->m_Message);
 		} else {
+			GameServer()->SendChatTarget(pPlayer->GetCid(), pPlayer->m_AccountLoginResult->m_Message);
+			if(pPlayer->m_AccountLoginResult->m_Autologin) {
+				SendActionMessage(pPlayer, ACTION_ENTER);
+			}
 			pPlayer->m_AccountLoginResult = nullptr;
 		}
 	}

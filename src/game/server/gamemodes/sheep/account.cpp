@@ -19,7 +19,7 @@ bool VerifyPassword(const char *pExpected, const char* pPassword)
 	return sha256_comp(HashPassword(pPassword), Expected) == 0;
 }
 
-void CGameControllerSheep::OnPlayerLogin(CPlayer *pPlayer) {
+void CGameControllerSheep::OnPlayerLogin(CPlayer *pPlayer, bool Autologin) {
 	int ClientId = pPlayer->GetCid();
 	CServer *pServer = (CServer*)Server();
 	CServer::CClient* pClient = &pServer->m_aClients[ClientId];
@@ -57,30 +57,57 @@ void CGameControllerSheep::OnPlayerLogin(CPlayer *pPlayer) {
 		// DDRace
 		GameServer()->OnSetAuthed(ClientId, AuthLevel);
 	}
+
+	if (!pPlayer->m_AccountLoginResult->m_Vanish) {
+		SendActionMessage(pPlayer, Autologin ? ACTION_ENTER_AND_JOIN : ACTION_JOIN);
+	}
 }
 
-void CGameControllerSheep::PostPlayerLogin(CPlayer *pPlayer) {
+void CGameControllerSheep::SendActionMessage(CPlayer *pPlayer, enum CAccountActions Action, char *pExtra) {
 	int ClientId = pPlayer->GetCid();
 	CServer *pServer = (CServer*)Server();
-	CServer::CClient* pClient = &pServer->m_aClients[ClientId];
 
-	// join message
-	if (!pPlayer->m_AccountLoginResult->m_Vanish) {
-		char PlayerInfo[64] = "unknown";
+	bool IncludeClient = true;
+	char aAction[64];
+	switch (Action) {
+		case ACTION_ENTER:
+			str_copy(aAction, "entered", sizeof(aAction));
+			break;
+		case ACTION_JOIN:
+			IncludeClient = false;
+			str_copy(aAction, "joined", sizeof(aAction));
+			break;
+		case ACTION_ENTER_AND_JOIN:
+			str_copy(aAction, "entered and joined", sizeof(aAction));
+			break;
+		case ACTION_LEAVE:
+			IncludeClient = false;
+			str_copy(aAction, "left", sizeof(aAction));
+			break;
+		default:
+			IncludeClient = false;
+			str_copy(aAction, "did something unknown to", sizeof(aAction));
+			break;
+	}
+
+	char aExtra[128] = "";
+	if(pExtra && pExtra[0] != '\0') {
+		str_format(aExtra, sizeof(aExtra), " (%s)", pExtra);
+	} else if(IncludeClient) {
 		IServer::CClientInfo Info;
 		if(Server()->GetClientInfo(ClientId, &Info) && Info.m_GotDDNetVersion)
-			str_format(PlayerInfo, sizeof(PlayerInfo), "%s %d", pServer->m_aClients[ClientId].m_ClientName, Info.m_DDNetVersion);
-
-		char aBuf[512];
-		char aTitle[33];
-		if(pPlayer->m_AccountLoginResult->m_Title[0] != '\0') {
-			str_format(aTitle, sizeof(aTitle), "%s ", pPlayer->m_AccountLoginResult->m_Title);
-		} else {
-			aTitle[0] = '\0';
-		}
-		str_format(aBuf, sizeof(aBuf), "%s'%s' joined the %s (%s)", aTitle, Server()->ClientName(ClientId), GetTeamName(pPlayer->GetTeam()), PlayerInfo);
-		GameServer()->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
+			str_format(aExtra, sizeof(aExtra), " (%s %d)", pServer->m_aClients[ClientId].m_ClientName, Info.m_DDNetVersion);
 	}
+
+	char aBuf[512];
+	char aTitle[33];
+	if(pPlayer->m_AccountLoginResult && pPlayer->m_AccountLoginResult->m_Title[0] != '\0') {
+		str_format(aTitle, sizeof(aTitle), "%s ", pPlayer->m_AccountLoginResult->m_Title);
+	} else {
+		aTitle[0] = '\0';
+	}
+	str_format(aBuf, sizeof(aBuf), "%s'%s' %s the game%s", aTitle, Server()->ClientName(ClientId), aAction, aExtra);
+	GameServer()->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
 }
 
 void CGameControllerSheep::OnPlayerLogout(CPlayer *pPlayer, const char *pReason) {
@@ -105,27 +132,6 @@ void CGameControllerSheep::OnPlayerLogout(CPlayer *pPlayer, const char *pReason)
 
 	// DDRace
 	GameServer()->OnSetAuthed(ClientId, AuthLevel);
-}
-
-void CGameControllerSheep::PostPlayerLogout(CPlayer *pPlayer, const char *pReason) {
-	int ClientId = pPlayer->GetCid();
-	char aBuf[512];
-
-	// leave message
-	if(Server()->ClientIngame(ClientId) && !pPlayer->m_AccountLoginResult->m_Vanish) {
-		char aTitle[33];
-		if(pPlayer->m_AccountLoginResult->m_Title[0] != '\0') {
-			str_format(aTitle, sizeof(aTitle), "%s ", pPlayer->m_AccountLoginResult->m_Title);
-		} else {
-			aTitle[0] = '\0';
-		}
-		if(pReason && *pReason)
-			str_format(aBuf, sizeof(aBuf), "%s'%s' left the game (%s)", aTitle, Server()->ClientName(ClientId), pReason);
-		else
-			str_format(aBuf, sizeof(aBuf), "%s'%s' left the game", aTitle, Server()->ClientName(ClientId));
-
-		GameServer()->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
-	}
 }
 
 void CGameControllerSheep::ConLogin(IConsole::IResult *pResult, void *pUserData) {
@@ -163,16 +169,16 @@ void CGameControllerSheep::ConLogin(IConsole::IResult *pResult, void *pUserData)
 	auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pPlayer->m_AccountLoginResult);
 	str_copy(Tmp->m_Username, aUsername, sizeof(Tmp->m_Username));
 	str_copy(Tmp->m_Password, aPassword, sizeof(Tmp->m_Password));
-	
+	str_copy(Tmp->m_IP, pGameServer->Server()->ClientAddrString(pResult->m_ClientId, false), sizeof(Tmp->m_IP));
+
 	CGameControllerSheep *pController = (CGameControllerSheep *)pGameServer->m_pController;
 	pController->m_pPool->Execute(CGameControllerSheep::ExecuteLogin, std::move(Tmp), "account login");
 }
 
 void GenerateAccountLoginResult(IDbConnection *pSqlServer, const ISqlData *pGameData) {
 	auto *pResult = dynamic_cast<CAccountLoginResult *>(pGameData->m_pResult.get());
-	const auto *pData = dynamic_cast<const CSqlAccountCredentialsRequest *>(pGameData);
 
-	str_copy(pResult->m_Username, pData->m_Username);
+	pSqlServer->GetString(15, pResult->m_Username, sizeof(pResult->m_Username));
     pResult->m_BanExpiration = pSqlServer->GetInt(1);
     pResult->m_Level = pSqlServer->GetInt(2);
     pResult->m_Exp = pSqlServer->GetInt(3);
@@ -198,14 +204,58 @@ void GenerateAccountLoginResult(IDbConnection *pSqlServer, const ISqlData *pGame
 	pSqlServer->GetString(13, pResult->m_Title, sizeof(pResult->m_Title));
 }
 
+const char* Fields() {
+	return "ban_expiration, level, exp, vip, vip_expiration, staff_level, email, email_verified, password, id, invisible, vanish, title, ip, name";
+}
+
+bool CGameControllerSheep::ExecuteAutoLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {
+	auto *pResult = dynamic_cast<CAccountLoginResult *>(pGameData->m_pResult.get());
+	pResult->m_Autologin = true;
+
+	char aSql[1024];
+	str_format(aSql, sizeof(aSql), "SELECT %s FROM sheep_accounts WHERE name=?", Fields());
+	if(!pSqlServer->PrepareStatement(aSql, pError, ErrorSize)) {
+		str_copy(pResult->m_Message, "Autologin: Database error (1).");
+		return false;
+	}
+
+	const auto *pData = dynamic_cast<const CSqlAccountCredentialsRequest *>(pGameData);
+	pSqlServer->BindString(1, pData->m_Username);
+
+	bool End;
+	if(!pSqlServer->Step(&End, pError, ErrorSize) || End) {
+		str_copy(pResult->m_Message, "Autologin: User does not exist. Please /register <password>");
+		return false;
+	}
+
+	char aIP[64];
+	pSqlServer->GetString(14, aIP, sizeof(aIP));
+
+	if (strcmp(aIP, pData->m_IP) != 0) {
+		str_copy(pResult->m_Message, "Autologin: IP mismatch. Please /login <password>.");
+		return false;
+	}
+
+	int BanExpiration = pSqlServer->GetInt(1);
+	if (BanExpiration != 0 && BanExpiration > time(0)) {
+		str_copy(pResult->m_Message, "Autologin: Banned.");
+		return false;
+	
+	}
+		
+	str_copy(pResult->m_Message, "Successfully logged in.");
+
+	GenerateAccountLoginResult(pSqlServer, pGameData);
+
+	return true;
+}
+
 bool CGameControllerSheep::ExecuteLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {
 	auto *pResult = dynamic_cast<CAccountLoginResult *>(pGameData->m_pResult.get());
 
-	if(!pSqlServer->PrepareStatement(
-		"SELECT ban_expiration, level, exp, vip, vip_expiration, staff_level, email, email_verified, password, id, invisible, vanish, title "
-		"FROM sheep_accounts WHERE name=?", 
-		pError, ErrorSize)
-	) {
+	char aSql[1024];
+	str_format(aSql, sizeof(aSql), "SELECT %s FROM sheep_accounts WHERE name=?", Fields());
+	if(!pSqlServer->PrepareStatement(aSql, pError, ErrorSize)) {
 		str_copy(pResult->m_Message, "Database error (1).");
 		return false;
 	}
@@ -237,6 +287,15 @@ bool CGameControllerSheep::ExecuteLogin(IDbConnection *pSqlServer, const ISqlDat
 
 	GenerateAccountLoginResult(pSqlServer, pGameData);
 
+	// update ip
+	if(!pSqlServer->PrepareStatement("UPDATE sheep_accounts SET ip=? WHERE name=?", pError, ErrorSize))
+		return true;
+
+	pSqlServer->BindString(1, pData->m_IP);
+	pSqlServer->BindString(2, pData->m_Username);
+
+	int NumUpdated;
+	pSqlServer->ExecuteUpdate(&NumUpdated, pError, ErrorSize);
 	return true;
 }
 
@@ -277,11 +336,9 @@ void CGameControllerSheep::ConRegister(IConsole::IResult *pResult, void *pUserDa
 bool CGameControllerSheep::ExecuteRegister(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {
 	auto *pResult = dynamic_cast<CAccountLoginResult *>(pGameData->m_pResult.get());
 
-	if(!pSqlServer->PrepareStatement(
-		"INSERT INTO sheep_accounts (name, password) VALUES (?, ?) RETURNING "
-		"ban_expiration, level, exp, vip, vip_expiration, staff_level, email, email_verified, password, id, invisible, vanish, title, ignore_invisible ", 
-		pError, ErrorSize)
-	) {
+	char aSql[1024];
+	str_format(aSql, sizeof(aSql), "INSERT INTO sheep_accounts (name, password) VALUES (?, ?) RETURNING %s", Fields());
+	if(!pSqlServer->PrepareStatement(aSql, pError, ErrorSize)) {
 		str_copy(pResult->m_Message, "Database error (1).");
 		return false;
 	}
@@ -292,6 +349,8 @@ bool CGameControllerSheep::ExecuteRegister(IDbConnection *pSqlServer, const ISql
 	char aHash[65];
 	sha256_str(HashPassword(pData->m_Password), aHash, sizeof(aHash));
 	pSqlServer->BindString(2, aHash);
+
+	pSqlServer->BindString(3, Fields());
 
 	bool End;
 	if(!pSqlServer->Step(&End, pError, ErrorSize) || End) {
@@ -383,13 +442,8 @@ void CGameControllerSheep::ConVanish(IConsole::IResult *pResult, void *pUserData
 	CPlayer *pVictim = CCommands::GetVictimOrCaller(pResult, pUserData);
 	CGameControllerSheep *pController = (CGameControllerSheep *)pGameServer->m_pController;
 
-	if (pVictim->m_AccountLoginResult->m_Vanish) {
-		pVictim->m_AccountLoginResult->m_Vanish = !pVictim->m_AccountLoginResult->m_Vanish;
-		pController->PostPlayerLogin(pVictim);
-	} else {
-		pController->PostPlayerLogout(pVictim, nullptr);
-		pVictim->m_AccountLoginResult->m_Vanish = !pVictim->m_AccountLoginResult->m_Vanish;
-	}
+	pVictim->m_AccountLoginResult->m_Vanish = !pVictim->m_AccountLoginResult->m_Vanish;
+	pController->SendActionMessage(pVictim, pVictim->m_AccountLoginResult->m_Vanish ? ACTION_LEAVE : ACTION_ENTER_AND_JOIN);
 
 	if (pVictim->GetCid() != pResult->m_ClientId) {
 		pGameServer->SendChatTarget(pResult->m_ClientId, pVictim->m_AccountLoginResult->m_Vanish ? "They are now vanished." : "They are no longer vanished.");
