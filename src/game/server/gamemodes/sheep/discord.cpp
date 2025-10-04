@@ -36,9 +36,7 @@ void CGameControllerSheep::DiscordShutdown() {
 
 void CGameControllerSheep::ConChainSheepDiscordTokenChange(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
 {
-	CServer *pSelf = (CServer *)pUserData;
-    CGameContext *pGameServer = (CGameContext *)pSelf->GameServer();
-    CGameControllerSheep *pController = (CGameControllerSheep *)pGameServer->m_pController;
+	CGameControllerSheep *pController = (CGameControllerSheep *)pUserData;
 
 	if(pResult->NumArguments())
 	{

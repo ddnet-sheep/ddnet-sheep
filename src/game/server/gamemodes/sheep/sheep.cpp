@@ -76,7 +76,7 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 	GameServer()->Console()->Register("forcelogout", "s[user]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConForceLogout, GameServer(), "forces a player to logout");
 	GameServer()->Console()->Register("forcelogin", "s[user] ?s[account]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConForceLogin, GameServer(), "forces a player to login");
 
-	GameServer()->Console()->Chain("sv_sheep_discord_token", ConChainSheepDiscordTokenChange, GameServer());
+	GameServer()->Console()->Chain("sv_sheep_discord_token", ConChainSheepDiscordTokenChange, this);
 
 	LoadItems();
 }
