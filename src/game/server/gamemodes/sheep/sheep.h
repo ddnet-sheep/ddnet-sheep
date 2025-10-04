@@ -20,15 +20,11 @@
 #include <game/server/entities/sheep/portal.h>
 #include <game/server/entities/sheep/lightsaber.h>
 
+#include <game/server/gamemodes/sheep/message.h>
+
 #undef log_error
 #include <dpp/dpp.h>
 #define log_error(sys, ...) log_log(LEVEL_ERROR, sys, __VA_ARGS__)
-
-struct CFakePlayerMessage {
-	char pName[64];
-	char pMessage[256];
-	int ClientId = -1;
-};
 
 enum CAccountActions {
 	ACTION_ENTER,

@@ -2546,7 +2546,7 @@ void CGameContext::OnVoteNetMessage(const CNetMsg_Cl_Vote *pMsg, int ClientId)
 	CPlayer *pPlayer = m_apPlayers[ClientId];
 
 	//<sheep>
-	if(!m_VoteCloseTime) {
+	if(!m_VoteCloseTime && GetPlayerChar(ClientId)) {
 		((CGameControllerSheep *)m_pController)->OnCharacterVote(GetPlayerChar(ClientId), static_cast<EVoteButton>(pMsg->m_Vote));
 		return;
 	}

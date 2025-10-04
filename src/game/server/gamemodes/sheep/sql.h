@@ -5,8 +5,11 @@
 #include <engine/server/databases/connection.h>
 #include <engine/server/databases/connection_pool.h>
 
+#include <game/server/gamemodes/sheep/message.h>
+
 struct ISheepSqlResult : ISqlResult {
 	char m_Message[255];
+	CFakePlayerMessage m_FakeMessage;
 };
 
 struct CSqlSuccessResult : ISheepSqlResult {

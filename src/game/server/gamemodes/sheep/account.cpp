@@ -105,7 +105,7 @@ void CGameControllerSheep::SendActionMessage(CPlayer *pPlayer, enum CAccountActi
 
 	char aBuf[512];
 	char aTitle[33];
-	if(pPlayer->m_AccountLoginResult && pPlayer->m_AccountLoginResult->m_Title[0] != '\0') {
+	if(pPlayer->IsLoggedIn() && pPlayer->m_AccountLoginResult->m_Title[0] != '\0') {
 		str_format(aTitle, sizeof(aTitle), "%s ", pPlayer->m_AccountLoginResult->m_Title);
 	} else {
 		aTitle[0] = '\0';
@@ -172,14 +172,14 @@ void CGameControllerSheep::ConLogin(IConsole::IResult *pResult, void *pUserData)
 	}
 	
 	for (CPlayer *pPlayer : pGameServer->m_apPlayers) {
-		if (pPlayer && pPlayer->m_AccountLoginResult != nullptr && !strcmp(pPlayer->m_AccountLoginResult->m_Username, aUsername)) {
+		if (pPlayer != nullptr && pPlayer->IsLoggedIn() && !strcmp(pPlayer->m_AccountLoginResult->m_Username, aUsername)) {
 			pGameServer->SendChatTarget(pResult->m_ClientId, "This account is already logged in.");
 			return;
 		}
 	}
 	
 	CPlayer *pPlayer = CCommands::GetCaller(pResult, pUserData);
-	pPlayer->m_AccountLoginResult = std::make_shared<CAccountLoginResult>();
+	pPlayer->m_AccountLoginResult = std::make_shared<CAccountLoginResult>(pPlayer->GetCid());
 	
 	auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pPlayer->m_AccountLoginResult);
 	Tmp->m_Type = CSqlAccountCredentialsRequest::TYPE_PASSWORD;
@@ -241,7 +241,7 @@ bool CGameControllerSheep::ExecuteLogin(IDbConnection *pSqlServer, const ISqlDat
 
 	bool End;
 	if(!pSqlServer->Step(&End, pError, ErrorSize) || End) {
-		str_copy(pResult->m_Message, "User does not exist. Please /register <password>");
+		str_format(pResult->m_FakeMessage.m_aMessage, sizeof(pResult->m_FakeMessage.m_aMessage), "User %s does not exist. Please /register <password>", pData->m_Username);
 		return false;
 	}
 
@@ -311,7 +311,7 @@ void CGameControllerSheep::ConRegister(IConsole::IResult *pResult, void *pUserDa
 	}
 		
 	CPlayer *pPlayer = CCommands::GetCaller(pResult, pUserData);
-	pPlayer->m_AccountLoginResult = std::make_shared<CAccountLoginResult>();
+	pPlayer->m_AccountLoginResult = std::make_shared<CAccountLoginResult>(pPlayer->GetCid());
 
 	auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pPlayer->m_AccountLoginResult);
 	Tmp->m_Type = CSqlAccountCredentialsRequest::TYPE_PASSWORD;
@@ -370,8 +370,8 @@ void CGameControllerSheep::ConLogout(IConsole::IResult *pResult, void *pUserData
 	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientId];
 	if(!pPlayer)
 		return;
-	
-	if (pPlayer->m_AccountLoginResult == nullptr) {
+
+	if (!pPlayer->IsLoggedIn()) {
 		pSelf->SendChatTarget(pResult->m_ClientId, "You are not logged in.");
 		return;
 	}
@@ -493,18 +493,18 @@ void CGameControllerSheep::ConForceLogin(IConsole::IResult *pResult, void *pUser
 	char aUsername[64];
 	str_copy(aUsername, pResult->GetString(pResult->NumArguments() - 1), sizeof(aUsername));
 	for (CPlayer *pPlayer : pGameServer->m_apPlayers) {
-		if (pPlayer && pPlayer->m_AccountLoginResult != nullptr && !strcmp(pPlayer->m_AccountLoginResult->m_Username, aUsername)) {
+		if (pPlayer && pPlayer->IsLoggedIn() && !strcmp(pPlayer->m_AccountLoginResult->m_Username, aUsername)) {
 			pGameServer->SendChatTarget(pResult->m_ClientId, "This account is already logged in.");
 			return;
 		}
 	}
 	
 	CGameControllerSheep *pController = (CGameControllerSheep *)pGameServer->m_pController;
-	if(pVictim->m_AccountLoginResult) {
+	if(pVictim->IsLoggedIn()) {
 		pController->OnPlayerLogout(pVictim, nullptr);
 	}
 
-	pVictim->m_AccountLoginResult = std::make_shared<CAccountLoginResult>();
+	pVictim->m_AccountLoginResult = std::make_shared<CAccountLoginResult>(pVictim->GetCid());
 	
 	auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pVictim->m_AccountLoginResult);
 	Tmp->m_Type = CSqlAccountCredentialsRequest::TYPE_FORCED;
@@ -527,7 +527,7 @@ void CGameControllerSheep::ConForceLogout(IConsole::IResult *pResult, void *pUse
 	}
 	
 	CGameControllerSheep *pController = (CGameControllerSheep *)pGameServer->m_pController;
-	if(!pVictim->m_AccountLoginResult) {
+	if(!pVictim->IsLoggedIn()) {
 		pGameServer->SendChatTarget(pResult->m_ClientId, "Player is not logged in.");
 		return;
 	}

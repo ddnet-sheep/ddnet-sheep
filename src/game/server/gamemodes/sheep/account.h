@@ -11,6 +11,8 @@
 #include "item.h"
 #include "sql.h"
 
+#include <generated/protocol.h>
+
 struct CSqlAccountCredentialsRequest : ISqlData
 {
 	CSqlAccountCredentialsRequest(std::shared_ptr<ISqlResult> pResult) :
@@ -32,7 +34,7 @@ struct CSqlAccountCredentialsRequest : ISqlData
 
 struct CAccountLoginResult : ISheepSqlResult
 {
-	CAccountLoginResult() :
+	CAccountLoginResult(int ClientId) :
 		m_BanExpiration(0),
         m_Level(0),
         m_Exp(0),
@@ -47,6 +49,9 @@ struct CAccountLoginResult : ISheepSqlResult
         m_Type(CSqlAccountCredentialsRequest::TYPE_PASSWORD),
         m_Title("")
 	{
+        m_FakeMessage.m_Team = TEAM_WHISPER_RECV; // team message
+		str_copy(m_FakeMessage.m_aName, "Shepherd", sizeof(m_FakeMessage.m_aName));
+        m_FakeMessage.m_ReceiverId = ClientId;
 	}
 
     CSqlAccountCredentialsRequest::EType m_Type;

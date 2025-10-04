@@ -1,3 +1,6 @@
+#ifndef GAME_SERVER_GAMEMODES_SHEEP_COMMANDS_H
+#define GAME_SERVER_GAMEMODES_SHEEP_COMMANDS_H
+
 #include <game/server/player.h>
 #include <game/server/gamecontext.h>
 
@@ -16,7 +19,7 @@ public:
     }
 
     static bool ValidateAuthenticated(CPlayer *pPlayer) {
-        return pPlayer && pPlayer->m_AccountLoginResult;
+        return pPlayer && pPlayer->IsLoggedIn();
     }
 
     static bool ValidateStaff(IConsole::IResult *pResult, void *pUserData, int Level) {
@@ -83,3 +86,5 @@ public:
         return true;
     }
 };
+
+#endif

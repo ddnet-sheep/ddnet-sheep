@@ -130,6 +130,7 @@ public:
 
 	int NumDDraceHudRows();
 	void SendBroadcastHud(const char *pMessage);
+	bool IsLoggedIn();
 	//</sheep>
 private:
 	const uint32_t m_UniqueClientId;

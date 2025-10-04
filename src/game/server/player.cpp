@@ -384,8 +384,8 @@ void CPlayer::Snap(int SnappingClient)
 
 		//<sheep>
 		// TODO: implement this for protocol7 too
-		if(m_AccountLoginResult && m_AccountLoginResult->m_Vanish) {
-			if(pSnappingPlayer->m_AccountLoginResult && pSnappingPlayer->m_AccountLoginResult->m_Staff > 0 && pSnappingPlayer->m_AccountLoginResult->m_Staff >= m_AccountLoginResult->m_Staff) {
+		if(IsLoggedIn() && m_AccountLoginResult->m_Vanish) {
+			if(pSnappingPlayer->IsLoggedIn() && pSnappingPlayer->m_AccountLoginResult->m_Staff > 0 && pSnappingPlayer->m_AccountLoginResult->m_Staff >= m_AccountLoginResult->m_Staff) {
 				// same staff level or higher
 				char aClan[12];
 				str_format(aClan, sizeof(aClan), "*v* %s", Server()->ClientClan(m_ClientId));
@@ -690,7 +690,7 @@ CCharacter *CPlayer::ForceSpawn(vec2 Pos)
 void CPlayer::SetTeam(int Team, bool DoChatMsg)
 {
 	//<sheep>
-	if(Team != TEAM_SPECTATORS && (m_AccountLoginResult == nullptr || !m_AccountLoginResult->m_Completed || !m_AccountLoginResult->m_Success)) {
+	if(Team != TEAM_SPECTATORS && !IsLoggedIn()) {
 		GameServer()->SendChatTarget(m_ClientId, "You must be logged in to spawn.");
 		return;
 	}
@@ -1102,8 +1102,7 @@ int CPlayer::NumDDraceHudRows() {
 	return Rows;
 }
 
-void CPlayer::SendBroadcastHud(const char *pMessage)
-{
+void CPlayer::SendBroadcastHud(const char *pMessage) {
 	char aBuf[256] = "";
 	for(int i = 0; i < NumDDraceHudRows(); i++)
 		str_append(aBuf, "\n", sizeof(aBuf));
@@ -1115,5 +1114,9 @@ void CPlayer::SendBroadcastHud(const char *pMessage)
 			str_append(aBuf, " ", sizeof(aBuf));
 
 	GameServer()->SendBroadcast(aBuf, GetCid(), false);
+}
+
+bool CPlayer::IsLoggedIn() {
+	return m_AccountLoginResult != nullptr && m_AccountLoginResult->m_Success;
 }
 //</sheep>

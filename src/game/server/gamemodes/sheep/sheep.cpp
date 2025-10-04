@@ -194,15 +194,15 @@ void CGameControllerSheep::OnPlayerConnect(CPlayer *pPlayer)
 	pPlayer->SetTeam(TEAM_SPECTATORS);
 
 	// try autologin
-	if(!pPlayer->m_AccountLoginResult) {
+	if(!pPlayer->IsLoggedIn()) {
 		for (CPlayer *pPlayer : GameServer()->m_apPlayers) {
-			if (pPlayer && pPlayer->m_AccountLoginResult && !strcmp(pPlayer->m_AccountLoginResult->m_Username, Server()->ClientName(ClientId))) {
+			if (pPlayer != nullptr && pPlayer->IsLoggedIn() && !strcmp(pPlayer->m_AccountLoginResult->m_Username, Server()->ClientName(ClientId))) {
 				GameServer()->SendChatTarget(ClientId, "Autologin: This account is already logged in.");
 				return;
 			}
 		}
 
-		pPlayer->m_AccountLoginResult = std::make_shared<CAccountLoginResult>();
+		pPlayer->m_AccountLoginResult = std::make_shared<CAccountLoginResult>(pPlayer->GetCid());
 		
 		auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pPlayer->m_AccountLoginResult);
 		Tmp->m_Type = CSqlAccountCredentialsRequest::TYPE_IP;
@@ -223,10 +223,8 @@ void CGameControllerSheep::OnPlayerDisconnect(CPlayer *pPlayer, const char *pRea
 	str_format(aBuf, sizeof(aBuf), "leave player='%d:%s'", ClientId, Server()->ClientName(ClientId));
 	GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "game", aBuf);
 
-	if(pPlayer->m_AccountLoginResult != nullptr) {
-		SendActionMessage(pPlayer, ACTION_LEAVE, (char*)pReason);
-		pPlayer->m_AccountLoginResult = nullptr;
-	}
+	SendActionMessage(pPlayer, ACTION_LEAVE, (char*)pReason);
+	pPlayer->m_AccountLoginResult = nullptr;
 
 	if(!GameServer()->PlayerModerating() && WasModerator)
 		GameServer()->SendChat(-1, TEAM_ALL, "Server kick/spec votes are no longer actively moderated.");
@@ -250,16 +248,19 @@ void CGameControllerSheep::Tick() {
 	Teams().Tick();
 }
 
-void CGameControllerSheep::Snap(int SnappingClient) {\
+void CGameControllerSheep::Snap(int SnappingClient) {
 	IGameController::Snap(SnappingClient);
 
 	for(auto pFakePlayerMessageItem = m_FakePlayerMessageQueue.begin(); pFakePlayerMessageItem < m_FakePlayerMessageQueue.end(); pFakePlayerMessageItem++) {
+		if(pFakePlayerMessageItem->m_SenderId != -1)
+			continue;
+		
 		for(int ClientId = 0; ClientId < MAX_CLIENTS; ClientId++) {
 			if(GameServer()->m_apPlayers[ClientId] || !Server()->ClientSlotEmpty(ClientId))
 				continue;
 
 			auto *pClientInfo = Server()->SnapNewItem<CNetObj_ClientInfo>(ClientId);
-			StrToInts(pClientInfo->m_aName, std::size(pClientInfo->m_aName), pFakePlayerMessageItem->pName);
+			StrToInts(pClientInfo->m_aName, std::size(pClientInfo->m_aName), pFakePlayerMessageItem->m_aName);
 			StrToInts(pClientInfo->m_aClan, std::size(pClientInfo->m_aClan), "");
 			StrToInts(pClientInfo->m_aSkin, std::size(pClientInfo->m_aSkin), "sheep");
 			pClientInfo->m_Country = -1;
@@ -274,7 +275,7 @@ void CGameControllerSheep::Snap(int SnappingClient) {\
 			pPlayerInfo->m_Local = 0;
 			pPlayerInfo->m_ClientId = ClientId;
 
-			pFakePlayerMessageItem->ClientId = ClientId;
+			pFakePlayerMessageItem->m_SenderId = ClientId;
 			break;
 		}
 	}
@@ -282,17 +283,18 @@ void CGameControllerSheep::Snap(int SnappingClient) {\
 
 void CGameControllerSheep::OnPostGlobalSnap() {
 	for(auto pFakePlayerMessageItem = m_FakePlayerMessageQueue.begin(); pFakePlayerMessageItem < m_FakePlayerMessageQueue.end(); pFakePlayerMessageItem++) {
-		if(pFakePlayerMessageItem->ClientId == -1)
+		if(pFakePlayerMessageItem->m_SenderId == -1)
 			continue;
 
-			
 		CNetMsg_Sv_Chat Msg;
-		Msg.m_Team = 0;	
-		Msg.m_ClientId = pFakePlayerMessageItem->ClientId;
-		Msg.m_pMessage = pFakePlayerMessageItem->pMessage;
-		Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, -1);
-			
-		log_info("discordchat", "%d:%d:%s: %s", pFakePlayerMessageItem->ClientId, Msg.m_Team, pFakePlayerMessageItem->pName, pFakePlayerMessageItem->pMessage);
+		Msg.m_Team = pFakePlayerMessageItem->m_Team;
+		Msg.m_ClientId = pFakePlayerMessageItem->m_SenderId;
+		Msg.m_pMessage = pFakePlayerMessageItem->m_aMessage;
+
+		// check if receiverid is dummy
+		Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, pFakePlayerMessageItem->m_ReceiverId);
+
+		log_info("discordchat", "TO: %d | %d:%d:%s: %s", pFakePlayerMessageItem->m_ReceiverId, Msg.m_ClientId, Msg.m_Team, pFakePlayerMessageItem->m_aName, pFakePlayerMessageItem->m_aMessage);
 
 		m_FakePlayerMessageQueue.erase(pFakePlayerMessageItem);
 	}
@@ -336,16 +338,23 @@ void CGameControllerSheep::OnPlayerTick(CPlayer *pPlayer) {
 	}
 
 	if (pPlayer->m_AccountLoginResult != nullptr && pPlayer->m_AccountLoginResult->m_Completed && !pPlayer->m_AccountLoginResult->m_Processed) {
+		char aMessage[512];
+		str_copy(aMessage, pPlayer->m_AccountLoginResult->m_Message);
+		CFakePlayerMessage FakeMessage = std::move(pPlayer->m_AccountLoginResult->m_FakeMessage);
 		if (pPlayer->m_AccountLoginResult->m_Success) {
 			pPlayer->m_AccountLoginResult->m_Processed = true;
 			OnPlayerLogin(pPlayer, pPlayer->m_AccountLoginResult->m_Type == CSqlAccountCredentialsRequest::TYPE_IP);
-			GameServer()->SendChatTarget(pPlayer->GetCid(), pPlayer->m_AccountLoginResult->m_Message);
 		} else {
-			GameServer()->SendChatTarget(pPlayer->GetCid(), pPlayer->m_AccountLoginResult->m_Message);
 			if(pPlayer->m_AccountLoginResult->m_Type == CSqlAccountCredentialsRequest::TYPE_IP) {
 				SendActionMessage(pPlayer, ACTION_ENTER);
 			}
 			pPlayer->m_AccountLoginResult = nullptr;
+		}
+		GameServer()->SendBroadcast("Use /register <password> to create an account or /login <password> to login", pPlayer->GetCid(), true);
+		if(strlen(FakeMessage.m_aMessage) > 0) {
+			m_FakePlayerMessageQueue.push_back(FakeMessage);
+		} else {
+			GameServer()->SendChatTarget(pPlayer->GetCid(), aMessage);
 		}
 	}
 }
@@ -467,5 +476,5 @@ void CGameControllerSheep::OnCharacterWeaponChanged(CCharacter *pCharacter) {
 }
 
 bool CGameControllerSheep::IncludedInServerInfo(CPlayer* pPlayer) {
-	return pPlayer->m_AccountLoginResult != nullptr && pPlayer->m_AccountLoginResult->m_Processed && !pPlayer->m_AccountLoginResult->m_Vanish;
+	return pPlayer != nullptr && pPlayer->IsLoggedIn() && !pPlayer->m_AccountLoginResult->m_Vanish;
 }

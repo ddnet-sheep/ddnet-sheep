@@ -1221,8 +1221,8 @@ bool CCharacter::CanSnapCharacter(int SnappingClient)
 
 	//<sheep>
 	CPlayer *pSnappingPlayer = GameServer()->m_apPlayers[SnappingClient];
-	if(GetPlayer()->m_AccountLoginResult != nullptr && GetPlayer()->m_AccountLoginResult->m_Invisible && SnappingClient != GetPlayer()->GetCid() && SnappingClient >= 0
-		&& pSnappingPlayer->m_AccountLoginResult != nullptr && !pSnappingPlayer->m_AccountLoginResult->m_IgnoreInvisible)
+	if(GetPlayer()->IsLoggedIn() && GetPlayer()->m_AccountLoginResult->m_Invisible && SnappingClient != GetPlayer()->GetCid() && SnappingClient >= 0
+		&& pSnappingPlayer->IsLoggedIn() && !pSnappingPlayer->m_AccountLoginResult->m_IgnoreInvisible)
 		return false;
 	//</sheep>
 
