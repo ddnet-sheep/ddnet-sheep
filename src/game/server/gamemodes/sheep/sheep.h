@@ -68,6 +68,7 @@ public:
 	static void ConRegister(IConsole::IResult *pResult, void *pUserData);
 	static void ConPassword(IConsole::IResult *pResult, void *pUserData);
     static void ConLogout(IConsole::IResult *pResult, void *pUserData);
+	static void ConStats(IConsole::IResult *pResult, void *pUserData);
 	
 	// admin commands
 	static void ConIgnoreInvisible(IConsole::IResult *pResult, void *pUserData);
@@ -86,6 +87,11 @@ public:
 	void OnPlayerLogin(CPlayer *pPlayer, bool Autologin);
 	void OnPlayerLogout(CPlayer *pPlayer, const char *pReason, bool Silent);
 	
+	int CalcPlayerExpPerMinute(CPlayer *pPlayer);
+	void GivePlayerMoney(CPlayer* pPlayer, int64_t Amount, const char *pReason);
+	void GivePlayerExp(CPlayer *pPlayer, int Exp, char* pReason = "");
+	void GivePlayerPlaytime(CPlayer *pPlayer, int Minutes);
+
 	bool OnCharacterPowerup(CCharacter *pChr, const SPowerupData *pData);
 
 	// sheep lowlevel passthrough hooks

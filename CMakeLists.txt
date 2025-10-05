@@ -2840,6 +2840,7 @@ if(SERVER)
     gamemodes/sheep/sheep.cpp
     gamemodes/sheep/sheep.h
     gamemodes/sheep/sql.h
+    gamemodes/sheep/stats.cpp
     gamemodes/sheep/vote.h
     gamemodes/sheep/weapon.cpp
     gamemodes/sheep/weapon.h

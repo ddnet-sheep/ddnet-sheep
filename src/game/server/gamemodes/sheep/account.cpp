@@ -26,6 +26,8 @@ void CGameControllerSheep::OnPlayerLogin(CPlayer *pPlayer, bool Autologin) {
 
 	LoadAccountItem(pPlayer);
 
+	pPlayer->m_LoginTick = Server()->Tick();
+
 	if(pPlayer->GetTeam() == TEAM_SPECTATORS)
 		pPlayer->SetTeam(TEAM_FLOCK);
 
@@ -184,7 +186,7 @@ void CGameControllerSheep::ConLogin(IConsole::IResult *pResult, void *pUserData)
 	}
 	
 	CPlayer *pPlayer = CCommands::GetCaller(pResult, pUserData);
-	pPlayer->m_AccountLoginResult = std::make_shared<CAccountLoginResult>(pPlayer->GetCid());
+	pPlayer->m_AccountLoginResult = std::make_shared<CAccountDataResult>();
 	
 	auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pPlayer->m_AccountLoginResult);
 	Tmp->m_Type = CSqlAccountCredentialsRequest::TYPE_PASSWORD;
@@ -197,7 +199,7 @@ void CGameControllerSheep::ConLogin(IConsole::IResult *pResult, void *pUserData)
 }
 
 void GenerateAccountLoginResult(IDbConnection *pSqlServer, const ISqlData *pGameData) {
-	auto *pResult = dynamic_cast<CAccountLoginResult *>(pGameData->m_pResult.get());
+	auto *pResult = dynamic_cast<CAccountDataResult *>(pGameData->m_pResult.get());
 
 	pSqlServer->GetString(15, pResult->m_Username, sizeof(pResult->m_Username));
     pResult->m_BanExpiration = pSqlServer->GetInt(1);
@@ -222,15 +224,18 @@ void GenerateAccountLoginResult(IDbConnection *pSqlServer, const ISqlData *pGame
 	pResult->m_Invisible = pSqlServer->GetInt(11) != 0;
 	pResult->m_Vanish = pSqlServer->GetInt(12) != 0;
 
+	pResult->m_Money = pSqlServer->GetInt64(16);
+	pResult->m_Playtime = pSqlServer->GetInt64(17);
+
 	pSqlServer->GetString(13, pResult->m_Title, sizeof(pResult->m_Title));
 }
 
 const char* Fields() {
-	return "ban_expiration, level, exp, vip, vip_expiration, staff_level, email, email_verified, password, id, invisible, vanish, title, ip, name";
+	return "ban_expiration, level, exp, vip, vip_expiration, staff_level, email, email_verified, password, id, invisible, vanish, title, ip, name, money, playtime";
 }
 
 bool CGameControllerSheep::ExecuteLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {
-	auto *pResult = dynamic_cast<CAccountLoginResult *>(pGameData->m_pResult.get());
+	auto *pResult = dynamic_cast<CAccountDataResult *>(pGameData->m_pResult.get());
 	const auto *pData = dynamic_cast<const CSqlAccountCredentialsRequest *>(pGameData);
 	
 	pResult->m_Type = pData->m_Type;
@@ -246,7 +251,7 @@ bool CGameControllerSheep::ExecuteLogin(IDbConnection *pSqlServer, const ISqlDat
 
 	bool End;
 	if(!pSqlServer->Step(&End, pError, ErrorSize) || End) {
-		str_format(pResult->m_FakeMessage.m_aMessage, sizeof(pResult->m_FakeMessage.m_aMessage), "User %s does not exist. Please /register <password>", pData->m_Username);
+		str_format(pResult->m_Message, sizeof(pResult->m_Message), "User %s does not exist. Please /register <password>", pData->m_Username);
 		return false;
 	}
 
@@ -316,7 +321,7 @@ void CGameControllerSheep::ConRegister(IConsole::IResult *pResult, void *pUserDa
 	}
 		
 	CPlayer *pPlayer = CCommands::GetCaller(pResult, pUserData);
-	pPlayer->m_AccountLoginResult = std::make_shared<CAccountLoginResult>(pPlayer->GetCid());
+	pPlayer->m_AccountLoginResult = std::make_shared<CAccountDataResult>();
 
 	auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pPlayer->m_AccountLoginResult);
 	Tmp->m_Type = CSqlAccountCredentialsRequest::TYPE_PASSWORD;
@@ -328,7 +333,7 @@ void CGameControllerSheep::ConRegister(IConsole::IResult *pResult, void *pUserDa
 }
 
 bool CGameControllerSheep::ExecuteRegister(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {
-	auto *pResult = dynamic_cast<CAccountLoginResult *>(pGameData->m_pResult.get());
+	auto *pResult = dynamic_cast<CAccountDataResult *>(pGameData->m_pResult.get());
 
 	char aSql[1024];
 	str_format(aSql, sizeof(aSql), "INSERT INTO sheep_accounts (name, password) VALUES (?, ?) RETURNING %s", Fields());
@@ -509,7 +514,7 @@ void CGameControllerSheep::ConForceLogin(IConsole::IResult *pResult, void *pUser
 		pController->OnPlayerLogout(pVictim, nullptr);
 	}
 
-	pVictim->m_AccountLoginResult = std::make_shared<CAccountLoginResult>(pVictim->GetCid());
+	pVictim->m_AccountLoginResult = std::make_shared<CAccountDataResult>();
 	
 	auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pVictim->m_AccountLoginResult);
 	Tmp->m_Type = CSqlAccountCredentialsRequest::TYPE_FORCED;

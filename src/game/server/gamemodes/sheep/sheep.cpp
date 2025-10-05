@@ -42,7 +42,9 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 			`invisible` TINYINT NOT NULL DEFAULT 0,
 			`vanish` TINYINT NOT NULL DEFAULT 0,
 			`title` VARCHAR(32) NOT NULL DEFAULT "",
-			`ip` VARCHAR(64) NOT NULL DEFAULT ""
+			`ip` VARCHAR(64) NOT NULL DEFAULT "",
+			`money` BIGINT NOT NULL DEFAULT 0,
+			`playtime` BIGINT NOT NULL DEFAULT 0
 		);
 
 		CREATE TABLE `sheep_items` ( 
@@ -80,6 +82,8 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 	// GameServer()->Console()->Register("sync", "?s[client]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConSync, GameServer(), "reloads the account data");
 	GameServer()->Console()->Register("forcelogout", "s[user]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConForceLogout, GameServer(), "forces a player to logout");
 	GameServer()->Console()->Register("forcelogin", "s[user] ?s[account]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConForceLogin, GameServer(), "forces a player to login");
+
+	GameServer()->Console()->Register("stats", "?s[account]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConStats, GameServer(), "shows account stats");
 
 	GameServer()->Console()->Chain("sv_sheep_discord_token", ConChainSheepDiscordTokenChange, this);
 
@@ -210,7 +214,7 @@ void CGameControllerSheep::OnPlayerConnect(CPlayer *pPlayer)
 			}
 		}
 
-		pPlayer->m_AccountLoginResult = std::make_shared<CAccountLoginResult>(pPlayer->GetCid());
+		pPlayer->m_AccountLoginResult = std::make_shared<CAccountDataResult>();
 		
 		auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pPlayer->m_AccountLoginResult);
 		Tmp->m_Type = CSqlAccountCredentialsRequest::TYPE_IP;
@@ -438,7 +442,6 @@ void CGameControllerSheep::OnPlayerTick(CPlayer *pPlayer) {
 	if (pPlayer->m_AccountLoginResult != nullptr && pPlayer->m_AccountLoginResult->m_Completed && !pPlayer->m_AccountLoginResult->m_Processed) {
 		char aMessage[512];
 		str_copy(aMessage, pPlayer->m_AccountLoginResult->m_Message);
-		CFakePlayerMessage FakeMessage = std::move(pPlayer->m_AccountLoginResult->m_FakeMessage);
 		if (pPlayer->m_AccountLoginResult->m_Success) {
 			pPlayer->m_AccountLoginResult->m_Processed = true;
 			OnPlayerLogin(pPlayer, pPlayer->m_AccountLoginResult->m_Type == CSqlAccountCredentialsRequest::TYPE_IP);
@@ -447,12 +450,37 @@ void CGameControllerSheep::OnPlayerTick(CPlayer *pPlayer) {
 				SendActionMessage(pPlayer, ACTION_ENTER);
 			}
 			pPlayer->m_AccountLoginResult = nullptr;
+			GameServer()->SendBroadcast("Use /register <password> to create an account or /login <password> to login", pPlayer->GetCid(), true);
 		}
-		GameServer()->SendBroadcast("Use /register <password> to create an account or /login <password> to login", pPlayer->GetCid(), true);
-		if(strlen(FakeMessage.m_aMessage) > 0) {
-			m_FakePlayerMessageQueue.push_back(FakeMessage);
+		GameServer()->SendChatTarget(pPlayer->GetCid(), aMessage);
+	}
+
+	if (pPlayer->m_AccountStatsResult != nullptr && pPlayer->m_AccountStatsResult->m_Completed) {
+		if (pPlayer->m_AccountStatsResult->m_Success) {
+			char aBuf[512];
+			str_format(aBuf, sizeof(aBuf), "Account stats for '%s': Level: %d, Exp: %d, Money: %lld, Playtime: %lld mins, VIP: %d",
+				pPlayer->m_AccountStatsResult->m_Username,
+				pPlayer->m_AccountStatsResult->m_Level,
+				pPlayer->m_AccountStatsResult->m_Exp,
+				pPlayer->m_AccountStatsResult->m_Money,
+				pPlayer->m_AccountStatsResult->m_Playtime,
+				pPlayer->m_AccountStatsResult->m_Vip
+			);
+			GameServer()->SendChatTarget(pPlayer->GetCid(), aBuf);
 		} else {
+			char aMessage[512];
+			str_copy(aMessage, pPlayer->m_AccountStatsResult->m_Message);
 			GameServer()->SendChatTarget(pPlayer->GetCid(), aMessage);
+		}
+
+		pPlayer->m_AccountStatsResult = nullptr;
+	}
+
+	if(pPlayer->IsLoggedIn() && !pPlayer->IsAfk()) {
+		int TicksPassed = Server()->Tick() - pPlayer->m_LoginTick;
+		if(TicksPassed > 0 && TicksPassed % (Server()->TickSpeed() * 60) == 0) {
+			GivePlayerExp(pPlayer, 1, "");
+			GivePlayerPlaytime(pPlayer, 1);
 		}
 	}
 }

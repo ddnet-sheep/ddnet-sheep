@@ -124,9 +124,12 @@ public:
 	} m_Latency;
 
 	//<sheep>
-	std::shared_ptr<CAccountLoginResult> m_AccountLoginResult;
+	std::shared_ptr<CAccountDataResult> m_AccountLoginResult;
+	std::shared_ptr<CAccountDataResult> m_AccountStatsResult;
 	std::shared_ptr<CAccountItemResult> m_AccountItemResult;
 	std::shared_ptr<CSqlSuccessResult> m_PasswordChangeSuccessResult;
+
+	int64_t m_LoginTick;
 
 	int NumDDraceHudRows();
 	void SendBroadcastHud(const char *pMessage);

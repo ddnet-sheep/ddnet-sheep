@@ -32,9 +32,9 @@ struct CSqlAccountCredentialsRequest : ISqlData
     char m_IP[64] = "";
 };
 
-struct CAccountLoginResult : ISheepSqlResult
+struct CAccountDataResult : ISheepSqlResult
 {
-	CAccountLoginResult(int ClientId) :
+	CAccountDataResult() :
 		m_BanExpiration(0),
         m_Level(0),
         m_Exp(0),
@@ -47,11 +47,10 @@ struct CAccountLoginResult : ISheepSqlResult
         m_IgnoreInvisible(false),
         m_Processed(false), 
         m_Type(CSqlAccountCredentialsRequest::TYPE_PASSWORD),
-        m_Title("")
+        m_Title(""),
+        m_Playtime(0),
+        m_Money(0)
 	{
-        m_FakeMessage.m_Team = TEAM_WHISPER_RECV; // team message
-		str_copy(m_FakeMessage.m_aName, "Shepherd", sizeof(m_FakeMessage.m_aName));
-        m_FakeMessage.m_ReceiverId = ClientId;
 	}
 
     CSqlAccountCredentialsRequest::EType m_Type;
@@ -65,6 +64,8 @@ struct CAccountLoginResult : ISheepSqlResult
 
     uint64_t m_Level;
     uint64_t m_Exp;
+    uint64_t m_Playtime;
+    uint64_t m_Money;
     
     uint8_t m_Vip; // vip level
     uint64_t m_VipExpiration; // vip expiration time
