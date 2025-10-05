@@ -13,6 +13,11 @@
 #include <engine/server/server.h>
 #include <game/server/gamemodes/sheep/weapon.h>
 #include <game/server/entities/sheep/custom_projectile.h>
+#include <game/server/entities/sheep/powerup.h>
+
+#include <algorithm>
+#include <iterator>
+#include <random>
 
 #define GAME_TYPE_NAME "DDraceNetwork"
 
@@ -79,6 +84,8 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 	GameServer()->Console()->Chain("sv_sheep_discord_token", ConChainSheepDiscordTokenChange, this);
 
 	LoadItems();
+
+	m_PowerupDelay = Server()->Tick() + Server()->TickSpeed() * 5;
 }
 
 CGameControllerSheep::~CGameControllerSheep() {
@@ -247,6 +254,96 @@ void CGameControllerSheep::Tick() {
 	IGameController::Tick();
 	Teams().ProcessSaveTeam();
 	Teams().Tick();
+
+	// spawn powerups
+	if(g_Config.m_SvSheepSpawnPowerups && m_vPowerups.size() < 5 && m_PowerupDelay <= Server()->Tick()) {
+		const auto RandomPos = GetRandomAccessablePos();
+		if(!RandomPos)
+		{
+			m_PowerupDelay = Server()->Tick() + Server()->TickSpeed() * 5;
+			return;
+		}
+
+		std::mt19937 rng{std::random_device{}()};
+		std::uniform_int_distribution<int> dist((int)EPowerUp::INVALID + 1, (int)EPowerUp::NUM_TYPES - 1);
+		EPowerUp Type = (EPowerUp)dist(rng);
+		CPowerUp *NewPowerUp = new CPowerUp(&GameServer()->m_World, *RandomPos, Type);
+
+		m_vPowerups.push_back(NewPowerUp);
+		m_PowerupDelay = Server()->Tick() + Server()->TickSpeed() * 15;
+	}
+		
+	// todo: save accounts every 15 minutes
+	// if(Server()->Tick() % (Server()->TickSpeed() * 60 * 15) == 0)
+	// {
+		
+	// }
+}
+
+std::optional<vec2> CGameControllerSheep::GetRandomAccessablePos() {
+	const auto Dist2 = [](const vec2 &a, const vec2 &b) {
+		const float dx = a.x - b.x;
+		const float dy = a.y - b.y;
+		return dx * dx + dy * dy;
+	};
+
+	constexpr float TileSize = 32.0f;
+	constexpr float MinPlayerDist = TileSize * 25.0f; 
+
+	for(int Tries = 0; Tries < 16; ++Tries)
+	{
+		vec2 Pos;
+		if(!GameServer()->Collision()->TryPickCachedCandidate(Pos))
+			return std::nullopt;
+
+		CEntity *apEnts[64] = {0};
+		const int num = GameServer()->m_World.FindEntities(Pos, MinPlayerDist, apEnts, std::size(apEnts), CGameWorld::ENTTYPE_CHARACTER);
+		bool NearPlayer = false;
+		for(int i = 0; i < num; ++i)
+		{
+			auto *pChr = static_cast<CCharacter *>(apEnts[i]);
+			if(pChr && pChr->IsAlive())
+			{
+				NearPlayer = true;
+				break;
+			}
+		}
+		if(NearPlayer)
+			continue;
+
+		return Pos;
+	}
+
+	float BestScore = -1.0f;
+	vec2 BestPos;
+	for(int k = 0; k < 32; ++k)
+	{
+		vec2 Pos;
+		if(!GameServer()->Collision()->TryPickCachedCandidate(Pos))
+			break;
+
+		float MinDist2 = std::numeric_limits<float>::infinity();
+		CEntity *apEnts[128] = {0};
+		const int Num = GameServer()->m_World.FindEntities(Pos, 1024.0f, apEnts, std::size(apEnts), CGameWorld::ENTTYPE_CHARACTER);
+		for(int i = 0; i < Num; ++i)
+		{
+			auto *pChr = static_cast<CCharacter *>(apEnts[i]);
+			if(!pChr || !pChr->IsAlive())
+				continue;
+			MinDist2 = std::min(MinDist2, Dist2(pChr->m_Pos, Pos));
+			if(MinDist2 == 0.0f)
+				break;
+		}
+		if(MinDist2 > BestScore)
+		{
+			BestScore = MinDist2;
+			BestPos = Pos;
+		}
+	}
+	if(BestScore >= 0.0f)
+		return BestPos;
+
+	return std::nullopt;
 }
 
 void CGameControllerSheep::Snap(int SnappingClient) {
@@ -478,4 +575,21 @@ void CGameControllerSheep::OnCharacterWeaponChanged(CCharacter *pCharacter) {
 
 bool CGameControllerSheep::IncludedInServerInfo(CPlayer* pPlayer) {
 	return pPlayer != nullptr && pPlayer->IsLoggedIn() && !pPlayer->m_AccountLoginResult->m_Vanish;
+}
+
+bool CGameControllerSheep::OnCharacterPowerup(CCharacter *pChr, const SPowerupData *pPowerup) {
+	if(!pChr->GetPlayer()->IsLoggedIn()) {
+		GameServer()->SendChatTarget(pChr->GetPlayer()->GetCid(), "You need to be logged in to collect Powerups");
+		GameServer()->SendChatTarget(pChr->GetPlayer()->GetCid(), "Use /register <password> to create an account or /login <password> to login");
+		return false;
+	}
+
+	switch(pPowerup->m_Type) {
+		case EPowerUp::MONEY:
+			return true;
+		case EPowerUp::XP:
+			return true;
+	}
+
+	return false;
 }

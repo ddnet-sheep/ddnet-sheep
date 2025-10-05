@@ -1,0 +1,177 @@
+// Made by qxdFox
+#include <game/server/entities/character.h>
+#include <game/server/entity.h>
+#include <game/server/gamecontext.h>
+#include <game/server/gamecontroller.h>
+
+#include <game/server/gamemodes/sheep/sheep.h>
+#include <game/server/gamemodes/sheep/math.h>
+
+#include <game/server/gameworld.h>
+#include <game/server/player.h>
+#include <game/server/teams.h>
+
+#include <game/teamscore.h>
+
+#include <generated/protocol.h>
+
+#include <engine/server.h>
+#include <engine/shared/protocol.h>
+
+#include <base/vmath.h>
+
+#include <algorithm>
+#include <iterator>
+#include <random>
+
+#include "powerup.h"
+
+// Its called powerup because i want to add more functionality later to it like giving custom weapons or abilities
+// For now it just acts like the 0xf one
+CPowerUp::CPowerUp(CGameWorld *pGameWorld, vec2 Pos, EPowerUp Type) :
+	CEntity(pGameWorld, CGameWorld::ENTTYPE_POWERUP, Pos, 54)
+{
+	m_Pos = Pos;
+	m_Data.m_Type = Type;
+
+	for(int i = 0; i < NUM_LASERS; i++)
+		m_Snap.m_aLaserIds[i] = Server()->SnapNewId();
+	std::sort(std::begin(m_Snap.m_aLaserIds), std::end(m_Snap.m_aLaserIds));
+
+	GameWorld()->InsertEntity(this);
+	SetData();
+}
+
+void CPowerUp::SetData() {
+	std::mt19937 rng{std::random_device{}()};
+	switch(m_Data.m_Type) {
+        case EPowerUp::XP:
+            m_Data.m_Value = CMath::RandGeometric(rng, 5, 35, 0.2);
+            m_Lifetime = 120 + m_Data.m_Value * 15;
+            break;
+        case EPowerUp::MONEY:
+            m_Data.m_Value = CMath::RandGeometric(rng, 3, 20, 0.2) * 25;
+            m_Lifetime = 120 + m_Data.m_Value / 2;
+            break;
+        default:
+            m_Data.m_Value = 0;
+            m_Lifetime = 0;
+	}
+	m_Lifetime *= Server()->TickSpeed();
+}
+
+void CPowerUp::Reset()
+{
+	Server()->SnapFreeId(GetId());
+	for(int i = 0; i < NUM_LASERS; i++)
+
+		Server()->SnapFreeId(m_Snap.m_aLaserIds[i]);
+
+    CGameControllerSheep* pController = (CGameControllerSheep*)(GameServer()->m_pController);
+
+	for(size_t i = 0; i < pController->m_vPowerups.size(); i++)
+	{
+		if(pController->m_vPowerups[i] == this)
+			pController->m_vPowerups.erase(pController->m_vPowerups.begin() + i);
+	}
+
+	GameWorld()->RemoveEntity(this);
+}
+
+inline static bool PointInSquare(vec2 Point, vec2 Center, float Size)
+{
+	return (Point.x > Center.x - Size && Point.x < Center.x + Size && Point.y > Center.y - Size && Point.y < Center.y + Size);
+}
+
+void CPowerUp::Tick()
+{
+	m_Lifetime--;
+	if(m_Lifetime <= 0)
+	{
+		Reset();
+		return;
+	}
+
+	for(int ClientId = 0; ClientId < MAX_CLIENTS; ClientId++)
+	{
+		CCharacter *pChr = GameServer()->GetPlayerChar(ClientId);
+		if(!pChr || !pChr->IsAlive() || pChr->Team() != TEAM_FLOCK)
+			continue;
+
+		if(PointInSquare(m_Pos, pChr->GetPos(), 54.0f))
+		{
+            CGameControllerSheep* pController = (CGameControllerSheep*)GameServer()->m_pController;
+			if(pController->OnCharacterPowerup(pChr, &m_Data)) {
+				GameServer()->CreateSound(m_Pos, SOUND_PICKUP_ARMOR, pChr->TeamMask());
+				Reset();
+				return;
+			}
+		}
+	}
+	SetPowerupVisual();
+}
+
+void CPowerUp::SetPowerupVisual()
+{
+	for(int i = 0; i < NUM_LASERS; i++)
+		m_Snap.m_aTo[i] = m_Snap.m_aFrom[i] = vec2(0, 0);
+
+	float Len = 28.0f;
+
+	m_Snap.m_aTo[0] = m_Pos + vec2(-Len, -Len);
+	m_Snap.m_aFrom[0] = m_Pos + vec2(Len, -Len);
+
+	m_Snap.m_aTo[1] = m_Pos + vec2(Len, -Len);
+	m_Snap.m_aFrom[1] = m_Pos + vec2(Len, Len);
+
+	m_Snap.m_aTo[2] = m_Pos + vec2(Len, Len);
+	m_Snap.m_aFrom[2] = m_Pos + vec2(-Len, Len);
+
+	m_Snap.m_aTo[3] = m_Pos + vec2(-Len, Len);
+	m_Snap.m_aFrom[3] = m_Pos + vec2(-Len, -Len);
+
+	m_Snap.m_aTo[4] = m_Pos + vec2(-Len, -Len);
+	m_Snap.m_aFrom[4] = m_Pos + vec2(-Len, -Len);
+}
+
+void CPowerUp::Snap(int SnappingClient)
+{
+	if(NetworkClipped(SnappingClient))
+		return;
+
+	if(SnappingClient != SERVER_DEMO_CLIENT)
+	{
+		const CPlayer *pSnapPlayer = GameServer()->m_apPlayers[SnappingClient];
+		if(!pSnapPlayer)
+			return;
+
+		// if(pSnapPlayer->m_HidePowerUps)
+		// 	return;
+	}
+
+	// Make the powerup blink when about to disappear
+	if(m_Lifetime < Server()->TickSpeed() * 10 && (Server()->Tick() / (Server()->TickSpeed() / 4)) % 2 == 0)
+		return;
+
+    // todo: mask
+	// CGameTeams Teams = GameServer()->m_pController->Teams();
+	// if(!Teams.SetMaskWithFlags(SnappingClient, TEAM_FLOCK, CGameTeams::IGNORE_SOLO))
+	// 	return;
+
+	const int SnappingClientVersion = Server()->GetClientVersion(SnappingClient);
+	const bool SixUp = Server()->IsSixup(SnappingClient);
+
+	if(Server()->Tick() % Server()->TickSpeed() == 0)
+		m_Switch = !m_Switch;
+
+	GameServer()->SnapPickup(CSnapContext(SnappingClientVersion, SixUp, SnappingClient), GetId(), m_Pos, m_Switch, 0, -1, PICKUPFLAG_NO_PREDICT);
+
+	int Type = m_Data.m_Type == EPowerUp::XP ? LASERTYPE_GUN : LASERTYPE_SHOTGUN;
+
+	for(int i = 0; i < NUM_LASERS; i++)
+	{
+		vec2 To = m_Snap.m_aTo[i];
+		vec2 From = m_Snap.m_aFrom[i];
+		GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, SixUp, SnappingClient), m_Snap.m_aLaserIds[i], To, From, Server()->Tick(), -1, Type);
+	}
+}

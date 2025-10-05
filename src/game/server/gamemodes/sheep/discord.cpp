@@ -5,6 +5,9 @@
 #include <game/server/gamecontext.h>
 
 void CGameControllerSheep::DiscordInit() {
+	if (g_Config.m_SvSheepDiscordToken[0] == '\0' || g_Config.m_SvSheepDiscordServerChannelId[0] == '\0')
+		return;
+	
 	m_DiscordBot = new dpp::cluster(g_Config.m_SvSheepDiscordToken, dpp::i_default_intents | dpp::i_message_content);
 	m_DiscordBot->start(dpp::st_return);
 
@@ -48,6 +51,9 @@ void CGameControllerSheep::ConChainSheepDiscordTokenChange(IConsole::IResult *pR
 }
 
 void CGameControllerSheep::SendDiscordChat(int ChatterClientId, int Team, const char *pText, int SpamProtectionClientId, int VersionFlags) {
+	if(m_DiscordBot == nullptr)
+		return;
+
     char aBuf[256]; 
 	bool isDiscordMessage = str_startswith(pText, "[DC]");
 	if (!isDiscordMessage) {

@@ -143,6 +143,14 @@ public:
 	const std::vector<vec2> &TeleCheckOuts(int Number) { return m_TeleCheckOuts[Number]; }
 	const std::vector<vec2> &TeleOthers(int Number) { return m_TeleOthers[Number]; }
 
+	//<sheep>
+	std::vector<vec2> m_SpawnCandidates;
+	int CountSolidTilesInRadius(vec2 Pos, int TileRadius, bool Circle = true) const;
+	bool HasSolidInRadius(vec2 Pos, int TileRadius, int MinCount = 1, bool Circle = true) const;
+	void CollectMapSpawnPoints(std::vector<vec2> &OutSeeds) const;
+	void BuildSpawnCandidates();
+	bool TryPickCachedCandidate(vec2 &out) const;
+	//</sheep>
 private:
 	CLayers *m_pLayers;
 

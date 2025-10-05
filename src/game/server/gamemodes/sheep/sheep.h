@@ -19,6 +19,7 @@
 #include <game/server/entities/sheep/weapon_drop.h>
 #include <game/server/entities/sheep/portal.h>
 #include <game/server/entities/sheep/lightsaber.h>
+#include <game/server/entities/sheep/powerup.h>
 
 #include <game/server/gamemodes/sheep/message.h>
 
@@ -55,6 +56,8 @@ public:
 	void LoadAccountItem(class CPlayer* pPlayer);
 	static bool ExecuteLoadAccountItem(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	
+	std::optional<vec2> GetRandomAccessablePos();
+
 	// database
     static bool ExecuteLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	static bool ExecuteRegister(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
@@ -83,6 +86,8 @@ public:
 	void OnPlayerLogin(CPlayer *pPlayer, bool Autologin);
 	void OnPlayerLogout(CPlayer *pPlayer, const char *pReason, bool Silent);
 	
+	bool OnCharacterPowerup(CCharacter *pChr, const SPowerupData *pData);
+
 	// sheep lowlevel passthrough hooks
 	bool IncludedInServerInfo(CPlayer* pPlayer);
 	
@@ -116,9 +121,13 @@ public:
 	// client bound
 	CPortal *m_pPortals[MAX_CLIENTS] = {};
 	CLightsaber *m_pLightsabers[MAX_CLIENTS] = {};
+
+	// server bound
+	std::vector<CPowerUp *> m_vPowerups;
+	int64_t m_PowerupDelay;
 private:
 	// server bound
-    dpp::cluster *m_DiscordBot;
+    dpp::cluster *m_DiscordBot = nullptr;
 	std::shared_ptr<CItemsResult> m_ItemsResult;
 	std::vector<CFakePlayerMessage> m_FakePlayerMessageQueue;
 
