@@ -211,7 +211,7 @@ public:
 		}
 
 		//<sheep>
-		char m_ClientName[24] = "unknown";
+		char m_ClientName[24] = "DDNet";
 		//</sheep>
 	};
 

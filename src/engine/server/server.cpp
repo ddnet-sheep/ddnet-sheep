@@ -1161,6 +1161,10 @@ int CServer::NewClientNoAuthCallback(int ClientId, void *pUser)
 	pThis->m_aClients[ClientId].m_DDNetVersionSettled = false;
 	pThis->m_aClients[ClientId].Reset();
 
+	//<sheep>
+	str_copy(pThis->m_aClients[ClientId].m_ClientName, "DDNet");
+	//</sheep>
+
 	pThis->GameServer()->TeehistorianRecordPlayerJoin(ClientId, false);
 	pThis->Antibot()->OnEngineClientJoin(ClientId);
 
@@ -1196,7 +1200,11 @@ int CServer::NewClientCallback(int ClientId, void *pUser, bool Sixup)
 	pThis->m_aClients[ClientId].m_DDNetVersionSettled = false;
 	pThis->m_aClients[ClientId].Reset();
 	pThis->m_aClients[ClientId].m_Sixup = Sixup;
-
+	
+	//<sheep>
+	str_copy(pThis->m_aClients[ClientId].m_ClientName, "DDNet");
+	//</sheep>
+	
 	pThis->GameServer()->TeehistorianRecordPlayerJoin(ClientId, Sixup);
 	pThis->Antibot()->OnEngineClientJoin(ClientId);
 
@@ -1286,6 +1294,10 @@ int CServer::DelClientCallback(int ClientId, const char *pReason, void *pUser)
 	pThis->m_aClients[ClientId].m_Sixup = false;
 	pThis->m_aClients[ClientId].m_RedirectDropTime = 0;
 	pThis->m_aClients[ClientId].m_HasPersistentData = false;
+
+	//<sheep>
+	str_copy(pThis->m_aClients[ClientId].m_ClientName, "DDNet");
+	//</sheep>
 
 	pThis->GameServer()->TeehistorianRecordPlayerDrop(ClientId, pReason);
 	pThis->Antibot()->OnEngineClientDrop(ClientId, pReason);

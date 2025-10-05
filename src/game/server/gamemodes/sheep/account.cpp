@@ -101,6 +101,8 @@ void CGameControllerSheep::SendActionMessage(CPlayer *pPlayer, enum CAccountActi
 		IServer::CClientInfo Info;
 		if(Server()->GetClientInfo(ClientId, &Info) && Info.m_GotDDNetVersion)
 			str_format(aExtra, sizeof(aExtra), " (%s %d)", pServer->m_aClients[ClientId].m_ClientName, Info.m_DDNetVersion);
+		else
+			str_format(aExtra, sizeof(aExtra), " (unknown)");
 	}
 
 	char aBuf[512];
