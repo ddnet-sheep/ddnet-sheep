@@ -2814,6 +2814,8 @@ if(SERVER)
     entities/sheep/lightsaber.h
     entities/sheep/portal.cpp
     entities/sheep/portal.h
+    entities/sheep/powerup.cpp
+    entities/sheep/powerup.h
     entities/sheep/weapon_drop.cpp
     entities/sheep/weapon_drop.h
     #</sheep>
