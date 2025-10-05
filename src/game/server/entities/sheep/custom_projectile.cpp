@@ -5,15 +5,10 @@
 #include <game/server/player.h>
 
 #include <game/server/gamecontext.h>
-#include <game/server/gamemodes/DDRace.h>
-#include <game/server/teams.h>
-
 #include <generated/protocol.h>
 #include <generated/server_data.h>
 
-#include <base/math.h>
 #include <base/vmath.h>
-#include <game/mapitems.h>
 #include <game/server/entity.h>
 #include <game/server/gameworld.h>
 
@@ -128,7 +123,7 @@ void CCustomProjectile::HitCharacter() {
 	// else
 	// pHit->TakeDamage(vec2(0, 0), g_pData->m_Weapons.m_aId[GameServer()->GetWeaponType(m_Type)].m_Damage, m_Owner, m_Type);
 
-	if(GameServer()->GetPlayerChar(m_Owner)->GetActiveWeapon() == WEAPON_HEARTGUN)// || GameServer()->GetPlayerChar(m_Owner)->GetPlayer()->m_Cosmetics.m_Ability == ABILITY_HEART)
+	if(GameServer()->GetPlayerChar(m_Owner)->GetActiveWeapon() == WEAPON_HEARTGUN)
 	{
 		pHit->SetEmote(EMOTE_HAPPY, Server()->Tick() + 2 * Server()->TickSpeed());
 		GameServer()->SendEmoticon(pHit->GetPlayer()->GetCid(), EMOTICON_HEARTS, -1);
@@ -147,9 +142,6 @@ void CCustomProjectile::Snap(int SnappingClient)
 
 	if(!pOwnerChar || !pSnapPlayer)
 		return;
-
-	// if(pOwnerChar->IsPaused())
-	// 	return;
 
 	if(pSnapPlayer->GetCharacter() && pOwnerChar)
 		if(!pOwnerChar->CanSnapCharacter(SnappingClient))
@@ -170,8 +162,8 @@ void CCustomProjectile::Snap(int SnappingClient)
 
 	if(m_Weapon)
 	{
-		// if(m_Type >= NUM_WEAPONS && pSnapChar && pOwnerChar->GetPlayer()->m_Cosmetics.m_Trail == TRAIL_DOT)
-		// 	return;
+		if(m_Type >= NUM_WEAPONS && pSnapChar)
+			return;
 
 		CNetObj_DDRaceProjectile DDRaceProjectile;
 		if(SnappingClientVersion >= VERSION_DDNET_ENTITY_NETOBJS)
@@ -246,7 +238,7 @@ bool CCustomProjectile::FillExtraInfoLegacy(CNetObj_DDRaceProjectile *pProj)
 		return false;
 	}
 	// Send additional/modified info, by modifying the fields of the netobj
-	float Angle = -std::atan2(m_Direction.x, m_Direction.y);
+	const float Angle = -std::atan2(m_Direction.x, m_Direction.y);
 
 	int Data = 0;
 	Data |= (absolute(m_Owner) & 255) << 0;
