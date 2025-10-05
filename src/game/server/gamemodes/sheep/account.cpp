@@ -20,10 +20,6 @@ bool VerifyPassword(const char *pExpected, const char* pPassword)
 }
 
 void CGameControllerSheep::OnPlayerLogin(CPlayer *pPlayer, bool Autologin) {
-	int ClientId = pPlayer->GetCid();
-	CServer *pServer = (CServer*)Server();
-	CServer::CClient* pClient = &pServer->m_aClients[ClientId];
-
 	LoadAccountItem(pPlayer);
 
 	pPlayer->m_LoginTick = Server()->Tick();
@@ -31,8 +27,19 @@ void CGameControllerSheep::OnPlayerLogin(CPlayer *pPlayer, bool Autologin) {
 	if(pPlayer->GetTeam() == TEAM_SPECTATORS)
 		pPlayer->SetTeam(TEAM_FLOCK);
 
-	// rcon auth
-	if (pPlayer->m_AccountLoginResult->m_Staff > 0) {
+	AuthPlayer(pPlayer);
+
+	if (!pPlayer->m_AccountLoginResult->m_Vanish) {
+		SendActionMessage(pPlayer, Autologin ? ACTION_ENTER_AND_JOIN : ACTION_JOIN);
+	}
+}
+
+void CGameControllerSheep::AuthPlayer(CPlayer *pPlayer) {
+	int ClientId = pPlayer->GetCid();
+	CServer *pServer = (CServer*)Server();
+	CServer::CClient* pClient = &pServer->m_aClients[ClientId];
+
+	if (pPlayer->m_AccountLoginResult != nullptr && pPlayer->m_AccountLoginResult->m_Staff > 0) {
 		if(!Server()->IsSixup(ClientId)) {
 			CMsgPacker Msgp(NETMSG_RCON_AUTH_STATUS, true);
 			Msgp.AddInt(1); //authed
@@ -58,10 +65,26 @@ void CGameControllerSheep::OnPlayerLogin(CPlayer *pPlayer, bool Autologin) {
 
 		// DDRace
 		GameServer()->OnSetAuthed(ClientId, AuthLevel);
-	}
+	} else {
+		if(pClient->m_Authed > AUTHED_NO) {
+			if(!Server()->IsSixup(ClientId)) {
+				CMsgPacker Msgp(NETMSG_RCON_AUTH_STATUS, true);
+				Msgp.AddInt(0); //authed
+				Msgp.AddInt(0); //cmdlist
+				Server()->SendMsg(&Msgp, MSGFLAG_VITAL, ClientId);
+			} else {
+				CMsgPacker Msgp(protocol7::NETMSG_RCON_AUTH_OFF, true, true);
+				Server()->SendMsg(&Msgp, MSGFLAG_VITAL, ClientId);
+			}
 
-	if (!pPlayer->m_AccountLoginResult->m_Vanish) {
-		SendActionMessage(pPlayer, Autologin ? ACTION_ENTER_AND_JOIN : ACTION_JOIN);
+			int AuthLevel = AUTHED_NO;
+
+			pClient->m_Authed = AuthLevel; // Keeping m_Authed around is unwise...
+			pClient->m_AuthKey = -1;
+
+			// DDRace
+			GameServer()->OnSetAuthed(ClientId, AuthLevel);
+		}
 	}
 }
 
@@ -124,36 +147,14 @@ void CGameControllerSheep::OnPlayerLogout(CPlayer *pPlayer, const char *pReason,
 	else
 		pPlayer->KillCharacter(WEAPON_GAME, false);
 
-	int ClientId = pPlayer->GetCid();
-	CServer *pServer = (CServer*)Server();
-	CServer::CClient* pClient = &pServer->m_aClients[ClientId];
-
-	if(pClient->m_Authed > AUTHED_NO) {
-		if(!Server()->IsSixup(ClientId)) {
-			CMsgPacker Msgp(NETMSG_RCON_AUTH_STATUS, true);
-			Msgp.AddInt(0); //authed
-			Msgp.AddInt(0); //cmdlist
-			Server()->SendMsg(&Msgp, MSGFLAG_VITAL, ClientId);
-		} else {
-			CMsgPacker Msgp(protocol7::NETMSG_RCON_AUTH_OFF, true, true);
-			Server()->SendMsg(&Msgp, MSGFLAG_VITAL, ClientId);
-		}
-
-		int AuthLevel = AUTHED_NO;
-
-		pClient->m_Authed = AuthLevel; // Keeping m_Authed around is unwise...
-		pClient->m_AuthKey = -1;
-
-		// DDRace
-		GameServer()->OnSetAuthed(ClientId, AuthLevel);
-	}
-
 	if (!Silent) {
 		SendActionMessage(pPlayer, ACTION_LOGOUT);
 	}
-
+	
 	SaveAccount(pPlayer);
 	pPlayer->m_AccountLoginResult = nullptr;
+
+	AuthPlayer(pPlayer);
 
 	GameServer()->SendChatTarget(pPlayer->GetCid(), "You have been logged out.");
 }
@@ -584,4 +585,161 @@ void CGameControllerSheep::ConForceLogout(IConsole::IResult *pResult, void *pUse
 	}
 
 	pController->OnPlayerLogout(pVictim, nullptr);
+}
+
+
+void CGameControllerSheep::ConGiveExp(IConsole::IResult *pResult, void *pUserData) {
+	CGameContext *pGameServer = (CGameContext *)pUserData;
+	if(!CCommands::ValidateStaff(pResult, pUserData, 1)) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "You are not authorized to do that.");
+		return;
+	}
+
+	CPlayer *pVictim = CCommands::GetVictimOrCaller(pResult, pUserData, 2);
+	if(!pVictim) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "Invalid client id.");
+		return;
+	}
+	
+	CGameControllerSheep *pController = (CGameControllerSheep *)pGameServer->m_pController;
+	if(!pVictim->IsLoggedIn()) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "Player is not logged in.");
+		return;
+	}
+
+	pController->GivePlayerExp(pVictim, pResult->GetInteger(pResult->NumArguments() - 1));
+}
+
+void CGameControllerSheep::ConSetMoney(IConsole::IResult *pResult, void *pUserData) {
+	CGameContext *pGameServer = (CGameContext *)pUserData;
+	if(!CCommands::ValidateStaff(pResult, pUserData, 1)) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "You are not authorized to do that.");
+		return;
+	}
+
+	CPlayer *pVictim = CCommands::GetVictimOrCaller(pResult, pUserData, 2);
+	if(!pVictim) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "Invalid client id.");
+		return;
+	}
+	
+	CGameControllerSheep *pController = (CGameControllerSheep *)pGameServer->m_pController;
+	if(!pVictim->IsLoggedIn()) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "Player is not logged in.");
+		return;
+	}
+
+	pVictim->m_AccountLoginResult->m_Money = pResult->GetInteger(pResult->NumArguments() - 1);
+	pController->SaveAccount(pVictim);
+}
+
+void CGameControllerSheep::ConSetLevel(IConsole::IResult *pResult, void *pUserData) {
+	CGameContext *pGameServer = (CGameContext *)pUserData;
+	if(!CCommands::ValidateStaff(pResult, pUserData, 1)) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "You are not authorized to do that.");
+		return;
+	}
+
+	CPlayer *pVictim = CCommands::GetVictimOrCaller(pResult, pUserData, 2);
+	if(!pVictim) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "Invalid client id.");
+		return;
+	}
+	
+	CGameControllerSheep *pController = (CGameControllerSheep *)pGameServer->m_pController;
+	if(!pVictim->IsLoggedIn()) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "Player is not logged in.");
+		return;
+	}
+
+	pVictim->m_AccountLoginResult->m_Level = pResult->GetInteger(pResult->NumArguments() - 1);
+	pController->SaveAccount(pVictim);
+}
+
+void CGameControllerSheep::ConSetVip(IConsole::IResult *pResult, void *pUserData) {
+	CGameContext *pGameServer = (CGameContext *)pUserData;
+	if(!CCommands::ValidateStaff(pResult, pUserData, 1)) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "You are not authorized to do that.");
+		return;
+	}
+
+	CPlayer *pVictim = CCommands::GetVictimOrCaller(pResult, pUserData, 2);
+	if(!pVictim) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "Invalid client id.");
+		return;
+	}
+	
+	CGameControllerSheep *pController = (CGameControllerSheep *)pGameServer->m_pController;
+	if(!pVictim->IsLoggedIn()) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "Player is not logged in.");
+		return;
+	}
+
+	pVictim->m_AccountLoginResult->m_Vip = pResult->GetInteger(pResult->NumArguments() - 1);
+	pController->SaveAccount(pVictim);
+}
+
+void CGameControllerSheep::ConSetStaff(IConsole::IResult *pResult, void *pUserData) {
+	CGameContext *pGameServer = (CGameContext *)pUserData;
+
+	CPlayer *pCaller = CCommands::GetCaller(pResult, pUserData);
+	CPlayer *pVictim = CCommands::GetVictimOrCaller(pResult, pUserData, 2);
+	if(!pCaller->IsLoggedIn() || pCaller->m_AccountLoginResult->m_Staff < 2) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "You are not authorized to do that.");
+		return;
+	}
+
+	if(pCaller == pVictim) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "You cannot change your own staff level.");
+		return;
+	}
+
+	if(pCaller->m_AccountLoginResult->m_Staff <= pResult->GetInteger(pResult->NumArguments() - 1)) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "You cannot set a staff level equal or higher than your own.");
+		return;
+	}
+	
+	if(!pVictim) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "Invalid client id.");
+		return;
+	}
+
+	if(pCaller->m_AccountLoginResult->m_Staff <= pVictim->m_AccountLoginResult->m_Staff) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "You cannot change the staff level of someone with an equal or higher staff level than your own.");
+		return;
+	}
+	
+	CGameControllerSheep *pController = (CGameControllerSheep *)pGameServer->m_pController;
+	if(!pVictim->IsLoggedIn()) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "Player is not logged in.");
+		return;
+	}
+
+	pVictim->m_AccountLoginResult->m_Staff = pResult->GetInteger(pResult->NumArguments() - 1);
+	pController->SaveAccount(pVictim);
+	pController->AuthPlayer(pVictim);
+}
+
+
+void CGameControllerSheep::ConSetTitle(IConsole::IResult *pResult, void *pUserData) {
+	CGameContext *pGameServer = (CGameContext *)pUserData;
+	if(!CCommands::ValidateStaff(pResult, pUserData, 1)) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "You are not authorized to do that.");
+		return;
+	}
+
+	CPlayer *pVictim = CCommands::GetVictimOrCaller(pResult, pUserData, 2);
+	if(!pVictim) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "Invalid client id.");
+		return;
+	}
+	
+	CGameControllerSheep *pController = (CGameControllerSheep *)pGameServer->m_pController;
+	if(!pVictim->IsLoggedIn()) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "Player is not logged in.");
+		return;
+	}
+
+	str_copy(pVictim->m_AccountLoginResult->m_Title, pResult->GetString(pResult->NumArguments() - 1));
+	pController->SaveAccount(pVictim);
 }

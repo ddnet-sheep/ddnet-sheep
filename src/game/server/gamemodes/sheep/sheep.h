@@ -52,6 +52,7 @@ public:
 	void SendActionMessage(CPlayer *pPlayer, enum CAccountActions Action, char* pExtra = "");
 
 	void LoadItems();
+	void AuthPlayer(CPlayer *pPlayer);
 	void SaveAccount(CPlayer* pPlayer);
 	static bool ExecuteLoadItems(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	void LoadAccountItem(class CPlayer* pPlayer);
@@ -76,6 +77,13 @@ public:
 	static void ConIgnoreInvisible(IConsole::IResult *pResult, void *pUserData);
 	static void ConVanish(IConsole::IResult *pResult, void *pUserData);
 	static void ConInvisible(IConsole::IResult *pResult, void *pUserData);
+
+	static void ConGiveExp(IConsole::IResult *pResult, void *pUserData);
+	static void ConSetMoney(IConsole::IResult *pResult, void *pUserData);
+	static void ConSetLevel(IConsole::IResult *pResult, void *pUserData);
+	static void ConSetVip(IConsole::IResult *pResult, void *pUserData);
+	static void ConSetTitle(IConsole::IResult *pResult, void *pUserData);
+	static void ConSetStaff(IConsole::IResult *pResult, void *pUserData);
 	
 	// static void ConSync(IConsole::IResult *pResult, void *pUserData);
 	static void ConForceLogout(IConsole::IResult *pResult, void *pUserData);
