@@ -115,7 +115,10 @@ void CGameControllerSheep::SendActionMessage(CPlayer *pPlayer, enum CAccountActi
 }
 
 void CGameControllerSheep::OnPlayerLogout(CPlayer *pPlayer, const char *pReason, bool Silent = false) {
-	pPlayer->SetTeam(TEAM_SPECTATORS);
+	if(g_Config.m_SvSheepEnforceAccount)
+		pPlayer->SetTeam(TEAM_SPECTATORS);
+	else
+		pPlayer->KillCharacter(WEAPON_GAME, false);
 
 	int ClientId = pPlayer->GetCid();
 	CServer *pServer = (CServer*)Server();

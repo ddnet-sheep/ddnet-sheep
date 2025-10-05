@@ -690,7 +690,7 @@ CCharacter *CPlayer::ForceSpawn(vec2 Pos)
 void CPlayer::SetTeam(int Team, bool DoChatMsg)
 {
 	//<sheep>
-	if(Team != TEAM_SPECTATORS && !IsLoggedIn()) {
+	if(Team != TEAM_SPECTATORS && g_Config.m_SvSheepEnforceAccount && !IsLoggedIn()) {
 		GameServer()->SendChatTarget(m_ClientId, "You must be logged in to spawn.");
 		return;
 	}

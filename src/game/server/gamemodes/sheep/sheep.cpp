@@ -190,8 +190,9 @@ void CGameControllerSheep::OnPlayerConnect(CPlayer *pPlayer)
 	// Can't set score here as LoadScore() is threaded, run it in
 	// LoadScoreThreaded() instead
 	Score()->LoadPlayerData(ClientId);
-	
-	pPlayer->SetTeam(TEAM_SPECTATORS);
+
+	if(g_Config.m_SvSheepEnforceAccount)
+		pPlayer->SetTeam(TEAM_SPECTATORS);
 
 	// try autologin
 	if(!pPlayer->IsLoggedIn()) {
