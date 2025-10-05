@@ -277,11 +277,11 @@ void CGameControllerSheep::Tick() {
 		m_PowerupDelay = Server()->Tick() + Server()->TickSpeed() * 15;
 	}
 		
-	// todo: save accounts every 15 minutes
-	// if(Server()->Tick() % (Server()->TickSpeed() * 60 * 15) == 0)
-	// {
-		
-	// }
+	// save account every 10 minutes
+	if(Server()->Tick() % (Server()->TickSpeed() * 60 * 10) == 0)
+		for(auto pPlayer : GameServer()->m_apPlayers)
+			if(pPlayer != nullptr && pPlayer->IsLoggedIn())
+				SaveAccount(pPlayer);
 }
 
 std::optional<vec2> CGameControllerSheep::GetRandomAccessablePos() {

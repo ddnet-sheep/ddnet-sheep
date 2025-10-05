@@ -152,6 +152,7 @@ void CGameControllerSheep::OnPlayerLogout(CPlayer *pPlayer, const char *pReason,
 		SendActionMessage(pPlayer, ACTION_LOGOUT);
 	}
 
+	SaveAccount(pPlayer);
 	pPlayer->m_AccountLoginResult = nullptr;
 
 	GameServer()->SendChatTarget(pPlayer->GetCid(), "You have been logged out.");
@@ -296,6 +297,43 @@ bool CGameControllerSheep::ExecuteLogin(IDbConnection *pSqlServer, const ISqlDat
 		pSqlServer->ExecuteUpdate(&NumUpdated, pError, ErrorSize);
 	}
 	return true;
+}
+
+void CGameControllerSheep::SaveAccount(CPlayer *pPlayer) {
+	if(!pPlayer->IsLoggedIn())
+		return;
+
+	auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pPlayer->m_AccountLoginResult);
+	Tmp->m_Type = CSqlAccountCredentialsRequest::TYPE_FORCED;
+	str_copy(Tmp->m_Username, pPlayer->m_AccountLoginResult->m_Username, sizeof(Tmp->m_Username));
+
+	m_pPool->Execute(CGameControllerSheep::ExecuteSave, std::move(Tmp), "account save");
+}
+
+bool CGameControllerSheep::ExecuteSave(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {
+	auto *pResult = dynamic_cast<CAccountDataResult *>(pGameData->m_pResult.get());
+	const auto *pData = dynamic_cast<const CSqlAccountCredentialsRequest *>(pGameData);
+
+	if(!pSqlServer->PrepareStatement("UPDATE sheep_accounts SET name=?, level=?, exp=?, vip=?, vip_expiration=?, staff_level=?, email=?, email_verified=?, invisible=?, vanish=?, title=?, money=?, playtime=? WHERE id=?", pError, ErrorSize)) {
+		return true;
+	}
+	pSqlServer->BindString(1, pData->m_Username);
+	pSqlServer->BindInt64(2, pResult->m_Level);
+	pSqlServer->BindInt64(3, pResult->m_Exp);
+	pSqlServer->BindInt(4, pResult->m_Vip);
+	pSqlServer->BindInt64(5, pResult->m_VipExpiration);
+	pSqlServer->BindInt(6, pResult->m_Staff);
+	pSqlServer->BindString(7, pResult->m_Email.c_str());
+	pSqlServer->BindInt(8, pResult->m_EmailVerified ? 1 : 0);
+	pSqlServer->BindInt(9, pResult->m_Invisible ? 1 : 0);
+	pSqlServer->BindInt(10, pResult->m_Vanish ? 1 : 0);
+	pSqlServer->BindString(11, pResult->m_Title);
+	pSqlServer->BindInt64(12, pResult->m_Money);
+	pSqlServer->BindInt64(13, pResult->m_Playtime);
+	pSqlServer->BindInt64(14, pResult->m_AccountId);
+
+	int NumUpdated;
+	return pSqlServer->ExecuteUpdate(&NumUpdated, pError, ErrorSize);
 }
 
 void CGameControllerSheep::ConRegister(IConsole::IResult *pResult, void *pUserData) {

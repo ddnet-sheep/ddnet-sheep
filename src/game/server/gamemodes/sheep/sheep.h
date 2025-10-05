@@ -52,6 +52,7 @@ public:
 	void SendActionMessage(CPlayer *pPlayer, enum CAccountActions Action, char* pExtra = "");
 
 	void LoadItems();
+	void SaveAccount(CPlayer* pPlayer);
 	static bool ExecuteLoadItems(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	void LoadAccountItem(class CPlayer* pPlayer);
 	static bool ExecuteLoadAccountItem(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
@@ -62,7 +63,8 @@ public:
     static bool ExecuteLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	static bool ExecuteRegister(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	static bool ExecutePassword(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
-	
+	static bool ExecuteSave(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
+
 	// user commands
 	static void ConLogin(IConsole::IResult *pResult, void *pUserData);
 	static void ConRegister(IConsole::IResult *pResult, void *pUserData);

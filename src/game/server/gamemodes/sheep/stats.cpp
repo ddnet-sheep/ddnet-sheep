@@ -65,8 +65,7 @@ void CGameControllerSheep::GivePlayerExp(CPlayer *pPlayer, int Exp, char* pReaso
 			GameServer()->CreateBirthdayEffect(pPlayer->GetCharacter()->GetPos(), pPlayer->GetCharacter()->TeamMask());
     }
     
-    // todo: SaveAccount();
-	// m_pPool->Execute(CGameControllerSheep::ExecuteAccountUpdate, std::move(Tmp), "account update exp/level");
+    SaveAccount(pPlayer);
 }
 
 void CGameControllerSheep::GivePlayerMoney(CPlayer* pPlayer, int64_t Amount, const char *pReason) {
@@ -90,8 +89,7 @@ void CGameControllerSheep::GivePlayerMoney(CPlayer* pPlayer, int64_t Amount, con
 		pChr->SetEmote(EMOTE_HAPPY, Server()->Tick() + 175);
 	}
 
-	// todo: SaveAccount();
-	// m_pPool->Execute(CGameControllerSheep::ExecuteAccountUpdate, std::move(Tmp), "account update exp/level");
+	SaveAccount(pPlayer);
 }
 
 void CGameControllerSheep::GivePlayerPlaytime(CPlayer *pPlayer, int Minutes) {
