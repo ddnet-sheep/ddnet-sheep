@@ -314,9 +314,9 @@ bool CGameControllerSheep::ExecuteSave(IDbConnection *pSqlServer, const ISqlData
 	auto *pResult = dynamic_cast<CAccountDataResult *>(pGameData->m_pResult.get());
 	const auto *pData = dynamic_cast<const CSqlAccountCredentialsRequest *>(pGameData);
 
-	if(!pSqlServer->PrepareStatement("UPDATE sheep_accounts SET name=?, level=?, exp=?, vip=?, vip_expiration=?, staff_level=?, email=?, email_verified=?, invisible=?, vanish=?, title=?, money=?, playtime=? WHERE id=?", pError, ErrorSize)) {
-		return true;
-	}
+	if(!pSqlServer->PrepareStatement("UPDATE sheep_accounts SET name=?, level=?, exp=?, vip=?, vip_expiration=?, staff_level=?, email=?, email_verified=?, invisible=?, vanish=?, title=?, money=?, playtime=? WHERE id=?", pError, ErrorSize))
+		return false;
+	
 	pSqlServer->BindString(1, pData->m_Username);
 	pSqlServer->BindInt64(2, pResult->m_Level);
 	pSqlServer->BindInt64(3, pResult->m_Exp);
@@ -333,7 +333,10 @@ bool CGameControllerSheep::ExecuteSave(IDbConnection *pSqlServer, const ISqlData
 	pSqlServer->BindInt64(14, pResult->m_AccountId);
 
 	int NumUpdated;
-	return pSqlServer->ExecuteUpdate(&NumUpdated, pError, ErrorSize);
+	if(!pSqlServer->ExecuteUpdate(&NumUpdated, pError, ErrorSize))
+		return false;
+
+	return NumUpdated != 0;
 }
 
 void CGameControllerSheep::ConRegister(IConsole::IResult *pResult, void *pUserData) {
