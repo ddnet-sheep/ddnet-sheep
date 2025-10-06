@@ -791,7 +791,6 @@ void CGameControllerSheep::ConSetStaff(IConsole::IResult *pResult, void *pUserDa
 	str_format(aBuf, sizeof(aBuf), "Your staff level has been set to %d by %s.", pVictim->m_AccountLoginResult->m_Staff, pController->Server()->ClientName(pResult->m_ClientId));
 	pController->GameServer()->SendChatTarget(pVictim->GetCid(), aBuf);
 
-	CPlayer *pCaller = CCommands::GetCaller(pResult, pUserData);
 	str_format(aBuf, sizeof(aBuf), "You have set the staff level of %s to %d.", pController->Server()->ClientName(pVictim->GetCid()), pVictim->m_AccountLoginResult->m_Staff);
 	pController->GameServer()->SendChatTarget(pCaller->GetCid(), aBuf);
 }
