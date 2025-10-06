@@ -4,7 +4,7 @@
 
 struct CFakePlayerMessage {
 	int m_Team = 0; // 0 = all, 1 = team, 2 = system
-	char m_aName[64];
+	char m_aName[16];
 	char m_aMessage[256] = "";
 	int m_SenderId = -1;
 	int m_ReceiverId = -1;
