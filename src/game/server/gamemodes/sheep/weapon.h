@@ -17,29 +17,25 @@ class CWeapon {
 				case WEAPON_GRENADE: return "Grenade";
 				case WEAPON_LASER: return "Laser";
 				case WEAPON_NINJA: return "Ninja";
-				case WEAPON_GRAVITYGUN: return "Gravitygun";
-				case WEAPON_HEARTGUN: return "Heartgun";
+				case WEAPON_GRAVITYGUN: return "Gravity";
+				case WEAPON_HEARTGUN: return "Heart";
 				case WEAPON_LIGHTSABER: return "Lightsaber";
-				case WEAPON_PORTALGUN: return "Portalgun";
+				case WEAPON_PORTALGUN: return "Portal";
 				default: return "Unknown";
 			}
 		}
 
 		static int GetId(const char* Type) {
-			// char LowerType[64] = "";
-			// for(size_t i = 0; i < sizeof(Type); i++)
-			// 	LowerType[i] = tolower(Type[i]);
-
-			if(!strcmp(Type, "hammer")) return WEAPON_HAMMER;
-			if(!strcmp(Type, "gun")) return WEAPON_GUN;
-			if(!strcmp(Type, "shotgun")) return WEAPON_SHOTGUN;
-			if(!strcmp(Type, "grenade")) return WEAPON_GRENADE;
-			if(!strcmp(Type, "laser")) return WEAPON_LASER;
-			if(!strcmp(Type, "ninja")) return WEAPON_NINJA;
-			if(!strcmp(Type, "gravity")) return WEAPON_GRAVITYGUN;
-			if(!strcmp(Type, "heart")) return WEAPON_HEARTGUN;
-			if(!strcmp(Type, "lightsaber")) return WEAPON_LIGHTSABER;
-			if(!strcmp(Type, "portal")) return WEAPON_PORTALGUN;
+			if(!str_comp_nocase(Type, "hammer")) return WEAPON_HAMMER;
+			if(!str_comp_nocase(Type, "gun")) return WEAPON_GUN;
+			if(!str_comp_nocase(Type, "shotgun")) return WEAPON_SHOTGUN;
+			if(!str_comp_nocase(Type, "grenade")) return WEAPON_GRENADE;
+			if(!str_comp_nocase(Type, "laser")) return WEAPON_LASER;
+			if(!str_comp_nocase(Type, "ninja")) return WEAPON_NINJA;
+			if(!str_comp_nocase(Type, "gravity")) return WEAPON_GRAVITYGUN;
+			if(!str_comp_nocase(Type, "heart")) return WEAPON_HEARTGUN;
+			if(!str_comp_nocase(Type, "lightsaber")) return WEAPON_LIGHTSABER;
+			if(!str_comp_nocase(Type, "portal")) return WEAPON_PORTALGUN;
 			return -2;
 		}
 	
