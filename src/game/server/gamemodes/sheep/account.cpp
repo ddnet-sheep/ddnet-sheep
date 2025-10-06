@@ -304,7 +304,26 @@ void CGameControllerSheep::SaveAccount(CPlayer *pPlayer) {
 	if(!pPlayer->IsLoggedIn())
 		return;
 
-	auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pPlayer->m_AccountLoginResult);
+
+	std::shared_ptr<CAccountDataResult> Result = std::make_shared<CAccountDataResult>();
+	Result->m_AccountId = pPlayer->m_AccountLoginResult->m_AccountId;
+	Result->m_Level = pPlayer->m_AccountLoginResult->m_Level;
+	Result->m_Exp = pPlayer->m_AccountLoginResult->m_Exp;
+	Result->m_Vip = pPlayer->m_AccountLoginResult->m_Vip;
+	Result->m_VipExpiration = pPlayer->m_AccountLoginResult->m_VipExpiration;
+	Result->m_Staff = pPlayer->m_AccountLoginResult->m_Staff;
+	Result->m_Email = pPlayer->m_AccountLoginResult->m_Email;
+	Result->m_EmailVerified = pPlayer->m_AccountLoginResult->m_EmailVerified;
+	Result->m_Invisible = pPlayer->m_AccountLoginResult->m_Invisible;
+	Result->m_Vanish = pPlayer->m_AccountLoginResult->m_Vanish;
+	str_copy(Result->m_Title, pPlayer->m_AccountLoginResult->m_Title);
+	Result->m_Money = pPlayer->m_AccountLoginResult->m_Money;
+	Result->m_Playtime = pPlayer->m_AccountLoginResult->m_Playtime;
+	str_copy(Result->m_Username, pPlayer->m_AccountLoginResult->m_Username);
+	str_copy(Result->m_PasswordHash, pPlayer->m_AccountLoginResult->m_PasswordHash);
+	Result->m_Type = pPlayer->m_AccountLoginResult->m_Type;
+
+	auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(Result);
 	Tmp->m_Type = CSqlAccountCredentialsRequest::TYPE_FORCED;
 	str_copy(Tmp->m_Username, pPlayer->m_AccountLoginResult->m_Username, sizeof(Tmp->m_Username));
 
@@ -563,6 +582,14 @@ void CGameControllerSheep::ConForceLogin(IConsole::IResult *pResult, void *pUser
 	str_copy(Tmp->m_Username, aUsername, sizeof(Tmp->m_Username));
 
 	pController->m_pPool->Execute(CGameControllerSheep::ExecuteLogin, std::move(Tmp), "account login");
+
+	char aBuf[256];
+	str_format(aBuf, sizeof(aBuf), "You have forcefully logged in %s.", pController->Server()->ClientName(pVictim->GetCid()));
+	pController->GameServer()->SendChatTarget(pResult->m_ClientId, aBuf);
+
+	CPlayer *pCaller = CCommands::GetCaller(pResult, pUserData);
+	str_format(aBuf, sizeof(aBuf), "You have been forcefully logged in by %s.", pController->Server()->ClientName(pCaller->GetCid()));
+	pController->GameServer()->SendChatTarget(pVictim->GetCid(), aBuf);
 }
 
 void CGameControllerSheep::ConForceLogout(IConsole::IResult *pResult, void *pUserData) {
@@ -585,6 +612,14 @@ void CGameControllerSheep::ConForceLogout(IConsole::IResult *pResult, void *pUse
 	}
 
 	pController->OnPlayerLogout(pVictim, nullptr);
+
+	char aBuf[256];
+	str_format(aBuf, sizeof(aBuf), "You have forcefully logged out %s.", pController->Server()->ClientName(pVictim->GetCid()));
+	pController->GameServer()->SendChatTarget(pResult->m_ClientId, aBuf);
+
+	CPlayer *pCaller = CCommands::GetCaller(pResult, pUserData);
+	str_format(aBuf, sizeof(aBuf), "You have been forcefully logged out by %s.", pController->Server()->ClientName(pCaller->GetCid()));
+	pController->GameServer()->SendChatTarget(pVictim->GetCid(), aBuf);
 }
 
 
@@ -607,7 +642,16 @@ void CGameControllerSheep::ConGiveExp(IConsole::IResult *pResult, void *pUserDat
 		return;
 	}
 
-	pController->GivePlayerExp(pVictim, pResult->GetInteger(pResult->NumArguments() - 1));
+	int Amount = pResult->GetInteger(pResult->NumArguments() - 1);
+	pController->GivePlayerExp(pVictim, Amount);
+
+	char aBuf[256];
+	str_format(aBuf, sizeof(aBuf), "You have been given %d EXP from %s.", Amount, pController->Server()->ClientName(pResult->m_ClientId));
+	pController->GameServer()->SendChatTarget(pVictim->GetCid(), aBuf);
+
+	CPlayer *pCaller = CCommands::GetCaller(pResult, pUserData);
+	str_format(aBuf, sizeof(aBuf), "You have given %s %d EXP.", pController->Server()->ClientName(pVictim->GetCid()), Amount);
+	pController->GameServer()->SendChatTarget(pCaller->GetCid(), aBuf);
 }
 
 void CGameControllerSheep::ConSetMoney(IConsole::IResult *pResult, void *pUserData) {
@@ -631,6 +675,14 @@ void CGameControllerSheep::ConSetMoney(IConsole::IResult *pResult, void *pUserDa
 
 	pVictim->m_AccountLoginResult->m_Money = pResult->GetInteger(pResult->NumArguments() - 1);
 	pController->SaveAccount(pVictim);
+
+	char aBuf[256];
+	str_format(aBuf, sizeof(aBuf), "Your money has been set to %d by %s.", pVictim->m_AccountLoginResult->m_Money, pController->Server()->ClientName(pResult->m_ClientId));
+	pController->GameServer()->SendChatTarget(pVictim->GetCid(), aBuf);
+
+	CPlayer *pCaller = CCommands::GetCaller(pResult, pUserData);
+	str_format(aBuf, sizeof(aBuf), "You have changed the money of %s to %d.", pController->Server()->ClientName(pVictim->GetCid()), pVictim->m_AccountLoginResult->m_Money);
+	pController->GameServer()->SendChatTarget(pCaller->GetCid(), aBuf);
 }
 
 void CGameControllerSheep::ConSetLevel(IConsole::IResult *pResult, void *pUserData) {
@@ -654,6 +706,14 @@ void CGameControllerSheep::ConSetLevel(IConsole::IResult *pResult, void *pUserDa
 
 	pVictim->m_AccountLoginResult->m_Level = pResult->GetInteger(pResult->NumArguments() - 1);
 	pController->SaveAccount(pVictim);
+
+	char aBuf[256];
+	str_format(aBuf, sizeof(aBuf), "Your level has been set to %d by %s.", pVictim->m_AccountLoginResult->m_Level, pController->Server()->ClientName(pResult->m_ClientId));
+	pController->GameServer()->SendChatTarget(pVictim->GetCid(), aBuf);
+
+	CPlayer *pCaller = CCommands::GetCaller(pResult, pUserData);
+	str_format(aBuf, sizeof(aBuf), "You have set the level of %s to %d.", pController->Server()->ClientName(pVictim->GetCid()), pVictim->m_AccountLoginResult->m_Level);
+	pController->GameServer()->SendChatTarget(pCaller->GetCid(), aBuf);
 }
 
 void CGameControllerSheep::ConSetVip(IConsole::IResult *pResult, void *pUserData) {
@@ -677,6 +737,14 @@ void CGameControllerSheep::ConSetVip(IConsole::IResult *pResult, void *pUserData
 
 	pVictim->m_AccountLoginResult->m_Vip = pResult->GetInteger(pResult->NumArguments() - 1);
 	pController->SaveAccount(pVictim);
+
+	char aBuf[256];
+	str_format(aBuf, sizeof(aBuf), "Your VIP level has been set to %d by %s.", pVictim->m_AccountLoginResult->m_Vip, pController->Server()->ClientName(pResult->m_ClientId));
+	pController->GameServer()->SendChatTarget(pVictim->GetCid(), aBuf);
+
+	CPlayer *pCaller = CCommands::GetCaller(pResult, pUserData);
+	str_format(aBuf, sizeof(aBuf), "You have set the VIP level of %s to %d.", pController->Server()->ClientName(pVictim->GetCid()), pVictim->m_AccountLoginResult->m_Vip);
+	pController->GameServer()->SendChatTarget(pCaller->GetCid(), aBuf);
 }
 
 void CGameControllerSheep::ConSetStaff(IConsole::IResult *pResult, void *pUserData) {
@@ -718,6 +786,14 @@ void CGameControllerSheep::ConSetStaff(IConsole::IResult *pResult, void *pUserDa
 	pVictim->m_AccountLoginResult->m_Staff = pResult->GetInteger(pResult->NumArguments() - 1);
 	pController->SaveAccount(pVictim);
 	pController->AuthPlayer(pVictim);
+
+	char aBuf[256];
+	str_format(aBuf, sizeof(aBuf), "Your staff level has been set to %d by %s.", pVictim->m_AccountLoginResult->m_Staff, pController->Server()->ClientName(pResult->m_ClientId));
+	pController->GameServer()->SendChatTarget(pVictim->GetCid(), aBuf);
+
+	CPlayer *pCaller = CCommands::GetCaller(pResult, pUserData);
+	str_format(aBuf, sizeof(aBuf), "You have set the staff level of %s to %d.", pController->Server()->ClientName(pVictim->GetCid()), pVictim->m_AccountLoginResult->m_Staff);
+	pController->GameServer()->SendChatTarget(pCaller->GetCid(), aBuf);
 }
 
 
@@ -742,4 +818,12 @@ void CGameControllerSheep::ConSetTitle(IConsole::IResult *pResult, void *pUserDa
 
 	str_copy(pVictim->m_AccountLoginResult->m_Title, pResult->GetString(pResult->NumArguments() - 1));
 	pController->SaveAccount(pVictim);
+
+	char aBuf[256];
+	str_format(aBuf, sizeof(aBuf), "Your title has been set to '%s' by %s.", pVictim->m_AccountLoginResult->m_Title, pController->Server()->ClientName(pResult->m_ClientId));
+	pController->GameServer()->SendChatTarget(pVictim->GetCid(), aBuf);
+
+	CPlayer *pCaller = CCommands::GetCaller(pResult, pUserData);
+	str_format(aBuf, sizeof(aBuf), "You have set the title of %s to '%s'.", pController->Server()->ClientName(pVictim->GetCid()), pVictim->m_AccountLoginResult->m_Title);
+	pController->GameServer()->SendChatTarget(pCaller->GetCid(), aBuf);
 }

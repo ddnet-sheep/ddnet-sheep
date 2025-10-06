@@ -26,20 +26,20 @@ class CWeapon {
 		}
 
 		static int GetId(const char* Type) {
-			char LowerType[64] = "";
-			for(size_t i = 0; i < sizeof(Type); i++)
-				LowerType[i] = tolower(Type[i]);
+			// char LowerType[64] = "";
+			// for(size_t i = 0; i < sizeof(Type); i++)
+			// 	LowerType[i] = tolower(Type[i]);
 
-			if(!strcmp(LowerType, "hammer")) return WEAPON_HAMMER;
-			if(!strcmp(LowerType, "gun")) return WEAPON_GUN;
-			if(!strcmp(LowerType, "shotgun")) return WEAPON_SHOTGUN;
-			if(!strcmp(LowerType, "grenade")) return WEAPON_GRENADE;
-			if(!strcmp(LowerType, "laser")) return WEAPON_LASER;
-			if(!strcmp(LowerType, "ninja")) return WEAPON_NINJA;
-			if(!strcmp(LowerType, "gravitygun")) return WEAPON_GRAVITYGUN;
-			if(!strcmp(LowerType, "heartgun")) return WEAPON_HEARTGUN;
-			if(!strcmp(LowerType, "lightsaber")) return WEAPON_LIGHTSABER;
-			if(!strcmp(LowerType, "portalgun")) return WEAPON_PORTALGUN;
+			if(!strcmp(Type, "hammer")) return WEAPON_HAMMER;
+			if(!strcmp(Type, "gun")) return WEAPON_GUN;
+			if(!strcmp(Type, "shotgun")) return WEAPON_SHOTGUN;
+			if(!strcmp(Type, "grenade")) return WEAPON_GRENADE;
+			if(!strcmp(Type, "laser")) return WEAPON_LASER;
+			if(!strcmp(Type, "ninja")) return WEAPON_NINJA;
+			if(!strcmp(Type, "gravity")) return WEAPON_GRAVITYGUN;
+			if(!strcmp(Type, "heart")) return WEAPON_HEARTGUN;
+			if(!strcmp(Type, "lightsaber")) return WEAPON_LIGHTSABER;
+			if(!strcmp(Type, "portal")) return WEAPON_PORTALGUN;
 			return -2;
 		}
 	

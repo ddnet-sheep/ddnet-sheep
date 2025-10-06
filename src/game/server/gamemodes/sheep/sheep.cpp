@@ -85,12 +85,12 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 	GameServer()->Console()->Register("forcelogout", "s[user]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConForceLogout, GameServer(), "forces a player to logout");
 	GameServer()->Console()->Register("forcelogin", "s[user] ?s[account]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConForceLogin, GameServer(), "forces a player to login");
 
-	GameServer()->Console()->Register("giveexp", "?s[account] i[amount]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConGiveExp, GameServer(), "gives exp to an account");
-	GameServer()->Console()->Register("setlevel", "?s[account] i[amount]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConSetLevel, GameServer(), "sets the level of an account");
-	GameServer()->Console()->Register("setmoney", "?s[account] i[amount]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConSetMoney, GameServer(), "sets the money of an account");
-	GameServer()->Console()->Register("setvip", "?s[account] i[amount]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConSetVip, GameServer(), "sets the vip level of an account");
-	GameServer()->Console()->Register("settitle", "?s[account] s[title]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConSetTitle, GameServer(), "sets the title of an account");
-	GameServer()->Console()->Register("setstaff", "?s[account] i[amount]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConSetStaff, GameServer(), "sets the staff level of an account");
+	GameServer()->Console()->Register("giveexp", "s[account|amount] i[amount]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConGiveExp, GameServer(), "gives exp to an account");
+	GameServer()->Console()->Register("setlevel", "s[account|amount] i[amount]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConSetLevel, GameServer(), "sets the level of an account");
+	GameServer()->Console()->Register("setmoney", "s[account|amount] i[amount]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConSetMoney, GameServer(), "sets the money of an account");
+	GameServer()->Console()->Register("setvip", "s[account|amount] i[amount]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConSetVip, GameServer(), "sets the vip level of an account");
+	GameServer()->Console()->Register("settitle", "s[account|title] s[title]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConSetTitle, GameServer(), "sets the title of an account");
+	GameServer()->Console()->Register("setstaff", "s[account|amount] i[amount]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConSetStaff, GameServer(), "sets the staff level of an account");
 
 	GameServer()->Console()->Chain("sv_sheep_discord_token", ConChainSheepDiscordTokenChange, this);
  
