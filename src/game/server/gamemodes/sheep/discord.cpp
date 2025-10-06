@@ -23,7 +23,7 @@ void CGameControllerSheep::DiscordInit() {
 		}
 
 		CFakePlayerMessage Message;
-		str_copy(Message.m_aName, event.msg.author.global_name.c_str());
+		str_format(Message.m_aName, sizeof(Message.m_aName), "[DC] %s", event.msg.author.global_name.c_str());
 		str_copy(Message.m_aMessage, event.msg.content.c_str());
 		m_FakePlayerMessageQueue.push_back(Message);
 	});
