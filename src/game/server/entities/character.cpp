@@ -1287,6 +1287,10 @@ void CCharacter::Snap(int SnappingClient)
 		pDDNetCharacter->m_Flags |= CHARACTERFLAG_SUPER;
 	if(m_Core.m_Invincible)
 		pDDNetCharacter->m_Flags |= CHARACTERFLAG_INVINCIBLE;
+	//<sheep>
+	if(GetActiveWeapon() == WEAPON_GRAVITYGUN)
+		pDDNetCharacter->m_Flags |= CHARACTERFLAG_INVINCIBLE;
+	//</sheep>
 	if(m_Core.m_EndlessHook)
 		pDDNetCharacter->m_Flags |= CHARACTERFLAG_ENDLESS_HOOK;
 	if(m_Core.m_CollisionDisabled || !GetTuning(m_TuneZone)->m_PlayerCollision)
@@ -1462,7 +1466,11 @@ void CCharacter::HandleSkippableTiles(int Index)
 		   Collision()->GetFrontCollisionAt(m_Pos.x + GetProximityRadius() / 3.f, m_Pos.y + GetProximityRadius() / 3.f) == TILE_DEATH ||
 		   Collision()->GetFrontCollisionAt(m_Pos.x - GetProximityRadius() / 3.f, m_Pos.y - GetProximityRadius() / 3.f) == TILE_DEATH ||
 		   Collision()->GetFrontCollisionAt(m_Pos.x - GetProximityRadius() / 3.f, m_Pos.y + GetProximityRadius() / 3.f) == TILE_DEATH) &&
-		!m_Core.m_Super && !m_Core.m_Invincible && !(Team() && Teams()->TeeFinished(m_pPlayer->GetCid())))
+		!m_Core.m_Super && !m_Core.m_Invincible && !(Team() && Teams()->TeeFinished(m_pPlayer->GetCid()))
+	//<sheep>
+		&& GetActiveWeapon() != WEAPON_GRAVITYGUN
+	//</sheep>
+	)
 	{
 		if(Teams()->IsPractice(Team()))
 		{
@@ -1629,7 +1637,11 @@ void CCharacter::HandleTiles(int Index)
 		return;
 
 	// freeze
-	if(((m_TileIndex == TILE_FREEZE) || (m_TileFIndex == TILE_FREEZE)) && !m_Core.m_Super && !m_Core.m_Invincible && !m_Core.m_DeepFrozen)
+	if(((m_TileIndex == TILE_FREEZE) || (m_TileFIndex == TILE_FREEZE)) && !m_Core.m_Super && !m_Core.m_Invincible && !m_Core.m_DeepFrozen
+		//<sheep>
+		&& GetActiveWeapon() != WEAPON_GRAVITYGUN
+		//</sheep>
+	)
 	{
 		Freeze();
 	}
@@ -1637,17 +1649,33 @@ void CCharacter::HandleTiles(int Index)
 		UnFreeze();
 
 	// deep freeze
-	if(((m_TileIndex == TILE_DFREEZE) || (m_TileFIndex == TILE_DFREEZE)) && !m_Core.m_Super && !m_Core.m_Invincible && !m_Core.m_DeepFrozen)
+	if(((m_TileIndex == TILE_DFREEZE) || (m_TileFIndex == TILE_DFREEZE)) && !m_Core.m_Super && !m_Core.m_Invincible && !m_Core.m_DeepFrozen
+	//<sheep>
+		&& GetActiveWeapon() != WEAPON_GRAVITYGUN
+	//</sheep>
+	)
 		m_Core.m_DeepFrozen = true;
-	else if(((m_TileIndex == TILE_DUNFREEZE) || (m_TileFIndex == TILE_DUNFREEZE)) && !m_Core.m_Super && !m_Core.m_Invincible && m_Core.m_DeepFrozen)
+	else if(((m_TileIndex == TILE_DUNFREEZE) || (m_TileFIndex == TILE_DUNFREEZE)) && !m_Core.m_Super && !m_Core.m_Invincible && m_Core.m_DeepFrozen
+	//<sheep>
+		&& GetActiveWeapon() != WEAPON_GRAVITYGUN
+	//</sheep>
+	)
 		m_Core.m_DeepFrozen = false;
 
 	// live freeze
-	if(((m_TileIndex == TILE_LFREEZE) || (m_TileFIndex == TILE_LFREEZE)) && !m_Core.m_Super && !m_Core.m_Invincible)
+	if(((m_TileIndex == TILE_LFREEZE) || (m_TileFIndex == TILE_LFREEZE)) && !m_Core.m_Super && !m_Core.m_Invincible
+	//<sheep>
+		&& GetActiveWeapon() != WEAPON_GRAVITYGUN
+	//</sheep>
+	)
 	{
 		m_Core.m_LiveFrozen = true;
 	}
-	else if(((m_TileIndex == TILE_LUNFREEZE) || (m_TileFIndex == TILE_LUNFREEZE)) && !m_Core.m_Super && !m_Core.m_Invincible)
+	else if(((m_TileIndex == TILE_LUNFREEZE) || (m_TileFIndex == TILE_LUNFREEZE)) && !m_Core.m_Super && !m_Core.m_Invincible
+	//<sheep>
+		&& GetActiveWeapon() != WEAPON_GRAVITYGUN
+	//</sheep>
+	)
 	{
 		m_Core.m_LiveFrozen = false;
 	}
@@ -1828,31 +1856,51 @@ void CCharacter::HandleTiles(int Index)
 		Switchers()[Collision()->GetSwitchNumber(MapIndex)].m_aType[Team()] = TILE_SWITCHCLOSE;
 		Switchers()[Collision()->GetSwitchNumber(MapIndex)].m_aLastUpdateTick[Team()] = Server()->Tick();
 	}
-	else if(Collision()->GetSwitchType(MapIndex) == TILE_FREEZE && Team() != TEAM_SUPER && !m_Core.m_Invincible)
+	else if(Collision()->GetSwitchType(MapIndex) == TILE_FREEZE && Team() != TEAM_SUPER && !m_Core.m_Invincible
+	//<sheep>
+		&& GetActiveWeapon() != WEAPON_GRAVITYGUN
+	//</sheep>
+	)
 	{
 		if(Collision()->GetSwitchNumber(MapIndex) == 0 || Switchers()[Collision()->GetSwitchNumber(MapIndex)].m_aStatus[Team()])
 		{
 			Freeze(Collision()->GetSwitchDelay(MapIndex));
 		}
 	}
-	else if(Collision()->GetSwitchType(MapIndex) == TILE_DFREEZE && Team() != TEAM_SUPER && !m_Core.m_Invincible)
+	else if(Collision()->GetSwitchType(MapIndex) == TILE_DFREEZE && Team() != TEAM_SUPER && !m_Core.m_Invincible
+	//<sheep>
+		&& GetActiveWeapon() != WEAPON_GRAVITYGUN
+	//</sheep>
+	)
 	{
 		if(Collision()->GetSwitchNumber(MapIndex) == 0 || Switchers()[Collision()->GetSwitchNumber(MapIndex)].m_aStatus[Team()])
 			m_Core.m_DeepFrozen = true;
 	}
-	else if(Collision()->GetSwitchType(MapIndex) == TILE_DUNFREEZE && Team() != TEAM_SUPER && !m_Core.m_Invincible)
+	else if(Collision()->GetSwitchType(MapIndex) == TILE_DUNFREEZE && Team() != TEAM_SUPER && !m_Core.m_Invincible
+	//<sheep>
+		&& GetActiveWeapon() != WEAPON_GRAVITYGUN
+	//</sheep>
+	)
 	{
 		if(Collision()->GetSwitchNumber(MapIndex) == 0 || Switchers()[Collision()->GetSwitchNumber(MapIndex)].m_aStatus[Team()])
 			m_Core.m_DeepFrozen = false;
 	}
-	else if(Collision()->GetSwitchType(MapIndex) == TILE_LFREEZE && Team() != TEAM_SUPER && !m_Core.m_Invincible)
+	else if(Collision()->GetSwitchType(MapIndex) == TILE_LFREEZE && Team() != TEAM_SUPER && !m_Core.m_Invincible
+	//<sheep>
+		&& GetActiveWeapon() != WEAPON_GRAVITYGUN
+	//</sheep>
+	)
 	{
 		if(Collision()->GetSwitchNumber(MapIndex) == 0 || Switchers()[Collision()->GetSwitchNumber(MapIndex)].m_aStatus[Team()])
 		{
 			m_Core.m_LiveFrozen = true;
 		}
 	}
-	else if(Collision()->GetSwitchType(MapIndex) == TILE_LUNFREEZE && Team() != TEAM_SUPER && !m_Core.m_Invincible)
+	else if(Collision()->GetSwitchType(MapIndex) == TILE_LUNFREEZE && Team() != TEAM_SUPER && !m_Core.m_Invincible
+	//<sheep>
+		&& GetActiveWeapon() != WEAPON_GRAVITYGUN
+	//</sheep>
+	)
 	{
 		if(Collision()->GetSwitchNumber(MapIndex) == 0 || Switchers()[Collision()->GetSwitchNumber(MapIndex)].m_aStatus[Team()])
 		{
@@ -2266,7 +2314,11 @@ void CCharacter::DDRacePostCoreTick()
 
 	m_FrozenLastTick = false;
 
-	if(m_Core.m_DeepFrozen && !m_Core.m_Super && !m_Core.m_Invincible)
+	if(m_Core.m_DeepFrozen && !m_Core.m_Super && !m_Core.m_Invincible 
+		//<sheep>
+		&& GetActiveWeapon() != WEAPON_GRAVITYGUN
+		//</sheep>
+	)
 		Freeze();
 
 	// following jump rules can be overridden by tiles, like Refill Jumps, Stopper and Wall Jump
@@ -2338,7 +2390,11 @@ void CCharacter::DDRacePostCoreTick()
 
 bool CCharacter::Freeze(int Seconds)
 {
-	if(Seconds <= 0 || m_Core.m_Super || m_Core.m_Invincible || m_FreezeTime > Seconds * Server()->TickSpeed())
+	if(Seconds <= 0 || m_Core.m_Super || m_Core.m_Invincible || m_FreezeTime > Seconds * Server()->TickSpeed()
+		//<sheep>
+		|| GetActiveWeapon() == WEAPON_GRAVITYGUN
+		//</sheep>
+	)
 		return false;
 	if(m_FreezeTime == 0 || m_Core.m_FreezeStart < Server()->Tick() - Server()->TickSpeed())
 	{

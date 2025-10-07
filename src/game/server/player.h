@@ -213,6 +213,9 @@ public:
 		vec2 ConvertTargetToWorld(vec2 Position, vec2 Target) const;
 		void Write(const CNetMsg_Cl_CameraInfo *pMsg);
 		void Reset();
+		//<sheep>
+		float GetZoom() const { return m_Zoom; }
+		//</sheep>
 	} m_CameraInfo;
 
 	int m_ChatScore;

@@ -5,6 +5,7 @@
 #include <engine/shared/config.h>
 #include <game/mapitems.h>
 #include <game/server/entities/character.h>
+#include <game/server/player.h>
 #include <game/server/gamecontext.h>
 #include <game/server/player.h>
 #include <game/server/score.h>
@@ -495,6 +496,16 @@ void CGameControllerSheep::OnPlayerTick(CPlayer *pPlayer) {
 void CGameControllerSheep::OnCharacterTick(CCharacter *pCharacter) {
 	if(pCharacter->m_VoteCooldown > 0)
 		pCharacter->m_VoteCooldown--;
+
+	auto Pair = m_vGravityTarget.find(pCharacter);
+	if(Pair != m_vGravityTarget.end()) {
+		if(!pCharacter->IsAlive() || !Pair->second->IsAlive() || Pair->second->m_FreezeTime > 0 || Pair->second->GetActiveWeapon() != WEAPON_GRAVITYGUN) { // || pChr->GetPlayer()->m_TelekinesisImmunity
+			m_vGravityTarget.erase(Pair);	
+		} else {
+			pCharacter->SetPosition(Pair->second->GetCursorPos());
+			pCharacter->SetVelocity(vec2(0.f, 0.f));
+		}
+	}
 }
 
 void CGameControllerSheep::OnCharacterVote(CCharacter *pCharacter, EVoteButton Button)
@@ -553,9 +564,37 @@ bool CGameControllerSheep::OnCharacterWeaponFire(CCharacter *pCharacter, int Wea
 	int ClientId = pCharacter->GetPlayer()->GetCid();
 
 	switch(Weapon) {
-		case WEAPON_GRAVITYGUN:
-			// pick up or throw entity
+		case WEAPON_GRAVITYGUN: {
+			// release controlled entity
+			for(auto it = m_vGravityTarget.begin(); it != m_vGravityTarget.end(); ++it) {
+				if(it->second == pCharacter) {
+					m_vGravityTarget.erase(it);
+					GameServer()->CreateSound(pCharacter->m_Pos, SOUND_NINJA_HIT, pCharacter->TeamMask());
+					return true;
+				}
+			} 
+			
+			// already being controlled
+			if(m_vGravityTarget.find(pCharacter) != m_vGravityTarget.end())
+				return false;
+
+			float Zoom = std::max(1.0f, pCharacter->GetPlayer()->m_CameraInfo.GetZoom());
+			CCharacter *pClosest = GameServer()->m_World.ClosestCharacter(pCharacter->GetCursorPos(), CCharacterCore::PhysicalSize() * Zoom, pCharacter);
+			
+			// no one close
+			if(pClosest == nullptr || !pClosest->IsAlive())
+				return false;
+
+			// if(pClosest->GetPlayer()->m_TelekinesisImmunity)
+			// 	return; // immunity
+
+			m_vGravityTarget[pClosest] = pCharacter;
+
+			GameServer()->CreateSound(pCharacter->m_Pos, SOUND_NINJA_HIT, pCharacter->TeamMask());
+
+			// pCharacter->m_VoteActionDelay = GetFireDelay(Core()->m_ActiveWeapon) * Server()->TickSpeed() / 1000;
 			return true;
+		}
 		case WEAPON_HEARTGUN:
 			new CCustomProjectile(
 				pCharacter->GameWorld(),
