@@ -3,7 +3,7 @@
 #define GAME_SERVER_GAMEMODES_SHEEP_H
 
 #include <vector>
-
+#include <unordered_map>
 
 #include <base/log.h>
 
@@ -137,6 +137,7 @@ public:
 	// client bound
 	CPortal *m_pPortals[MAX_CLIENTS] = {};
 	CLightsaber *m_pLightsabers[MAX_CLIENTS] = {};
+	std::unordered_map<CEntity*, CCharacter*> m_vGravityTarget;
 
 	// server bound
 	std::vector<CPowerUp *> m_vPowerups;

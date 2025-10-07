@@ -5,6 +5,7 @@
 #include <generated/protocol.h>
 #include <string.h>
 
+#include <base/system.h>
 #include <base/log.h>
 
 class CWeapon {
