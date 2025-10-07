@@ -386,8 +386,9 @@ void CGameControllerSheep::ConRegister(IConsole::IResult *pResult, void *pUserDa
 
 	auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pPlayer->m_AccountLoginResult);
 	Tmp->m_Type = CSqlAccountCredentialsRequest::TYPE_PASSWORD;
-	str_copy(Tmp->m_Username, aUsername, sizeof(Tmp->m_Username));
-	str_copy(Tmp->m_Password, aPassword, sizeof(Tmp->m_Password));
+	str_copy(Tmp->m_Username, aUsername);
+	str_copy(Tmp->m_Password, aPassword);
+	str_copy(Tmp->m_IP, pGameServer->Server()->ClientAddrString(pResult->m_ClientId, false));
 	
 	CGameControllerSheep *pController = (CGameControllerSheep *)pGameServer->m_pController;
 	pController->m_pPool->Execute(CGameControllerSheep::ExecuteRegister, std::move(Tmp), "account register");
@@ -397,7 +398,7 @@ bool CGameControllerSheep::ExecuteRegister(IDbConnection *pSqlServer, const ISql
 	auto *pResult = dynamic_cast<CAccountDataResult *>(pGameData->m_pResult.get());
 
 	char aSql[1024];
-	str_format(aSql, sizeof(aSql), "INSERT INTO sheep_accounts (name, password) VALUES (?, ?) RETURNING %s", Fields());
+	str_format(aSql, sizeof(aSql), "INSERT INTO sheep_accounts (name, password, ip) VALUES (?, ?, ?) RETURNING %s", Fields());
 	if(!pSqlServer->PrepareStatement(aSql, pError, ErrorSize)) {
 		str_copy(pResult->m_Message, "Database error (1).");
 		return false;
@@ -410,6 +411,8 @@ bool CGameControllerSheep::ExecuteRegister(IDbConnection *pSqlServer, const ISql
 	sha256_str(HashPassword(pData->m_Password), aHash, sizeof(aHash));
 	pSqlServer->BindString(2, aHash);
 
+	pSqlServer->BindString(3, pData->m_IP);
+
 	bool End;
 	if(!pSqlServer->Step(&End, pError, ErrorSize) || End) {
 		str_copy(pResult->m_Message, "User does already exist.");
@@ -419,16 +422,6 @@ bool CGameControllerSheep::ExecuteRegister(IDbConnection *pSqlServer, const ISql
 	str_copy(pResult->m_Message, "Successfully registered.");
 
 	GenerateAccountLoginResult(pSqlServer, pGameData);
-
-	// update ip
-	if(!pSqlServer->PrepareStatement("UPDATE sheep_accounts SET ip=? WHERE name=?", pError, ErrorSize))
-		return true;
-
-	pSqlServer->BindString(1, pData->m_IP);
-	pSqlServer->BindString(2, pData->m_Username);
-
-	int NumUpdated;
-	pSqlServer->ExecuteUpdate(&NumUpdated, pError, ErrorSize);
 
 	return true;
 }
