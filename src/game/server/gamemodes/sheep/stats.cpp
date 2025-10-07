@@ -24,7 +24,7 @@ int CGameControllerSheep::CalcPlayerExpPerMinute(CPlayer *pPlayer) {
 // 4 => 160
 // 5 => 250
 // 6 => 360
-int CalcPlayerNeededExp(CPlayer *pPlayer) {
+int CGameControllerSheep::CalcPlayerNeededExp(CPlayer *pPlayer) {
     int NextLevel = pPlayer == nullptr || !pPlayer->IsLoggedIn() ? 1 : pPlayer->m_AccountLoginResult->m_Level + 1;
     return NextLevel * NextLevel * 10;
 }

@@ -466,10 +466,11 @@ void CGameControllerSheep::OnPlayerTick(CPlayer *pPlayer) {
 	if (pPlayer->m_AccountStatsResult != nullptr && pPlayer->m_AccountStatsResult->m_Completed) {
 		if (pPlayer->m_AccountStatsResult->m_Success) {
 			char aBuf[512];
-			str_format(aBuf, sizeof(aBuf), "Account stats for '%s': Level: %d, Exp: %d, Money: %lld, Playtime: %lld mins, VIP: %d",
+			str_format(aBuf, sizeof(aBuf), "Account stats for '%s': Level: %d, Exp: %d/%d, Money: %lld, Playtime: %lld mins, VIP: %d",
 				pPlayer->m_AccountStatsResult->m_Username,
 				pPlayer->m_AccountStatsResult->m_Level,
 				pPlayer->m_AccountStatsResult->m_Exp,
+				CalcPlayerNeededExp(pPlayer),
 				pPlayer->m_AccountStatsResult->m_Money,
 				pPlayer->m_AccountStatsResult->m_Playtime,
 				pPlayer->m_AccountStatsResult->m_Vip
@@ -658,14 +659,21 @@ bool CGameControllerSheep::OnCharacterPowerup(CCharacter *pChr, const SPowerupDa
 		return false;
 	}
 
+	int Amount = (rand() % 50) + 1;
 	switch(pPowerup->m_Type) {
 		case EPowerUp::MONEY:
-			GivePlayerMoney(pChr->GetPlayer(), (rand() % 50) + 1, "picked up money powerup");
-			return true;
+			GivePlayerMoney(pChr->GetPlayer(), Amount, "picked up money powerup");
+			break;
 		case EPowerUp::XP:
-			GivePlayerExp(pChr->GetPlayer(), (rand() % 50) + 1, "picked up exp powerup");
-			return true;
+			char aBuf[256];
+			str_format(aBuf, sizeof(aBuf), "You found +%d EXP.", Amount);
+			GameServer()->SendChatTarget(pChr->GetPlayer()->GetCid(), aBuf);
+			
+			GivePlayerExp(pChr->GetPlayer(), Amount, "picked up exp powerup");
+			break;
+		default:
+			return false;
 	}
 
-	return false;
+	return true;
 }

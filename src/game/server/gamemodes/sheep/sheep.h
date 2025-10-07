@@ -58,6 +58,7 @@ public:
 	void LoadAccountItem(class CPlayer* pPlayer);
 	static bool ExecuteLoadAccountItem(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	
+	int CalcPlayerNeededExp(CPlayer *pPlayer);
 	std::optional<vec2> GetRandomAccessablePos();
 
 	// database
