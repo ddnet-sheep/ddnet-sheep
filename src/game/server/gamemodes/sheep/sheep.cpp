@@ -660,6 +660,7 @@ bool CGameControllerSheep::OnCharacterPowerup(CCharacter *pChr, const SPowerupDa
 
 	switch(pPowerup->m_Type) {
 		case EPowerUp::MONEY:
+			GivePlayerMoney(pChr->GetPlayer(), (rand() % 50) + 1, "picked up money powerup");
 			return true;
 		case EPowerUp::XP:
 			return true;
