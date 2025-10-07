@@ -3,6 +3,8 @@
 #include <engine/shared/config.h>
 #include <game/server/entities/character.h>
 
+#include <game/server/entities/sheep/text/text.h>
+
 #include <engine/server/databases/connection.h>
 #include <engine/server/databases/connection_pool.h>
 
@@ -85,7 +87,7 @@ void CGameControllerSheep::GivePlayerMoney(CPlayer* pPlayer, int64_t Amount, con
 		const vec2 Pos = pChr->m_Pos + vec2(0, -74);
 		char aText[66];
 		str_format(aText, sizeof(aText), "+%ld", Amount);
-		// new CProjectileText(pChr->GameWorld(), Pos, pPlayer->GetCid(), 175, aText, WEAPON_HAMMER);
+		new CProjectileText(pChr->GameWorld(), Pos, pPlayer->GetCid(), 175, aText, WEAPON_HAMMER);
 		pChr->SetEmote(EMOTE_HAPPY, Server()->Tick() + 175);
 	}
 

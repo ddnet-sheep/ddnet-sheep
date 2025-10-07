@@ -2816,6 +2816,9 @@ if(SERVER)
     entities/sheep/portal.h
     entities/sheep/powerup.cpp
     entities/sheep/powerup.h
+    entities/sheep/text/laser.cpp
+    entities/sheep/text/projectile.cpp
+    entities/sheep/text/text.h
     entities/sheep/weapon_drop.cpp
     entities/sheep/weapon_drop.h
     #</sheep>
@@ -2841,6 +2844,7 @@ if(SERVER)
     gamemodes/sheep/sheep.h
     gamemodes/sheep/sql.h
     gamemodes/sheep/stats.cpp
+    gamemodes/sheep/text.cpp
     gamemodes/sheep/vote.h
     gamemodes/sheep/weapon.cpp
     gamemodes/sheep/weapon.h

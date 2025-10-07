@@ -74,6 +74,9 @@ public:
     static void ConLogout(IConsole::IResult *pResult, void *pUserData);
 	static void ConStats(IConsole::IResult *pResult, void *pUserData);
 	
+	static void ConLaserText(IConsole::IResult *pResult, void *pUserData);
+	static void ConProjectileText(IConsole::IResult *pResult, void *pUserData);
+
 	// admin commands
 	static void ConIgnoreInvisible(IConsole::IResult *pResult, void *pUserData);
 	static void ConVanish(IConsole::IResult *pResult, void *pUserData);

@@ -77,21 +77,24 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 	
 	GameServer()->Console()->Register("stats", "?s[account]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConStats, GameServer(), "shows account stats");
 
-	// admin commands
-	GameServer()->Console()->Register("weapon", "s[user|weapon] ?s[weapon]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConWeapon, GameServer(), "toggles a weapon");
-	GameServer()->Console()->Register("vanish", "?s[user]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConVanish, GameServer(), "toggles the vanish state");
-	GameServer()->Console()->Register("invisible", "?s[user]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConInvisible, GameServer(), "toggles the invisible state");
-	GameServer()->Console()->Register("ignoreinvisible", "?s[user]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConIgnoreInvisible, GameServer(), "toggles the ignore invisible state");
-	// GameServer()->Console()->Register("sync", "?s[client]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConSync, GameServer(), "reloads the account data");
-	GameServer()->Console()->Register("forcelogout", "s[user]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConForceLogout, GameServer(), "forces a player to logout");
-	GameServer()->Console()->Register("forcelogin", "s[user] ?s[account]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConForceLogin, GameServer(), "forces a player to login");
+	GameServer()->Console()->Register("lasertext", "r[string]", CFGFLAG_SERVER, ConLaserText, GameServer(), "laser text");
+	GameServer()->Console()->Register("projectiletext", "r[string]", CFGFLAG_SERVER, ConProjectileText, GameServer(), "projectile text");
 
-	GameServer()->Console()->Register("giveexp", "s[account|amount] i[amount]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConGiveExp, GameServer(), "gives exp to an account");
-	GameServer()->Console()->Register("setlevel", "s[account|amount] i[amount]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConSetLevel, GameServer(), "sets the level of an account");
-	GameServer()->Console()->Register("setmoney", "s[account|amount] i[amount]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConSetMoney, GameServer(), "sets the money of an account");
-	GameServer()->Console()->Register("setvip", "s[account|amount] i[amount]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConSetVip, GameServer(), "sets the vip level of an account");
-	GameServer()->Console()->Register("settitle", "s[account|title] s[title]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConSetTitle, GameServer(), "sets the title of an account");
-	GameServer()->Console()->Register("setstaff", "s[account|amount] i[amount]", CFGFLAG_CHAT | CFGFLAG_SERVER, ConSetStaff, GameServer(), "sets the staff level of an account");
+	// admin commands
+	GameServer()->Console()->Register("weapon", "s[user|weapon] ?s[weapon]", CFGFLAG_SERVER, ConWeapon, GameServer(), "toggles a weapon");
+	GameServer()->Console()->Register("vanish", "?s[user]", CFGFLAG_SERVER, ConVanish, GameServer(), "toggles the vanish state");
+	GameServer()->Console()->Register("invisible", "?s[user]", CFGFLAG_SERVER, ConInvisible, GameServer(), "toggles the invisible state");
+	GameServer()->Console()->Register("ignoreinvisible", "?s[user]", CFGFLAG_SERVER, ConIgnoreInvisible, GameServer(), "toggles the ignore invisible state");
+
+	GameServer()->Console()->Register("forcelogout", "s[user]", CFGFLAG_SERVER, ConForceLogout, GameServer(), "forces a player to logout");
+	GameServer()->Console()->Register("forcelogin", "s[user] ?s[account]", CFGFLAG_SERVER, ConForceLogin, GameServer(), "forces a player to login");
+
+	GameServer()->Console()->Register("giveexp", "s[account|amount] i[amount]", CFGFLAG_SERVER, ConGiveExp, GameServer(), "gives exp to an account");
+	GameServer()->Console()->Register("setlevel", "s[account|amount] i[amount]", CFGFLAG_SERVER, ConSetLevel, GameServer(), "sets the level of an account");
+	GameServer()->Console()->Register("setmoney", "s[account|amount] i[amount]", CFGFLAG_SERVER, ConSetMoney, GameServer(), "sets the money of an account");
+	GameServer()->Console()->Register("setvip", "s[account|amount] i[amount]", CFGFLAG_SERVER, ConSetVip, GameServer(), "sets the vip level of an account");
+	GameServer()->Console()->Register("settitle", "s[account|title] s[title]", CFGFLAG_SERVER, ConSetTitle, GameServer(), "sets the title of an account");
+	GameServer()->Console()->Register("setstaff", "s[account|amount] i[amount]", CFGFLAG_SERVER, ConSetStaff, GameServer(), "sets the staff level of an account");
 
 	GameServer()->Console()->Chain("sv_sheep_discord_token", ConChainSheepDiscordTokenChange, this);
  
@@ -668,7 +671,7 @@ bool CGameControllerSheep::OnCharacterPowerup(CCharacter *pChr, const SPowerupDa
 			char aBuf[256];
 			str_format(aBuf, sizeof(aBuf), "You found +%d EXP.", Amount);
 			GameServer()->SendChatTarget(pChr->GetPlayer()->GetCid(), aBuf);
-			
+
 			GivePlayerExp(pChr->GetPlayer(), Amount, "picked up exp powerup");
 			break;
 		default:
