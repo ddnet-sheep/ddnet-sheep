@@ -663,6 +663,7 @@ bool CGameControllerSheep::OnCharacterPowerup(CCharacter *pChr, const SPowerupDa
 			GivePlayerMoney(pChr->GetPlayer(), (rand() % 50) + 1, "picked up money powerup");
 			return true;
 		case EPowerUp::XP:
+			GivePlayerExp(pChr->GetPlayer(), (rand() % 50) + 1, "picked up exp powerup");
 			return true;
 	}
 
