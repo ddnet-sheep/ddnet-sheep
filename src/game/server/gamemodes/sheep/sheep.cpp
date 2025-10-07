@@ -96,6 +96,8 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 	GameServer()->Console()->Register("settitle", "s[account|title] s[title]", CFGFLAG_SERVER, ConSetTitle, GameServer(), "sets the title of an account");
 	GameServer()->Console()->Register("setstaff", "s[account|amount] i[amount]", CFGFLAG_SERVER, ConSetStaff, GameServer(), "sets the staff level of an account");
 
+	GameServer()->Console()->Register("redirect", "s[user] i[port]", CFGFLAG_SERVER, ConRedirect, GameServer(), "redirects a player to another port");
+
 	GameServer()->Console()->Chain("sv_sheep_discord_token", ConChainSheepDiscordTokenChange, this);
  
 	LoadItems();
@@ -679,4 +681,12 @@ bool CGameControllerSheep::OnCharacterPowerup(CCharacter *pChr, const SPowerupDa
 	}
 
 	return true;
+}
+
+void CGameControllerSheep::ConRedirect(IConsole::IResult *pResult, void *pUserData) {
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	
+	CPlayer *pPlayer = CCommands::GetVictimOrCaller(pResult, pUserData, 2);
+
+	pSelf->Server()->RedirectClient(pPlayer->GetCid(), pResult->GetInteger(pResult->NumArguments() - 1));
 }

@@ -88,6 +88,8 @@ public:
 	static void ConSetVip(IConsole::IResult *pResult, void *pUserData);
 	static void ConSetTitle(IConsole::IResult *pResult, void *pUserData);
 	static void ConSetStaff(IConsole::IResult *pResult, void *pUserData);
+
+	static void ConRedirect(IConsole::IResult *pResult, void *pUserData);
 	
 	// static void ConSync(IConsole::IResult *pResult, void *pUserData);
 	static void ConForceLogout(IConsole::IResult *pResult, void *pUserData);
