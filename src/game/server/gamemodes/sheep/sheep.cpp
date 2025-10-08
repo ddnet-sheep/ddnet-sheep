@@ -50,7 +50,9 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 			`title` VARCHAR(32) NOT NULL DEFAULT "",
 			`ip` VARCHAR(64) NOT NULL DEFAULT "",
 			`money` BIGINT NOT NULL DEFAULT 0,
-			`playtime` BIGINT NOT NULL DEFAULT 0
+			`playtime` BIGINT NOT NULL DEFAULT 0,
+			`created_at` DATETIME NOT NULL,
+			`updated_at` DATETIME NOT NULL
 		);
 
 		CREATE TABLE `sheep_items` ( 

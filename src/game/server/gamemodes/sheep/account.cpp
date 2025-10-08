@@ -334,7 +334,7 @@ bool CGameControllerSheep::ExecuteSave(IDbConnection *pSqlServer, const ISqlData
 	auto *pResult = dynamic_cast<CAccountDataResult *>(pGameData->m_pResult.get());
 	const auto *pData = dynamic_cast<const CSqlAccountCredentialsRequest *>(pGameData);
 
-	if(!pSqlServer->PrepareStatement("UPDATE sheep_accounts SET name=?, level=?, exp=?, vip=?, vip_expiration=?, staff_level=?, email=?, email_verified=?, invisible=?, vanish=?, title=?, money=?, playtime=? WHERE id=?", pError, ErrorSize))
+	if(!pSqlServer->PrepareStatement("UPDATE sheep_accounts SET name=?, level=?, exp=?, vip=?, vip_expiration=?, staff_level=?, email=?, email_verified=?, invisible=?, vanish=?, title=?, money=?, playtime=?, updated_at=NOW() WHERE id=?", pError, ErrorSize))
 		return false;
 	
 	pSqlServer->BindString(1, pData->m_Username);
@@ -398,7 +398,7 @@ bool CGameControllerSheep::ExecuteRegister(IDbConnection *pSqlServer, const ISql
 	auto *pResult = dynamic_cast<CAccountDataResult *>(pGameData->m_pResult.get());
 
 	char aSql[1024];
-	str_format(aSql, sizeof(aSql), "INSERT INTO sheep_accounts (name, password, ip) VALUES (?, ?, ?) RETURNING %s", Fields());
+	str_format(aSql, sizeof(aSql), "INSERT INTO sheep_accounts (name, password, ip, created_at) VALUES (?, ?, ?, NOW()) RETURNING %s", Fields());
 	if(!pSqlServer->PrepareStatement(aSql, pError, ErrorSize)) {
 		str_copy(pResult->m_Message, "Database error (1).");
 		return false;
