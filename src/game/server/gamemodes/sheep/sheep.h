@@ -133,6 +133,7 @@ public:
 
 	void OnPlayerConnect(class CPlayer *pPlayer) override;
 	void OnPlayerDisconnect(class CPlayer *pPlayer, const char *pReason) override;
+	bool OnEntity(int Index, int x, int y, int Layer, int Flags, bool Initial, int Number) override;
 
 	void OnReset() override;
 	void Tick() override;

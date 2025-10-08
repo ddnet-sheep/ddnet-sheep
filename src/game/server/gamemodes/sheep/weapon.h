@@ -22,6 +22,10 @@ class CWeapon {
 				case WEAPON_HEARTGUN: return "Heart";
 				case WEAPON_LIGHTSABER: return "Lightsaber";
 				case WEAPON_PORTALGUN: return "Portal";
+				case WEAPON_PLASMA_RIFLE: return "Plasma Rifle";
+				case WEAPON_PROJECTILE_RIFLE: return "Projectile Rifle";
+				case WEAPON_BALL_GRENADE: return "Ball Grenade";
+				case WEAPON_LIGHTNING_LASER: return "Lightning Laser";
 				default: return "Unknown";
 			}
 		}
@@ -37,6 +41,10 @@ class CWeapon {
 			if(!str_comp_nocase(Type, "heart")) return WEAPON_HEARTGUN;
 			if(!str_comp_nocase(Type, "lightsaber")) return WEAPON_LIGHTSABER;
 			if(!str_comp_nocase(Type, "portal")) return WEAPON_PORTALGUN;
+			if(!str_comp_nocase(Type, "plasma")) return WEAPON_PLASMA_RIFLE;
+			if(!str_comp_nocase(Type, "projectilerifle")) return WEAPON_PROJECTILE_RIFLE;
+			if(!str_comp_nocase(Type, "ballgrenade")) return WEAPON_BALL_GRENADE;
+			if(!str_comp_nocase(Type, "lightninglaser")) return WEAPON_LIGHTNING_LASER;
 			return -2;
 		}
 	
@@ -48,10 +56,27 @@ class CWeapon {
 				case WEAPON_LIGHTSABER:
 					return WEAPON_GUN;
 				case WEAPON_PORTALGUN:
+				case WEAPON_PLASMA_RIFLE:
+				case WEAPON_PROJECTILE_RIFLE:
+				case WEAPON_LIGHTNING_LASER:
 					return WEAPON_LASER;
+				case WEAPON_BALL_GRENADE:
+					return WEAPON_GRENADE;
 				default:
 					return Type;
 			}
+		}
+
+		static int GetProjectileType(int Weapon) {
+			switch (Weapon) {
+				case WEAPON_PLASMA_RIFLE:
+					return WEAPON_LASER;
+				case WEAPON_PROJECTILE_RIFLE:
+					return WEAPON_GUN;
+				case WEAPON_BALL_GRENADE:
+					return WEAPON_GRENADE;
+			}
+			return Weapon;
 		}
 };
 

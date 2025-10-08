@@ -2810,6 +2810,8 @@ if(SERVER)
     #<sheep>
     entities/sheep/custom_projectile.cpp
     entities/sheep/custom_projectile.h
+    entities/sheep/lightninglaser.cpp
+    entities/sheep/lightninglaser.h
     entities/sheep/lightsaber.cpp
     entities/sheep/lightsaber.h
     entities/sheep/portal.cpp

@@ -25,4 +25,19 @@ public:
 			k = range; 
 		return Min + k;
 	}
+
+	static float GetAngle(vec2 Dir) {
+		if (Dir.x == 0 && Dir.y == 0)
+			return 0.0f;
+
+		float a = atanf(Dir.y / Dir.x);
+		if (Dir.x < 0)
+			a = a + pi;
+
+		return a;
+	}
+
+	static vec2 GetDir(float Angle) {
+		return vec2(cosf(Angle), sinf(Angle));
+	}
 };

@@ -29,6 +29,8 @@ static int GetNeededIds(int Type) {
 		case WEAPON_GRAVITYGUN:
 		case WEAPON_HEARTGUN:
 		case WEAPON_LIGHTSABER:
+		case WEAPON_PLASMA_RIFLE:
+		case WEAPON_PROJECTILE_RIFLE:
 			return 1;
 		case WEAPON_PORTALGUN:
 			return 2;
@@ -315,6 +317,19 @@ void CWeaponDrop::Snap(int ClientId) {
 		case WEAPON_HEARTGUN:
 			GameServer()->SnapPickup(SnapContext, m_vIds[0], m_Pos + Offset, POWERUP_HEALTH, 0, -1, PICKUPFLAG_NO_PREDICT);
 			break;
+		case WEAPON_PROJECTILE_RIFLE:
+			{
+				CNetObj_Projectile* pShotgunBullet = static_cast<CNetObj_Projectile*>(Server()->SnapNewItem(NETOBJTYPE_PROJECTILE, m_vIds[0], sizeof(CNetObj_Projectile)));
+				if (!pShotgunBullet)
+					return;
+
+				pShotgunBullet->m_X = (int)m_Pos.x + Offset.x;
+				pShotgunBullet->m_Y = (int)m_Pos.y + Offset.y;
+				pShotgunBullet->m_Type = WEAPON_SHOTGUN;
+				pShotgunBullet->m_StartTick = 0;
+			}
+			break;
+		case WEAPON_PLASMA_RIFLE:
 		case WEAPON_LIGHTSABER:
 			GameServer()->SnapLaserObject(SnapContext, m_vIds[0], m_Pos + Offset, m_Pos + Offset, Server()->Tick(), -1, LASERTYPE_GUN);
 			break;

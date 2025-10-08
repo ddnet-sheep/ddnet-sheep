@@ -447,7 +447,14 @@ void CCharacter::FireWeapon()
 	vec2 Direction = normalize(MouseTarget);
 
 	bool FullAuto = false;
-	if(m_Core.m_ActiveWeapon == WEAPON_GRENADE || m_Core.m_ActiveWeapon == WEAPON_SHOTGUN || m_Core.m_ActiveWeapon == WEAPON_LASER)
+	if(m_Core.m_ActiveWeapon == WEAPON_GRENADE || m_Core.m_ActiveWeapon == WEAPON_SHOTGUN || m_Core.m_ActiveWeapon == WEAPON_LASER
+		//<sheep>
+		|| m_Core.m_ActiveWeapon == WEAPON_PLASMA_RIFLE
+		|| m_Core.m_ActiveWeapon == WEAPON_PROJECTILE_RIFLE
+		|| m_Core.m_ActiveWeapon == WEAPON_BALL_GRENADE
+		|| m_Core.m_ActiveWeapon == WEAPON_LIGHTNING_LASER
+		//</sheep>
+	)
 		FullAuto = true;
 	if(m_Core.m_Jetpack && m_Core.m_ActiveWeapon == WEAPON_GUN)
 		FullAuto = true;

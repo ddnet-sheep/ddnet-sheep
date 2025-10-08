@@ -64,6 +64,9 @@ vec2 CProjectile::GetPos(float Time)
 
 	switch(m_Type)
 	{
+	//<sheep>
+	case WEAPON_BALL_GRENADE:
+	//</sheep>
 	case WEAPON_GRENADE:
 		if(!m_TuneZone)
 		{
@@ -92,6 +95,9 @@ vec2 CProjectile::GetPos(float Time)
 
 		break;
 
+	//<sheep>
+	case WEAPON_PROJECTILE_RIFLE:
+	//</sheep>
 	case WEAPON_GUN:
 		if(!m_TuneZone)
 		{
@@ -146,7 +152,11 @@ void CProjectile::Tick()
 	{
 		TeamMask = pOwnerChar->TeamMask();
 	}
-	else if(m_Owner >= 0 && (m_Type != WEAPON_GRENADE || g_Config.m_SvDestroyBulletsOnDeath || m_BelongsToPracticeTeam))
+	else if(m_Owner >= 0 && (m_Type != WEAPON_GRENADE
+		//<sheep>
+		&& m_Type != WEAPON_BALL_GRENADE
+		//</sheep>
+		 || g_Config.m_SvDestroyBulletsOnDeath || m_BelongsToPracticeTeam))
 	{
 		m_MarkedForDestroy = true;
 		return;
@@ -302,6 +312,9 @@ void CProjectile::FillInfo(CNetObj_Projectile *pProj)
 	pProj->m_VelY = (int)(m_Direction.y * 100.0f);
 	pProj->m_StartTick = m_StartTick;
 	pProj->m_Type = m_Type;
+	//<sheep>
+	pProj->m_Type = CWeapon::GetProjectileType(m_Type);
+	//</sheep>
 }
 
 void CProjectile::Snap(int SnappingClient)
@@ -415,6 +428,9 @@ bool CProjectile::FillExtraInfoLegacy(CNetObj_DDRaceProjectile *pProj)
 	pProj->m_Data = Data;
 	pProj->m_StartTick = m_StartTick;
 	pProj->m_Type = m_Type;
+	//<sheep>
+	pProj->m_Type = CWeapon::GetProjectileType(m_Type);
+	//</sheep>
 	return true;
 }
 
@@ -453,6 +469,9 @@ void CProjectile::FillExtraInfo(CNetObj_DDNetProjectile *pProj)
 	pProj->m_X = round_to_int(m_Pos.x * 100.0f);
 	pProj->m_Y = round_to_int(m_Pos.y * 100.0f);
 	pProj->m_Type = m_Type;
+	//<sheep>
+	pProj->m_Type = CWeapon::GetProjectileType(m_Type);
+	//</sheep>
 	pProj->m_StartTick = m_StartTick;
 	pProj->m_Owner = m_Owner;
 	pProj->m_Flags = Flags;

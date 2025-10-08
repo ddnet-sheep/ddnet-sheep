@@ -13,8 +13,13 @@
 
 #include <engine/server/server.h>
 #include <game/server/gamemodes/sheep/weapon.h>
+#include <game/server/entities/projectile.h>
 #include <game/server/entities/sheep/custom_projectile.h>
+#include <game/server/entities/sheep/lightninglaser.h>
 #include <game/server/entities/sheep/powerup.h>
+#include <game/server/entities/pickup.h>
+
+#include <generated/protocol.h>
 
 #include <algorithm>
 #include <iterator>
@@ -570,6 +575,73 @@ bool CGameControllerSheep::OnCharacterWeaponFire(CCharacter *pCharacter, int Wea
 	int ClientId = pCharacter->GetPlayer()->GetCid();
 
 	switch(Weapon) {
+		case WEAPON_LIGHTNING_LASER:
+			{
+				new CLightningLaser(pCharacter->GameWorld(), ProjStartPos, Direction, ClientId);
+
+				GameServer()->CreateSound(pCharacter->m_Pos, SOUND_LASER_FIRE, pCharacter->TeamMask());
+			} 
+			break;
+		case WEAPON_BALL_GRENADE:
+			{
+				int Lifetime = (int)(Server()->TickSpeed() * pCharacter->Tuning()->m_GrenadeLifetime);
+
+				for (int i = 0; i < 7; i++)
+				{
+					new CProjectile
+					(
+						pCharacter->GameWorld(),
+						WEAPON_BALL_GRENADE,//Type
+						ClientId,//Owner
+						ProjStartPos,//Pos
+						Direction,//Dir
+						Lifetime,//Span
+						false,//Freeze
+						i < 3,//Explosive
+						i == 0 ? SOUND_GRENADE_EXPLODE : -1,//SoundImpact
+						MouseTarget //InitDir
+					);
+				}
+
+				GameServer()->CreateSound(pCharacter->m_Pos, SOUND_GRENADE_FIRE, pCharacter->TeamMask());
+			} 
+			break;
+		case WEAPON_PROJECTILE_RIFLE:
+			{
+				int Lifetime = (int)(Server()->TickSpeed() * pCharacter->Tuning()->m_GunLifetime);
+	
+				new CProjectile(
+					pCharacter->GameWorld(),
+					WEAPON_PROJECTILE_RIFLE, //Type
+					ClientId,//Owner
+					ProjStartPos,//Pos
+					Direction,//Dir
+					Lifetime,//Span
+					false,//Freeze
+					true,//Explosive
+					SOUND_GRENADE_EXPLODE,//SoundImpact
+					MouseTarget //InitDir
+				);
+
+				GameServer()->CreateSound(pCharacter->m_Pos, SOUND_HOOK_LOOP, pCharacter->TeamMask());
+			} 
+			break;
+		case WEAPON_PLASMA_RIFLE:
+			{
+				new CCustomProjectile
+				(
+					pCharacter->GameWorld(),
+					ClientId,	//owner
+					ProjStartPos,			//pos
+					Direction,				//dir
+					true,					//explosive
+					false,					//freeze
+					true,					//unfreeze
+					WEAPON_PLASMA_RIFLE	//type
+				);
+				GameServer()->CreateSound(pCharacter->m_Pos, SOUND_LASER_FIRE, pCharacter->TeamMask());
+			} 
+			break;
 		case WEAPON_GRAVITYGUN: {
 			// release controlled entity
 			for(auto it = m_vGravityTarget.begin(); it != m_vGravityTarget.end(); ++it) {
@@ -689,4 +761,32 @@ void CGameControllerSheep::ConRedirect(IConsole::IResult *pResult, void *pUserDa
 	CPlayer *pPlayer = CCommands::GetVictimOrCaller(pResult, pUserData, 2);
 
 	pSelf->Server()->RedirectClient(pPlayer->GetCid(), pResult->GetInteger(pResult->NumArguments() - 1));
+}
+
+
+bool CGameControllerSheep::OnEntity(int Index, int x, int y, int Layer, int Flags, bool Initial, int Number) {
+	log_error("sheep", "ent id = %d", Index);
+	
+	if(IGameController::OnEntity(Index, x, y, Layer, Flags, Initial, Number))
+		return true;
+
+	const vec2 Pos(x * 32.0f + 16.0f, y * 32.0f + 16.0f);
+	int Type = -1;
+	int SubType = 0;
+
+	log_error("sheep", "ent id = %d", Index);
+
+	if(Index == ENTITY_WEAPON_HEART) {
+		Type = POWERUP_WEAPON;
+		SubType = WEAPON_HEARTGUN;
+	}
+
+	if(Type != -1) {
+		int PickupFlags = TileFlagsToPickupFlags(Flags);
+		CPickup *pPickup = new CPickup(&GameServer()->m_World, Type, SubType, Layer, Number, PickupFlags);
+		pPickup->m_Pos = Pos;
+		return true;
+	}
+
+	return false;
 }

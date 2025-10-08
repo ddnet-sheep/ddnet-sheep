@@ -77,6 +77,8 @@ void CCustomProjectile::Tick()
 
 		if(m_CollisionState == NOT_COLLIDED)
 			m_CollisionState = COLLIDED_ONCE;
+
+		Reset();
 	}
 	else if(m_CollisionState == COLLIDED_ONCE)
 		m_CollisionState = COLLIDED_TWICE;
@@ -195,27 +197,47 @@ void CCustomProjectile::Snap(int SnappingClient)
 			}
 			FillInfo(pProj);
 		}
-	}
-	else if(GameServer()->GetClientVersion(SnappingClient) >= VERSION_DDNET_ENTITY_NETOBJS)
-	{
-		CNetObj_DDNetPickup *pPickup = Server()->SnapNewItem<CNetObj_DDNetPickup>(GetId());
-		if(!pPickup)
-			return;
+	} else {
+		switch (m_Type) {
+			case WEAPON_HEARTGUN:
+				{
+					if(GameServer()->GetClientVersion(SnappingClient) >= VERSION_DDNET_ENTITY_NETOBJS)
+					{
+						CNetObj_DDNetPickup *pPickup = Server()->SnapNewItem<CNetObj_DDNetPickup>(GetId());
+						if(!pPickup)
+							return;
 
-		pPickup->m_X = (int)m_Pos.x;
-		pPickup->m_Y = (int)m_Pos.y;
-		pPickup->m_Type = m_Type;
-		pPickup->m_Flags = PICKUPFLAG_NO_PREDICT;
-	}
-	else
-	{
-		CNetObj_Pickup *pPickup = Server()->SnapNewItem<CNetObj_Pickup>(GetId());
-		if(!pPickup)
-			return;
+						pPickup->m_X = (int)m_Pos.x;
+						pPickup->m_Y = (int)m_Pos.y;
+						pPickup->m_Type = m_Type;
+						pPickup->m_Flags = PICKUPFLAG_NO_PREDICT;
+					}
+					else
+					{
+						CNetObj_Pickup *pPickup = Server()->SnapNewItem<CNetObj_Pickup>(GetId());
+						if(!pPickup)
+							return;
 
-		pPickup->m_X = (int)m_Pos.x;
-		pPickup->m_Y = (int)m_Pos.y;
-		pPickup->m_Type = m_Type;
+						pPickup->m_X = (int)m_Pos.x;
+						pPickup->m_Y = (int)m_Pos.y;
+						pPickup->m_Type = m_Type;
+					}
+				}
+				break;
+			case WEAPON_PLASMA_RIFLE:
+				{
+					CNetObj_Laser *pLaser = static_cast<CNetObj_Laser *>(Server()->SnapNewItem(NETOBJTYPE_LASER, GetId(), sizeof(CNetObj_Laser)));
+					if (!pLaser)
+						return;
+
+					pLaser->m_X = (int)m_Pos.x;
+					pLaser->m_Y = (int)m_Pos.y;
+					pLaser->m_FromX = (int)m_Pos.x;
+					pLaser->m_FromY = (int)m_Pos.y;
+					pLaser->m_StartTick = m_EvalTick;
+				}
+				break;
+		}
 	}
 }
 

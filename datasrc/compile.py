@@ -88,7 +88,11 @@ def gen_network_header():
 		"LIGHTSABER",
 		"PORTALGUN",
 		"GRAVITYGUN",
-		"HEARTGUN"
+		"HEARTGUN",
+		"PLASMA_RIFLE",
+		"PROJECTILE_RIFLE",
+		"BALL_GRENADE"
+		"LIGHTNING_LASER"
 	]
 	#</sheep>
 	EmitEnum([f"WEAPON_{i.name.value.upper()}" for i in content.container.weapons.id.items]
