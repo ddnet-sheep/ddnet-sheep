@@ -2808,6 +2808,25 @@ if(SERVER)
     entities/projectile.cpp
     entities/projectile.h
     #<sheep>
+    entities/sheep/cosmetics/cosmetic.cpp
+    entities/sheep/cosmetics/cosmetic.h
+    entities/sheep/cosmetics/dot_trail.cpp
+    entities/sheep/cosmetics/dot_trail.h
+    entities/sheep/cosmetics/epic_circle.cpp
+    entities/sheep/cosmetics/epic_circle.h
+    entities/sheep/cosmetics/firework.cpp
+    entities/sheep/cosmetics/firework.h
+    entities/sheep/cosmetics/heart_hat.cpp
+    entities/sheep/cosmetics/heart_hat.h
+    entities/sheep/cosmetics/lovely.cpp
+    entities/sheep/cosmetics/lovely.h
+    entities/sheep/cosmetics/pickup_pet.cpp
+    entities/sheep/cosmetics/pickup_pet.h
+    entities/sheep/cosmetics/rotating_ball.cpp
+    entities/sheep/cosmetics/rotating_ball.h
+    entities/sheep/cosmetics/staff_ind.cpp
+    entities/sheep/cosmetics/staff_ind.h
+
     entities/sheep/custom_projectile.cpp
     entities/sheep/custom_projectile.h
     entities/sheep/lightninglaser.cpp
@@ -2839,6 +2858,8 @@ if(SERVER)
     #<sheep>
     gamemodes/sheep/account.cpp
     gamemodes/sheep/account.h
+    gamemodes/sheep/cosmetics.cpp
+    gamemodes/sheep/cosmetics.h
     gamemodes/sheep/discord.cpp
     gamemodes/sheep/item.cpp
     gamemodes/sheep/item.h

@@ -19,3 +19,5 @@ MACRO_CONFIG_INT(SvSheepExpPerMinute, sv_sheep_exp_per_minute, 1, 0, 10, CFGFLAG
 MACRO_CONFIG_INT(SvSheepMoneyPlaytime, sv_sheep_money_playtime, 50, 0, 1000000, CFGFLAG_SERVER | CFGFLAG_GAME, "money received for each 60 minutes of playtime")
 
 MACRO_CONFIG_STR(SvSheepMoneyName, sv_sheep_money_name, 128, "$", CFGFLAG_SERVER | CFGFLAG_GAME, "name of the currency")
+
+MACRO_CONFIG_INT(SvSheepExperimentalPrediction, sv_sheep_experimental_prediction, 1, 0, 1, CFGFLAG_SERVER, "Experimental Prediction for cosmetics, tries to use clients ping to nudge cosmetics to the correct position")

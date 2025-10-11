@@ -41,17 +41,17 @@ public:
 	CGameControllerSheep(class CGameContext *pGameServer);
 	~CGameControllerSheep();
 
-	// weapon drops
-	std::vector<CWeaponDrop*> m_vWeaponDrops = {};
-
+	
 	// functions
 	void DiscordInit();
 	void DiscordShutdown();
 	void SendDiscordChat(int ChatterClientId, int Team, const char *pText, int SpamProtectionClientId, int VersionFlags);
 	
 	void SendActionMessage(CPlayer *pPlayer, enum CAccountActions Action, char* pExtra = "");
-
+	
 	void LoadItems();
+	void SpawnCosmetics(CPlayer *pPlayer);
+	void DespawnCosmetics(CPlayer *pPlayer);
 	void AuthPlayer(CPlayer *pPlayer);
 	void SaveAccount(CPlayer* pPlayer);
 	static bool ExecuteLoadItems(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
@@ -61,12 +61,14 @@ public:
 	int CalcPlayerNeededExp(CPlayer *pPlayer);
 	std::optional<vec2> GetRandomAccessablePos();
 
+	void CreateLaserDeath(int Type, int pOwner, vec2 pPos, CClientMask pMask);
+
 	// database
     static bool ExecuteLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	static bool ExecuteRegister(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	static bool ExecutePassword(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	static bool ExecuteSave(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
-
+	
 	// user commands
 	static void ConLogin(IConsole::IResult *pResult, void *pUserData);
 	static void ConRegister(IConsole::IResult *pResult, void *pUserData);
@@ -76,19 +78,35 @@ public:
 	
 	static void ConLaserText(IConsole::IResult *pResult, void *pUserData);
 	static void ConProjectileText(IConsole::IResult *pResult, void *pUserData);
-
+	
+	static void ConRainbowBody(IConsole::IResult *pResult, void *pUserData);
+	static void ConRainbowFeet(IConsole::IResult *pResult, void *pUserData);
+	static void ConRainbowSpeed(IConsole::IResult *pResult, void *pUserData);
+	static void ConSparkle(IConsole::IResult *pResult, void *pUserData);
+	static void ConDotTrail(IConsole::IResult *pResult, void *pUserData);
+	static void ConStarTrail(IConsole::IResult *pResult, void *pUserData);
+	static void ConInverseAim(IConsole::IResult *pResult, void *pUserData);
+	static void ConLovely(IConsole::IResult *pResult, void *pUserData);
+	static void ConRotatingBall(IConsole::IResult *pResult, void *pUserData);
+	static void ConEpicCircle(IConsole::IResult *pResult, void *pUserData);
+	static void ConBloody(IConsole::IResult *pResult, void *pUserData);
+	static void ConHeartHat(IConsole::IResult *pResult, void *pUserData);
+	static void ConStaffInd(IConsole::IResult *pResult, void *pUserData);
+	static void ConDeathEffect(IConsole::IResult *pResult, void *pUserData);
+	static void ConDamageIndEffect(IConsole::IResult *pResult, void *pUserData);
+	
 	// admin commands
 	static void ConIgnoreInvisible(IConsole::IResult *pResult, void *pUserData);
 	static void ConVanish(IConsole::IResult *pResult, void *pUserData);
 	static void ConInvisible(IConsole::IResult *pResult, void *pUserData);
-
+	
 	static void ConGiveExp(IConsole::IResult *pResult, void *pUserData);
 	static void ConSetMoney(IConsole::IResult *pResult, void *pUserData);
 	static void ConSetLevel(IConsole::IResult *pResult, void *pUserData);
 	static void ConSetVip(IConsole::IResult *pResult, void *pUserData);
 	static void ConSetTitle(IConsole::IResult *pResult, void *pUserData);
 	static void ConSetStaff(IConsole::IResult *pResult, void *pUserData);
-
+	
 	static void ConRedirect(IConsole::IResult *pResult, void *pUserData);
 	
 	// static void ConSync(IConsole::IResult *pResult, void *pUserData);
@@ -107,9 +125,9 @@ public:
 	void GivePlayerMoney(CPlayer* pPlayer, int64_t Amount, const char *pReason);
 	void GivePlayerExp(CPlayer *pPlayer, int Exp, char* pReason = "");
 	void GivePlayerPlaytime(CPlayer *pPlayer, int Minutes);
-
+	
 	bool OnCharacterPowerup(CCharacter *pChr, const SPowerupData *pData);
-
+	
 	// sheep lowlevel passthrough hooks
 	bool IncludedInServerInfo(CPlayer* pPlayer);
 	
@@ -127,33 +145,39 @@ public:
 	
 	// ddnet
 	CScore *Score();
-
+	
 	void HandleCharacterTiles(class CCharacter *pChr, int MapIndex) override;
 	void SetArmorProgress(CCharacter *pCharacter, int Progress) override;
-
+	
 	void OnPlayerConnect(class CPlayer *pPlayer) override;
 	void OnPlayerDisconnect(class CPlayer *pPlayer, const char *pReason) override;
 	bool OnEntity(int Index, int x, int y, int Layer, int Flags, bool Initial, int Number) override;
-
+	
 	void OnReset() override;
 	void Tick() override;
 	void Snap(int SnappingClient) override;
-
+	
 	void DoTeamChange(class CPlayer *pPlayer, int Team, bool DoChatMsg = true) override;
-
+	
 	// client bound
 	CPortal *m_pPortals[MAX_CLIENTS] = {};
 	CLightsaber *m_pLightsabers[MAX_CLIENTS] = {};
+	int m_RainbowColor[MAX_CLIENTS] = {};
 	std::unordered_map<CEntity*, CCharacter*> m_vGravityTarget;
-
+	std::unordered_map<CPlayer*, std::unordered_map<EItemVariant, CEntity*>> m_Cosmetics; // todo: make this better, i dont like EItemVariant as key here, maybe use 
+	
 	// server bound
+	std::vector<CWeaponDrop*> m_vWeaponDrops = {};
 	std::vector<CPowerUp *> m_vPowerups;
 	int64_t m_PowerupDelay;
+	
 private:
 	// server bound
     dpp::cluster *m_DiscordBot = nullptr;
 	std::shared_ptr<CItemsResult> m_ItemsResult;
 	std::vector<CFakePlayerMessage> m_FakePlayerMessageQueue;
+	
+	std::vector<SLaserDeath> m_vLaserDeaths;
 
 	// database
 	CDbConnectionPool *m_pPool;

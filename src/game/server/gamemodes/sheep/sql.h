@@ -8,8 +8,8 @@
 #include <game/server/gamemodes/sheep/message.h>
 
 struct ISheepSqlResult : ISqlResult {
+	bool m_Processed = false;
 	char m_Message[255];
-	CFakePlayerMessage m_FakeMessage;
 };
 
 struct CSqlSuccessResult : ISheepSqlResult {
@@ -20,5 +20,6 @@ struct CSqlSuccessResult : ISheepSqlResult {
 
     bool m_Success;
 };
+
 
 #endif

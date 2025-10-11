@@ -25,13 +25,15 @@
 #include <iterator>
 #include <random>
 
-#define GAME_TYPE_NAME "DDraceNetwork"
+#define GAME_TYPE_NAME "Sheep"
 
 CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 	IGameController(pGameServer),
 	m_pPool(((CServer *)Server())->DbPool())
 {
-
+	for(int i = 0; i < MAX_CLIENTS; i++)
+		m_RainbowColor[i] = 0;
+		
 	/*
 		CREATE TABLE `sheep_accounts` ( 
 			`id` INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
@@ -58,13 +60,35 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 		CREATE TABLE `sheep_items` ( 
 			`id` INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
 			`name` VARCHAR(32) NOT NULL UNIQUE,
+			`type` INT NOT NULL,
 			`description` VARCHAR(255) NOT NULL DEFAULT ""
 		);
+
+		// seed
+		for (const auto &Item : EItemVariant)
+		
+		INSERT INTO `sheep_items` (`name`, `type`, `description`) VALUES
+			('Rainbow Body', 0, 'Makes your body cycle through all colors'),
+			('Rainbow Feet', 0, 'Makes your feet cycle through all colors'),
+			('Rainbow Speed', 0, 'Makes your speed lines cycle through all colors'),
+			('Sparkle', 0, 'Adds sparkles around you'),
+			('Dot Trail', 0, 'Adds a dot trail behind you'),
+			('Star Trail', 0, 'Adds a star trail behind you'),
+			('Inverse Aim', 0, 'Inverts your aim'),
+			('Lovely', 1, 'Adds lovely hearts around you'),
+			('Rotating Ball', 1, 'Adds a rotating ball around you'),
+			('Epic Circle', 1, 'Adds an epic circle around you'),
+			('Bloody', 1, 'Adds a bloody effect to your character'),
+			-- ('Strong Bloody', 1, 'Adds a strong bloody effect to your character'),
+			('Heart Hat', 1, 'Adds a heart hat on your head'),
+			('Staff Indicator', 1, 'Shows that you are staff above your head'),
+			('Death Effect', 1, 'Adds an effect when you die');
 
 		CREATE TABLE `sheep_account_item` ( 
 			`account_id` INT NOT NULL,
 			`item_id` INT NOT NULL,
 			`amount` INT NOT NULL DEFAULT 1,
+			`state` INT NOT NULL DEFAULT 0,
 			PRIMARY KEY (`account_id`, `item_id`),
 			CONSTRAINT `fk_account_id` FOREIGN KEY (`account_id`) REFERENCES `sheep_accounts` (`id`) ON DELETE CASCADE ON UPDATE NO ACTION,
 			CONSTRAINT `fk_item_id` FOREIGN KEY (`item_id`) REFERENCES `sheep_items` (`id`) ON DELETE CASCADE ON UPDATE NO ACTION
@@ -104,6 +128,20 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 	GameServer()->Console()->Register("setstaff", "s[account|amount] i[amount]", CFGFLAG_SERVER, ConSetStaff, GameServer(), "sets the staff level of an account");
 
 	GameServer()->Console()->Register("redirect", "s[user] i[port]", CFGFLAG_SERVER, ConRedirect, GameServer(), "redirects a player to another port");
+
+	// GameServer()->Console()->Register("c_inverse_aim", "?v[id]", CFGFLAG_SERVER, ConInverseAim, GameServer(), "Makes a players (id) aim be inversed");
+	
+	// GameServer()->Console()->Register("c_hookpower", "?i[power] ?v[id]", CFGFLAG_SERVER, ConHookPower, GameServer(), "Sets hook power for player (id)");
+	// GameServer()->Console()->Register("c_pickuppet", "?v[id]", CFGFLAG_SERVER, ConSetPickupPet, GameServer(), "Gives player (id) a pet");
+
+	// GameServer()->Console()->Register("c_star_trail", "?v[id]", CFGFLAG_SERVER, ConStarTrail, GameServer(), "Gives a player (id) a Star Trail");
+
+	// GameServer()->Console()->Register("c_phase_gun", "?v[id]", CFGFLAG_SERVER, ConPhaseGun, GameServer(), "Gives player (id) a gun that shoots trough walls");
+	// GameServer()->Console()->Register("c_emote_gun", "i[type] ?v[id]", CFGFLAG_SERVER, ConSetEmoticonGun, GameServer(), "Set a players (id) Emoticon Gun to i[type] (1-12)");
+	// GameServer()->Console()->Register("c_confetti_gun", "?v[id]", CFGFLAG_SERVER, ConSetConfettiGun, GameServer(), "Set a players (id) Gun to shoot confetti");
+	
+	// GameServer()->Console()->Register("c_damageind_type", "i[type] ?v[id]", CFGFLAG_SERVER, ConDamageIndEffect, GameServer(), "Set a players (id) Damage Ind Type");
+
 
 	GameServer()->Console()->Chain("sv_sheep_discord_token", ConChainSheepDiscordTokenChange, this);
  
@@ -302,6 +340,16 @@ void CGameControllerSheep::Tick() {
 		for(auto pPlayer : GameServer()->m_apPlayers)
 			if(pPlayer != nullptr && pPlayer->IsLoggedIn())
 				SaveAccount(pPlayer);
+
+	for(auto it = m_vLaserDeaths.begin(); it != m_vLaserDeaths.end(); it++) {
+		const size_t count = std::min<size_t>((size_t)it->m_Remaining, it->m_vStartTick.size());
+		for(size_t at = 0; at < count; at++) {
+			if(Server()->Tick() < it->m_EndTick) {
+				if(it->m_vStartTick[at] == Server()->Tick())
+					GameServer()->CreateSound(it->m_Pos, it->m_Sound, it->m_Mask);
+			}
+		}
+	}
 }
 
 std::optional<vec2> CGameControllerSheep::GetRandomAccessablePos() {
@@ -372,6 +420,7 @@ std::optional<vec2> CGameControllerSheep::GetRandomAccessablePos() {
 
 void CGameControllerSheep::Snap(int SnappingClient) {
 	IGameController::Snap(SnappingClient);
+	CPlayer *pPlayer = GameServer()->m_apPlayers[SnappingClient];
 
 	for(auto pFakePlayerMessageItem = m_FakePlayerMessageQueue.begin(); pFakePlayerMessageItem < m_FakePlayerMessageQueue.end(); pFakePlayerMessageItem++) {
 		if(pFakePlayerMessageItem->m_SenderId != -1)
@@ -400,6 +449,35 @@ void CGameControllerSheep::Snap(int SnappingClient) {
 			pFakePlayerMessageItem->m_SenderId = ClientId;
 			break;
 		}
+	}
+
+	for(auto it = m_vLaserDeaths.begin(); it != m_vLaserDeaths.end();) {
+		const size_t count = std::min({(size_t)it->m_Remaining,
+			it->m_vIds.size(), it->m_vFrom.size(), it->m_vTo.size(), it->m_vStartTick.size()});
+		for(size_t at = 0; at < count; at++) {
+			if(Server()->Tick() > it->m_vStartTick[at] && Server()->Tick() < it->m_EndTick) {
+				CNetObj_DDNetLaser *pObj = Server()->SnapNewItem<CNetObj_DDNetLaser>(it->m_vIds[at]);
+				if(!pObj)
+					continue;
+
+				const vec2 &To = it->m_vTo[at];
+				const vec2 &From = it->m_vFrom[at];
+				pObj->m_ToX = (int)To.x;
+				pObj->m_ToY = (int)To.y;
+				pObj->m_FromX = (int)From.x;
+				pObj->m_FromY = (int)From.y;
+				pObj->m_StartTick = it->m_EndTick;
+				pObj->m_Owner = it->m_Owner;
+				pObj->m_Flags = LASERFLAG_NO_PREDICT;
+			}
+		}
+		if(Server()->Tick() > it->m_EndTick) {
+			for(const auto aIds : it->m_vIds)
+				Server()->SnapFreeId(aIds);
+			it = m_vLaserDeaths.erase(it);
+		}
+		else
+			it++;
 	}
 }
 
@@ -507,6 +585,9 @@ void CGameControllerSheep::OnPlayerTick(CPlayer *pPlayer) {
 }
 
 void CGameControllerSheep::OnCharacterTick(CCharacter *pCharacter) {
+	if(!pCharacter)
+		return;
+
 	if(pCharacter->m_VoteCooldown > 0)
 		pCharacter->m_VoteCooldown--;
 
@@ -519,10 +600,33 @@ void CGameControllerSheep::OnCharacterTick(CCharacter *pCharacter) {
 			pCharacter->SetVelocity(vec2(0.f, 0.f));
 		}
 	}
+
+	CPlayer* pPlayer = pCharacter->GetPlayer();
+	if (pPlayer != nullptr && pPlayer->m_AccountItemResult != nullptr && pPlayer->m_AccountItemResult->m_Completed) { 
+		if(!pPlayer->m_AccountItemResult->m_Processed) {
+			SpawnCosmetics(pPlayer);
+			pPlayer->m_AccountItemResult->m_Processed = true;
+		} else {
+			if(pCharacter->Team() != TEAM_SPECTATORS && pCharacter->IsAlive()) {
+				if(pPlayer->m_AccountItemResult->m_AccountItem.find(EItemVariant::ITEM_BLOODY_STRONG) != pPlayer->m_AccountItemResult->m_AccountItem.end() || pPlayer->m_AccountItemResult->m_AccountItem.find(EItemVariant::ITEM_BLOODY) != pPlayer->m_AccountItemResult->m_AccountItem.end() && Server()->Tick() % 6 == 0)
+					GameServer()->CreateDeath(pCharacter->m_Pos, pPlayer->GetCid(), pCharacter->TeamMask());
+			}
+		}
+	}
+
+	if(pPlayer->m_AccountItemResult != nullptr && pPlayer->m_AccountItemResult->m_Completed && pPlayer->m_AccountItemResult->m_Processed 
+		&& (pPlayer->m_AccountItemResult->m_AccountItem.find(EItemVariant::ITEM_RAINBOW_BODY) != pPlayer->m_AccountItemResult->m_AccountItem.end()
+		|| pPlayer->m_AccountItemResult->m_AccountItem.find(EItemVariant::ITEM_RAINBOW_FEET) != pPlayer->m_AccountItemResult->m_AccountItem.end())) {
+		
+		int RainbowSpeed = 1; // todo: make configurable
+
+		if(Server()->Tick() % 2 == 1)
+			m_RainbowColor[pPlayer->GetCid()] = (m_RainbowColor[pPlayer->GetCid()] + RainbowSpeed) % 256;
+
+	}
 }
 
-void CGameControllerSheep::OnCharacterVote(CCharacter *pCharacter, EVoteButton Button)
-{
+void CGameControllerSheep::OnCharacterVote(CCharacter *pCharacter, EVoteButton Button) {
 	if(pCharacter->m_VoteCooldown > 0)
 		return;
 	pCharacter->m_VoteCooldown = Server()->TickSpeed() / 4;
@@ -728,7 +832,7 @@ void CGameControllerSheep::OnCharacterWeaponChanged(CCharacter *pCharacter) {
 }
 
 bool CGameControllerSheep::IncludedInServerInfo(CPlayer* pPlayer) {
-	return pPlayer != nullptr && pPlayer->IsLoggedIn() && !pPlayer->m_AccountLoginResult->m_Vanish;
+	return pPlayer == nullptr || !pPlayer->IsLoggedIn() || !pPlayer->m_AccountLoginResult->m_Vanish;
 }
 
 bool CGameControllerSheep::OnCharacterPowerup(CCharacter *pChr, const SPowerupData *pPowerup) {

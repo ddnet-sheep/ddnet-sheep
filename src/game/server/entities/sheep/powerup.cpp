@@ -139,14 +139,10 @@ void CPowerUp::Snap(int SnappingClient)
 	if(NetworkClipped(SnappingClient))
 		return;
 
-	if(SnappingClient != SERVER_DEMO_CLIENT)
-	{
+	if(SnappingClient != SERVER_DEMO_CLIENT) {
 		const CPlayer *pSnapPlayer = GameServer()->m_apPlayers[SnappingClient];
 		if(!pSnapPlayer)
 			return;
-
-		// if(pSnapPlayer->m_HidePowerUps)
-		// 	return;
 	}
 
 	// Make the powerup blink when about to disappear

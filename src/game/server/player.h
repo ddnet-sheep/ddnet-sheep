@@ -16,6 +16,9 @@
 //<sheep>
 #include <game/server/gamemodes/sheep/account.h>
 #include <game/server/gamemodes/sheep/sql.h>
+#include <game/server/gamemodes/sheep/cosmetics.h>
+
+#include <game/server/entities/sheep/cosmetics/pickup_pet.h>
 //</sheep>
 
 class CCharacter;
@@ -131,9 +134,31 @@ public:
 
 	int64_t m_LoginTick;
 
+	CCosmetics m_Cosmetics;
+
 	int NumDDraceHudRows();
 	void SendBroadcastHud(const char *pMessage);
 	bool IsLoggedIn();
+
+	double m_PredLatency = 0.0;
+	void Repredict(int PredMargin = 6);
+
+	// tmp
+	CPickupPet *m_pPickupPet;
+	// Death Effect
+	void SetDeathEffect(int Type);
+	void SetPickupPet(bool Active);
+
+	// Cosmetics
+	void SetRainbowBody(bool Active);
+	void SetRainbowFeet(bool Active);
+	void SetInverseAim(bool Active);
+
+	// Gun effects
+	void SetConfettiGun(bool Active);
+	void SetPhaseGun(bool Active);
+	void SetDamageIndType(int Type);
+	
 	//</sheep>
 private:
 	const uint32_t m_UniqueClientId;

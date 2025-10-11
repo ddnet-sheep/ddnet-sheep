@@ -17,6 +17,8 @@
 
 //<sheep>
 #include <game/server/gamemodes/sheep/sheep.h>
+
+#include <game/server/entities/sheep/cosmetics/firework.h>
 //</sheep>
 
 MACRO_ALLOC_POOL_ID_IMPL(CPlayer, MAX_CLIENTS)
@@ -334,6 +336,17 @@ void CPlayer::Snap(int SnappingClient)
 	pClientInfo->m_UseCustomColor = m_TeeInfos.m_UseCustomColor;
 	pClientInfo->m_ColorBody = m_TeeInfos.m_ColorBody;
 	pClientInfo->m_ColorFeet = m_TeeInfos.m_ColorFeet;
+
+	if(m_AccountItemResult && m_AccountItemResult->m_Completed && m_AccountItemResult->m_Processed) {
+		CGameControllerSheep* pController = (CGameControllerSheep*)GameServer()->m_pController;
+		int Color = pController->m_RainbowColor[m_ClientId] * 0x010000 + 0xff32;
+
+		if(m_AccountItemResult->m_AccountItem.find(EItemVariant::ITEM_RAINBOW_BODY) != m_AccountItemResult->m_AccountItem.end())
+			pClientInfo->m_ColorBody = Color;
+
+		if(m_AccountItemResult->m_AccountItem.find(EItemVariant::ITEM_RAINBOW_FEET) != m_AccountItemResult->m_AccountItem.end())
+			pClientInfo->m_ColorFeet = Color;
+	}
 
 	int SnappingClientVersion = GameServer()->GetClientVersion(SnappingClient);
 	int Latency = SnappingClient == SERVER_DEMO_CLIENT ? m_Latency.m_Min : GameServer()->m_apPlayers[SnappingClient]->m_aCurLatency[m_ClientId];
@@ -1119,4 +1132,85 @@ void CPlayer::SendBroadcastHud(const char *pMessage) {
 bool CPlayer::IsLoggedIn() {
 	return m_AccountLoginResult != nullptr && m_AccountLoginResult->m_Success;
 }
+
+void CPlayer::Repredict(int PredMargin)
+{
+	int PingMs = m_Latency.m_Min + PredMargin;
+
+	static const std::unordered_map<int, double> s_BucketByPing = {
+		{0, 2.8},
+		{10, 3.4},
+		{20, 4.1},
+		{30, 5.0},
+		{40, 5.8},
+		{50, 6.8},
+		{60, 7.8},
+		{70, 8.5},
+		{80, 9.7},
+		{90, 10.7},
+		{100, 11.4},
+		{110, 12.5},
+		{120, 13.6},
+		{130, 14.5},
+		{140, 15.6},
+		{150, 16.5},
+		{160, 17.5},
+	};
+
+	static std::vector<int> s_Thresholds = [] {
+		std::vector<int> v;
+		v.reserve(s_BucketByPing.size());
+		for(const auto &kv : s_BucketByPing)
+			v.push_back(kv.first);
+		std::sort(v.begin(), v.end());
+		return v;
+	}();
+
+	double PredIndex = 0.0;
+
+	if(PingMs <= s_Thresholds.front())
+	{
+		PredIndex = s_BucketByPing.at(s_Thresholds.front());
+	}
+	else if(PingMs >= s_Thresholds.back())
+	{
+		PredIndex = s_BucketByPing.at(s_Thresholds.back());
+	}
+	else
+	{
+		const auto it = std::lower_bound(s_Thresholds.begin(), s_Thresholds.end(), PingMs);
+		const int hiKey = *it;
+		const int loKey = *(it - 1);
+
+		const double loIdx = s_BucketByPing.at(loKey);
+		const double hiIdx = s_BucketByPing.at(hiKey);
+
+		const double t = (double)(PingMs - loKey) / (double)(hiKey - loKey);
+		PredIndex = loIdx + t * (hiIdx - loIdx);
+	}
+
+	m_PredLatency = PredIndex;
+}
+
+//tmp
+void CPlayer::SetInverseAim(bool Active)
+{
+	m_Cosmetics.m_InverseAim = Active;
+}
+
+void CPlayer::SetPickupPet(bool Active)
+{
+	if(m_Cosmetics.m_PickupPet == Active)
+		return;
+	m_Cosmetics.m_PickupPet = Active;
+	const vec2 Pos = GetCharacter() ? GetCharacter()->GetPos() : vec2(0, 0);
+	if(m_Cosmetics.m_PickupPet)
+		m_pPickupPet = new CPickupPet(&GameServer()->m_World, GetCid(), Pos);
+}
+
+void CPlayer::SetDamageIndType(int Type)
+{
+	m_Cosmetics.m_DamageIndType = Type;
+}
+
 //</sheep>

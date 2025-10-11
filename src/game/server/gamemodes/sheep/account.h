@@ -45,7 +45,6 @@ struct CAccountDataResult : ISheepSqlResult
         m_Invisible(false),
         m_Vanish(false),
         m_IgnoreInvisible(false),
-        m_Processed(false), 
         m_Type(CSqlAccountCredentialsRequest::TYPE_PASSWORD),
         m_Title(""),
         m_Playtime(0),
@@ -81,8 +80,6 @@ struct CAccountDataResult : ISheepSqlResult
     bool m_Vanish; // silent join and not visible in the player list
 
     char m_Title[32];
-
-    bool m_Processed = false;
 
     std::unordered_map<EItemType, uint64_t> m_Items;
 };

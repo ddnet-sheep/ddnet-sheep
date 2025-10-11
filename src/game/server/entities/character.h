@@ -114,12 +114,14 @@ public:
 	void AddVelocity(vec2 Addition);
 	void ApplyMoveRestrictions();
 
-	//<sheep>]
+	//<sheep>
 	int m_VoteCooldown = 0;
 
 	vec2 GetCursorPos();
 	bool HasLineOfSight(vec2 Pos);
 	void ForceSetPos(vec2 NewPos);
+
+	vec2 GetVelocity() const { return m_Core.m_Vel; }
 
 	CNetObj_PlayerInput *Input() { return &m_Input; }
 	void SetReloadTimer(int Timer) { m_ReloadTimer = Timer; }

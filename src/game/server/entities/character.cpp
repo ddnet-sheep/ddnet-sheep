@@ -1028,7 +1028,42 @@ void CCharacter::Die(int Killer, int Weapon, bool SendKillMsg)
 
 	// a nice sound, and bursting tee death effect
 	GameServer()->CreateSound(m_Pos, SOUND_PLAYER_DIE, TeamMask());
-	GameServer()->CreateDeath(m_Pos, m_pPlayer->GetCid(), TeamMask());
+
+	if(GetPlayer() && GetPlayer()->IsLoggedIn() 
+		&& GetPlayer()->m_AccountItemResult && GetPlayer()->m_AccountItemResult->m_Completed && GetPlayer()->m_AccountItemResult->m_Processed 
+		&& GetPlayer()->m_AccountItemResult->m_AccountItem.find(EItemVariant::ITEM_DEATH_EFFECT) != GetPlayer()->m_AccountItemResult->m_AccountItem.end()) {
+		
+		switch(GetPlayer()->m_AccountItemResult->m_AccountItem[EItemVariant::ITEM_DEATH_EFFECT].m_State) {
+			case DEATH_HAMMERHIT:
+			{
+				GameServer()->CreateHammerHit(m_Pos, TeamMask());
+				GameServer()->CreateSound(m_Pos, SOUND_HAMMER_FIRE, TeamMask());
+				break;
+			}
+			case DEATH_EXPLOSION:
+			{
+				GameServer()->CreateExplosion(m_Pos, GetPlayer()->GetCid(), WEAPON_GAME, true, Team(), TeamMask());
+				GameServer()->CreateSound(m_Pos, SOUND_GRENADE_EXPLODE, TeamMask());
+				break;
+			}
+			case DEATH_LASER:
+			{
+				CGameControllerSheep* pController = (CGameControllerSheep *)GameServer()->m_pController;
+				pController->CreateLaserDeath(1, m_pPlayer->GetCid(), m_Pos, TeamMask());
+				break;
+			}
+			case DEATH_DAMAGEIND:
+			{
+				for(int i = 0; i < 8; i++)
+					GameServer()->CreateDamageInd(m_Pos, 0.84f + (i * 0.76f), 1, TeamMask());
+				break;
+			}
+			default:
+				GameServer()->CreateDeath(m_Pos, m_pPlayer->GetCid(), TeamMask());
+		}
+	} else {
+		GameServer()->CreateDeath(m_Pos, m_pPlayer->GetCid(), TeamMask());
+	}
 
 	// this is to rate limit respawning to 3 secs
 	m_pPlayer->m_PreviousDieTick = m_pPlayer->m_DieTick;
@@ -1367,6 +1402,11 @@ void CCharacter::Snap(int SnappingClient)
 
 	// -1 is the default value, SnapNewItem zeroes the object, so it would incorrectly become 0
 	pDDNetCharacter->m_TuneZoneOverride = -1;
+
+	//<sheep>
+	if(GetPlayer()->m_AccountItemResult->m_AccountItem.find(EItemVariant::ITEM_SPARKLE) != GetPlayer()->m_AccountItemResult->m_AccountItem.end())
+		pDDNetCharacter->m_Flags |= CHARACTERFLAG_INVINCIBLE;
+	//</sheep>
 }
 
 void CCharacter::PostGlobalSnap()
