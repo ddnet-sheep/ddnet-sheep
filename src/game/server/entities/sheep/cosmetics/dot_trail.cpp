@@ -21,9 +21,6 @@ void CDotTrail::Snap(int SnappingClient)
 	if(!Character() || Character()->IsPaused() || !pSnapPlayer || pSnapPlayer->GetCharacter() && !Character()->CanSnapCharacter(SnappingClient))
 		return;
 
-	CGameTeams Teams = GameServer()->m_pController->Teams();
-	const int Team = Character()->Team();
-
 	if(!TeamMask().test(SnappingClient))
 		return;
 

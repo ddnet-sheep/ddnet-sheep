@@ -57,9 +57,6 @@ void CStaffInd::Snap(int SnappingClient)
 	if(!Character() || !pSnapPlayer || pSnapPlayer->GetCharacter() && !Character()->CanSnapCharacter(SnappingClient))
 		return;
 
-	CGameTeams Teams = GameServer()->m_pController->Teams();
-	const int Team = Character()->Team();
-
 	if(!TeamMask().test(SnappingClient))
 		return;
 

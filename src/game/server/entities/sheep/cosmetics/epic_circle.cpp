@@ -45,9 +45,6 @@ void CEpicCircle::Snap(int SnappingClient)
 	if(!Character() || Character()->IsPaused() || !pSnapPlayer)
 		return;
 
-	CGameTeams Teams = GameServer()->m_pController->Teams();
-	const int Team = Character()->Team();
-
 	if(!TeamMask().test(SnappingClient))
 		return;
 
