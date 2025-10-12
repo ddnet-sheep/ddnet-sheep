@@ -10,3 +10,6 @@
 [submodule "data/ddnet-maps"]
 	path = data/ddnet-maps
 	url = git@github.com:ddnet/ddnet-maps.git
+[submodule "data/opengores-maps"]
+	path = data/opengores-maps
+	url = git@github.com:teemods/opengores-maps.git
