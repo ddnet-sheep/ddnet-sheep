@@ -39,8 +39,6 @@ class CPortal : public CEntityOwned
 	vec2 CirclePos(int Portal, int Part) const;
 	void SetPortalVisual();
 
-	int m_Owner;
-
 	CPortalData m_apData[NUM_PORTALS];
 
 	int m_State;

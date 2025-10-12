@@ -61,7 +61,7 @@ void CPortal::Reset()
 			Server()->SnapFreeId(m_Snap[p].m_aParticleIds[i]);
 	}
 
-	GameServer()->Sheep()->m_pPortals[m_Owner] = nullptr;
+	GameServer()->Sheep()->m_pPortals[Player()->GetCid()] = nullptr;
 	
 	GameWorld()->RemoveEntity(this);
 }
@@ -74,9 +74,9 @@ inline bool PointInCircle(vec2 pos, vec2 center, float radius)
 void CPortal::Tick()
 {
 	m_Lifetime--;
-	CCharacter *pOwnerChr = GameServer()->GetPlayerChar(m_Owner);
+	CCharacter *pOwnerChr = GameServer()->GetPlayerChar(Player()->GetCid());
 
-	if(!Server()->ClientIngame(m_Owner) || pOwnerChr != nullptr && !pOwnerChr->GetWeaponGot(WEAPON_PORTALGUN) || m_Lifetime <= 0) {
+	if(!Server()->ClientIngame(Player()->GetCid()) || pOwnerChr != nullptr && !pOwnerChr->GetWeaponGot(WEAPON_PORTALGUN) || m_Lifetime <= 0) {
 		Reset();
 		return;
 	}
@@ -215,7 +215,7 @@ void CPortal::SetPortalVisual()
 
 void CPortal::OnFire()
 {
-	CCharacter *pOwnerChar = GameServer()->GetPlayerChar(m_Owner);
+	CCharacter *pOwnerChar = GameServer()->GetPlayerChar(Player()->GetCid());
 	if(TrySetPortal())
 	{
 		GameServer()->CreateSound(pOwnerChar->m_Pos, SOUND_PICKUP_HEALTH, TeamMask());
@@ -229,7 +229,7 @@ void CPortal::OnFire()
 
 bool CPortal::TrySetPortal()
 {
-	CCharacter *pOwnerChr = GameServer()->GetPlayerChar(m_Owner);
+	CCharacter *pOwnerChr = GameServer()->GetPlayerChar(Player()->GetCid());
 	vec2 CursorPos = pOwnerChr->GetCursorPos();
 
 	if(Collision()->TestBox(CursorPos, CCharacterCore::PhysicalSizeVec2()))
@@ -247,7 +247,7 @@ bool CPortal::TrySetPortal()
 			continue;
 		if(pChr->Team() != pOwnerChr->Team())
 			continue;
-		if(ClientId == m_Owner)
+		if(ClientId == Player()->GetCid())
 			continue;
 		if(PointInCircle(pChr->m_Pos, CursorPos, MaxPortalRad + CCharacterCore::PhysicalSize() - 6))
 			return false; // Don't place portal on players
@@ -272,7 +272,7 @@ bool CPortal::TrySetPortal()
 		m_apData[0].m_Pos = m_apData[1].m_Pos;
 		m_apData[0].m_Team = m_apData[1].m_Team;
 
-		GameServer()->CreateDeath(m_apData[1].m_Pos, m_Owner, TeamMask());
+		GameServer()->CreateDeath(m_apData[1].m_Pos, Player()->GetCid(), TeamMask());
 
 		m_apData[1].m_Pos = CursorPos;
 		m_apData[1].m_Team = pOwnerChr->Team();
@@ -286,7 +286,7 @@ void CPortal::RemovePortals()
 	{
 		if(m_apData[i].m_Active)
 		{
-			GameServer()->CreateDeath(m_apData[i].m_Pos, m_Owner, TeamMask());
+			GameServer()->CreateDeath(m_apData[i].m_Pos, Player()->GetCid(), TeamMask());
 			m_apData[i].m_Active = false;
 			m_apData[i].m_Pos = vec2(0, 0);
 			m_State = STATE_NONE;
@@ -337,7 +337,7 @@ void CPortal::Snap(int SnappingClient)
 			From += m_apData[p].m_Pos;
 
 			GameServer()->SnapLaserObject(CSnapContext(SnapVer, SixUp, SnappingClient),
-				m_Snap[p].m_aIds[i], To, From, StartTick, m_Owner);
+				m_Snap[p].m_aIds[i], To, From, StartTick, Player()->GetCid());
 		}
 
 		if(m_State == STATE_BOTH_SET)
@@ -355,7 +355,7 @@ void CPortal::Snap(int SnappingClient)
 				pProj->m_VelX = 0;
 				pProj->m_VelY = 0;
 				pProj->m_Type = WEAPON_HAMMER;
-				pProj->m_Owner = m_Owner;
+				pProj->m_Owner = Player()->GetCid();
 			}
 		}
 	}
