@@ -438,7 +438,7 @@ void CGameControllerSheep::ConLogout(IConsole::IResult *pResult, void *pUserData
 		return;
 	}
 
-	GameServer()->Sheep()->OnPlayerLogout(pPlayer, "logged out");
+	pSelf->Sheep()->OnPlayerLogout(pPlayer, "logged out");
 }
 
 bool CGameControllerSheep::ExecutePassword(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {
