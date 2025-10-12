@@ -853,16 +853,12 @@ void CGameControllerSheep::ConRedirect(IConsole::IResult *pResult, void *pUserDa
 
 
 bool CGameControllerSheep::OnEntity(int Index, int x, int y, int Layer, int Flags, bool Initial, int Number) {
-	log_error("sheep", "ent id = %d", Index);
-	
 	if(IGameController::OnEntity(Index, x, y, Layer, Flags, Initial, Number))
 		return true;
 
 	const vec2 Pos(x * 32.0f + 16.0f, y * 32.0f + 16.0f);
 	int Type = -1;
 	int SubType = 0;
-
-	log_error("sheep", "ent id = %d", Index);
 
 	if(Index == ENTITY_WEAPON_HEART) {
 		Type = POWERUP_WEAPON;
