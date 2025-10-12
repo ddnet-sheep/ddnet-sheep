@@ -93,7 +93,7 @@ void CPowerUp::Tick()
 	for(int ClientId = 0; ClientId < MAX_CLIENTS; ClientId++)
 	{
 		CCharacter *pChr = GameServer()->GetPlayerChar(ClientId);
-		if(!pChr || !pChr->IsAlive() || pChr->Team() != TEAM_FLOCK)
+		if(!pChr || !pChr->IsAlive() || pChr->Team() != TEAM_FLOCK && pChr->Team() != TEAM_SUPER)
 			continue;
 
 		if(PointInSquare(m_Pos, pChr->GetPos(), 54.0f))
@@ -146,7 +146,7 @@ void CPowerUp::Snap(int SnappingClient)
 	if(m_Lifetime < Server()->TickSpeed() * 10 && (Server()->Tick() / (Server()->TickSpeed() / 4)) % 2 == 0)
 		return;
 
-	if(GameServer()->GetDDRaceTeam(SnappingClient) != TEAM_FLOCK)
+	if(GameServer()->GetDDRaceTeam(SnappingClient) != TEAM_FLOCK && GameServer()->GetDDRaceTeam(SnappingClient) != TEAM_SUPER)
 		return;
 
 	const int SnappingClientVersion = Server()->GetClientVersion(SnappingClient);
