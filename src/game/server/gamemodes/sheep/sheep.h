@@ -77,22 +77,6 @@ public:
 	static void ConLaserText(IConsole::IResult *pResult, void *pUserData);
 	static void ConProjectileText(IConsole::IResult *pResult, void *pUserData);
 	
-	static void ConRainbowBody(IConsole::IResult *pResult, void *pUserData);
-	static void ConRainbowFeet(IConsole::IResult *pResult, void *pUserData);
-	static void ConRainbowSpeed(IConsole::IResult *pResult, void *pUserData);
-	static void ConSparkle(IConsole::IResult *pResult, void *pUserData);
-	static void ConDotTrail(IConsole::IResult *pResult, void *pUserData);
-	static void ConStarTrail(IConsole::IResult *pResult, void *pUserData);
-	static void ConInverseAim(IConsole::IResult *pResult, void *pUserData);
-	static void ConLovely(IConsole::IResult *pResult, void *pUserData);
-	static void ConRotatingBall(IConsole::IResult *pResult, void *pUserData);
-	static void ConEpicCircle(IConsole::IResult *pResult, void *pUserData);
-	static void ConBloody(IConsole::IResult *pResult, void *pUserData);
-	static void ConHeartHat(IConsole::IResult *pResult, void *pUserData);
-	static void ConStaffInd(IConsole::IResult *pResult, void *pUserData);
-	static void ConDeathEffect(IConsole::IResult *pResult, void *pUserData);
-	static void ConDamageIndEffect(IConsole::IResult *pResult, void *pUserData);
-	
 	// admin commands
 	static void ConIgnoreInvisible(IConsole::IResult *pResult, void *pUserData);
 	static void ConVanish(IConsole::IResult *pResult, void *pUserData);

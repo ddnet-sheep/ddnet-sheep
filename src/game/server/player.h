@@ -147,8 +147,6 @@ public:
 	void SetPickupPet(bool Active);
 
 	// Cosmetics
-	void SetRainbowBody(bool Active);
-	void SetRainbowFeet(bool Active);
 	void SetInverseAim(bool Active);
 
 	// Gun effects
