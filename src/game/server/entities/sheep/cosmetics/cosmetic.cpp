@@ -21,20 +21,26 @@ void CCosmetic::Reset() {
 	GameWorld()->RemoveEntity(this);
 }
 
-bool CCosmetic::HasReset() {
-	if(!Player()) {
-        Reset();
-		return true;
-    }
+bool CCosmetic::ShouldReset() {
+    return
+        !Player() ||
+        GameServer()->Sheep()->m_Cosmetics.find(Player()) == GameServer()->Sheep()->m_Cosmetics.end() ||
+        GameServer()->Sheep()->m_Cosmetics[Player()].find(m_ItemVariant) == GameServer()->Sheep()->m_Cosmetics[Player()].end() ||
+        GameServer()->Sheep()->m_Cosmetics[Player()][m_ItemVariant] != this
+    ;
+}
 
-    if(Controller()->m_Cosmetics.find(Player()) == Controller()->m_Cosmetics.end() ||
-       Controller()->m_Cosmetics[Player()].find(m_ItemVariant) == Controller()->m_Cosmetics[Player()].end() ||
-       Controller()->m_Cosmetics[Player()][m_ItemVariant] != this) {
+bool CCosmetic::HasReset() {
+    if(ShouldReset()) {
         Reset();
         return true;
     }
-
     return false;
+}
+
+bool CCosmetic::ShouldSnap() {
+    // todo: mask
+    return true;
 }
 
 void CCosmetic::Tick() {

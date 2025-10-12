@@ -654,7 +654,7 @@ void CGameContext::SendChat(int ChatterClientId, int Team, const char *pText, in
 			return;
 
 	//<sheep>
-	((CGameControllerSheep *)m_pController)->SendChat(ChatterClientId, Team, pText, SpamProtectionClientId, VersionFlags);
+	Sheep()->SendChat(ChatterClientId, Team, pText, SpamProtectionClientId, VersionFlags);
 	//</sheep>
 
 	char aText[256];
@@ -2554,7 +2554,7 @@ void CGameContext::OnVoteNetMessage(const CNetMsg_Cl_Vote *pMsg, int ClientId)
 
 	//<sheep>
 	if(!m_VoteCloseTime && GetPlayerChar(ClientId)) {
-		((CGameControllerSheep *)m_pController)->OnCharacterVote(GetPlayerChar(ClientId), static_cast<EVoteButton>(pMsg->m_Vote));
+		Sheep()->OnCharacterVote(GetPlayerChar(ClientId), static_cast<EVoteButton>(pMsg->m_Vote));
 		return;
 	}
 	//</sheep>
@@ -4592,7 +4592,7 @@ void CGameContext::OnPostGlobalSnap()
 			pPlayer->GetCharacter()->PostGlobalSnap();
 	}
 	//<sheep>
-	((CGameControllerSheep *)m_pController)->OnPostGlobalSnap();
+	Sheep()->OnPostGlobalSnap();
 	//</sheep>
 	m_Events.Clear();
 }
@@ -5284,7 +5284,6 @@ bool CGameContext::PracticeByDefault() const
 
 //<sheep>
 bool CGameContext::IncludedInServerInfo(int ClientId) {
-	CGameControllerSheep *pController = (CGameControllerSheep *)m_pController;
-	return pController->IncludedInServerInfo(m_apPlayers[ClientId]);
+	return Sheep()->IncludedInServerInfo(m_apPlayers[ClientId]);
 }
 //</sheep>

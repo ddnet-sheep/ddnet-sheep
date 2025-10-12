@@ -188,7 +188,7 @@ void CPlayer::Tick()
 	Server()->SetClientScore(m_ClientId, m_Score);
 
 	//<sheep>
-	((CGameControllerSheep *)GameServer()->m_pController)->OnPlayerTick(this);
+	GameServer()->Sheep()->OnPlayerTick(this);
 	//</sheep>
 
 	if(m_Moderating && m_Afk)
@@ -337,16 +337,17 @@ void CPlayer::Snap(int SnappingClient)
 	pClientInfo->m_ColorBody = m_TeeInfos.m_ColorBody;
 	pClientInfo->m_ColorFeet = m_TeeInfos.m_ColorFeet;
 
-	if(m_AccountItemResult && m_AccountItemResult->m_Completed && m_AccountItemResult->m_Processed) {
-		CGameControllerSheep* pController = (CGameControllerSheep*)GameServer()->m_pController;
-		int Color = pController->m_RainbowColor[m_ClientId] * 0x010000 + 0xff32;
+	//<sheep>
+	if(IsItemsLoaded()) {
+		int Color = GameServer()->Sheep()->m_RainbowColor[m_ClientId] * 0x010000 + 0xff32;
 
-		if(m_AccountItemResult->m_AccountItem.find(EItemVariant::ITEM_RAINBOW_BODY) != m_AccountItemResult->m_AccountItem.end())
+		if(IsItemActive(EItemVariant::ITEM_RAINBOW_BODY))
 			pClientInfo->m_ColorBody = Color;
 
-		if(m_AccountItemResult->m_AccountItem.find(EItemVariant::ITEM_RAINBOW_FEET) != m_AccountItemResult->m_AccountItem.end())
+		if(IsItemActive(EItemVariant::ITEM_RAINBOW_FEET))
 			pClientInfo->m_ColorFeet = Color;
 	}
+	//</sheep>
 
 	int SnappingClientVersion = GameServer()->GetClientVersion(SnappingClient);
 	int Latency = SnappingClient == SERVER_DEMO_CLIENT ? m_Latency.m_Min : GameServer()->m_apPlayers[SnappingClient]->m_aCurLatency[m_ClientId];
@@ -1131,6 +1132,14 @@ void CPlayer::SendBroadcastHud(const char *pMessage) {
 
 bool CPlayer::IsLoggedIn() {
 	return m_AccountLoginResult != nullptr && m_AccountLoginResult->m_Success;
+}
+
+bool CPlayer::IsItemsLoaded() {
+	return m_AccountItemResult != nullptr && m_AccountItemResult->m_Success;
+}
+
+bool CPlayer::IsItemActive(EItemVariant Item) {
+	return IsItemsLoaded() && m_AccountItemResult->m_AccountItem.find(Item) != m_AccountItemResult->m_AccountItem.end() && m_AccountItemResult->m_AccountItem[Item].m_State > 0;
 }
 
 void CPlayer::Repredict(int PredMargin)

@@ -70,8 +70,7 @@ void CPortal::Reset()
 			Server()->SnapFreeId(m_Snap[p].m_aParticleIds[i]);
 	}
 
-	CGameControllerSheep *pController = (CGameControllerSheep *)GameServer()->m_pController;
-	pController->m_pPortals[m_Owner] = nullptr;
+	GameServer()->Sheep()->m_pPortals[m_Owner] = nullptr;
 	
 	GameWorld()->RemoveEntity(this);
 }

@@ -32,9 +32,8 @@ CLightsaber::CLightsaber(CGameWorld *pGameWorld, int Owner, vec2 Pos) :
 
 void CLightsaber::Reset()
 {
-    CGameControllerSheep *pController = (CGameControllerSheep *)GameServer()->m_pController;
-    if(pController->m_pLightsabers[m_Owner] != nullptr)
-        pController->m_pLightsabers[m_Owner] = nullptr;
+    if(GameServer()->Sheep()->m_pLightsabers[m_Owner] != nullptr)
+        GameServer()->Sheep()->m_pLightsabers[m_Owner] = nullptr;
 
 	Server()->SnapFreeId(GetId());
 	GameWorld()->RemoveEntity(this);

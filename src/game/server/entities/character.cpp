@@ -379,8 +379,7 @@ void CCharacter::DoWeaponSwitch()
 	SetWeapon(m_QueuedWeapon);
 
 	//<sheep>
-	CGameControllerSheep* pController = (CGameControllerSheep *)GameServer()->m_pController;
-	pController->OnCharacterWeaponChanged(this);
+	GameServer()->Sheep()->OnCharacterWeaponChanged(this);
 	//</sheep>
 }
 
@@ -496,8 +495,7 @@ void CCharacter::FireWeapon()
 	vec2 ProjStartPos = m_Pos + Direction * GetProximityRadius() * 0.75f;
 		
 	//<sheep>
-	CGameControllerSheep* pController = (CGameControllerSheep *)GameServer()->m_pController;
-	if(!pController->OnCharacterWeaponFire(this, m_Core.m_ActiveWeapon, MouseTarget, Direction, ProjStartPos)) {
+	if(!GameServer()->Sheep()->OnCharacterWeaponFire(this, m_Core.m_ActiveWeapon, MouseTarget, Direction, ProjStartPos)) {
 	//</sheep>
 
 	switch(m_Core.m_ActiveWeapon)
@@ -835,7 +833,7 @@ void CCharacter::Tick()
 	HandleWeapons();
 
 	//<sheep>
-	((CGameControllerSheep *)GameServer()->m_pController)->OnCharacterTick(this);
+	GameServer()->Sheep()->OnCharacterTick(this);
 	//</sheep>
 
 	DDRacePostCoreTick();
@@ -1029,10 +1027,7 @@ void CCharacter::Die(int Killer, int Weapon, bool SendKillMsg)
 	// a nice sound, and bursting tee death effect
 	GameServer()->CreateSound(m_Pos, SOUND_PLAYER_DIE, TeamMask());
 
-	if(GetPlayer() && GetPlayer()->IsLoggedIn() 
-		&& GetPlayer()->m_AccountItemResult && GetPlayer()->m_AccountItemResult->m_Completed && GetPlayer()->m_AccountItemResult->m_Processed 
-		&& GetPlayer()->m_AccountItemResult->m_AccountItem.find(EItemVariant::ITEM_DEATH_EFFECT) != GetPlayer()->m_AccountItemResult->m_AccountItem.end()) {
-		
+	if(GetPlayer() && GetPlayer()->IsItemActive(EItemVariant::ITEM_DEATH_EFFECT)) {
 		switch(GetPlayer()->m_AccountItemResult->m_AccountItem[EItemVariant::ITEM_DEATH_EFFECT].m_State) {
 			case DEATH_HAMMERHIT:
 			{
@@ -1048,8 +1043,7 @@ void CCharacter::Die(int Killer, int Weapon, bool SendKillMsg)
 			}
 			case DEATH_LASER:
 			{
-				CGameControllerSheep* pController = (CGameControllerSheep *)GameServer()->m_pController;
-				pController->CreateLaserDeath(1, m_pPlayer->GetCid(), m_Pos, TeamMask());
+				GameServer()->Sheep()->CreateLaserDeath(1, m_pPlayer->GetCid(), m_Pos, TeamMask());
 				break;
 			}
 			case DEATH_DAMAGEIND:
@@ -1404,7 +1398,7 @@ void CCharacter::Snap(int SnappingClient)
 	pDDNetCharacter->m_TuneZoneOverride = -1;
 
 	//<sheep>
-	if(GetPlayer()->m_AccountItemResult->m_AccountItem.find(EItemVariant::ITEM_SPARKLE) != GetPlayer()->m_AccountItemResult->m_AccountItem.end())
+	if(GetPlayer()->IsItemActive(EItemVariant::ITEM_SPARKLE))
 		pDDNetCharacter->m_Flags |= CHARACTERFLAG_INVINCIBLE;
 	//</sheep>
 }
@@ -2706,8 +2700,7 @@ bool CCharacter::HasLineOfSight(vec2 Pos)
 void CCharacter::SetActiveWeapon(int ActiveWeap)
 {
 	m_Core.m_ActiveWeapon = ActiveWeap;
-	CGameControllerSheep* pController = (CGameControllerSheep *)GameServer()->m_pController;
-	pController->OnCharacterWeaponChanged(this);
+	GameServer()->Sheep()->OnCharacterWeaponChanged(this);
 }
 
 void CCharacter::ForceSetPos(vec2 NewPos)

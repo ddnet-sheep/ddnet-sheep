@@ -13,8 +13,10 @@ protected:
     EItemVariant m_ItemVariant;
     std::vector<int> m_SnapIds;
 
+    bool ShouldReset();
+    bool ShouldSnap();
+
     bool HasReset();
-    CGameControllerSheep* Controller() { return (CGameControllerSheep *)GameServer()->m_pController; }
 public:
     CCosmetic(CGameWorld *pGameWorld, int EntityId, EItemVariant ItemVariant, CPlayer* Owner, vec2 Pos, int ExtraIds);
 

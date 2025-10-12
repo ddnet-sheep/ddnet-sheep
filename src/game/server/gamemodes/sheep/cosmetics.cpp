@@ -75,7 +75,7 @@ CCosmetic* BuildCosmetic(CPlayer* pPlayer, EItemVariant Variant) {
 void CGameControllerSheep::SpawnCosmetics(CPlayer *pPlayer) {
 	DespawnCosmetics(pPlayer);
 
-	if(!pPlayer || !pPlayer->IsLoggedIn() || !pPlayer->m_AccountItemResult->m_Completed)
+	if(!pPlayer || !pPlayer->IsLoggedIn() || !pPlayer->IsItemsLoaded())
 		return;
 	
 	for (const auto& [Type, AccountItem] : pPlayer->m_AccountItemResult->m_AccountItem) {

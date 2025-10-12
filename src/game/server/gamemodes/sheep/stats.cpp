@@ -109,7 +109,6 @@ void CGameControllerSheep::GivePlayerPlaytime(CPlayer *pPlayer, int Minutes) {
 void CGameControllerSheep::ConStats(IConsole::IResult *pResult, void *pUserData) {
     CPlayer *pPlayer = CCommands::GetCaller(pResult, pUserData);
     CGameContext *pGameServer = (CGameContext *)pUserData;
-    CGameControllerSheep *pController = (CGameControllerSheep *)pGameServer->m_pController;
 
     if(pResult->NumArguments() == 0) {
         if(!pPlayer->IsLoggedIn()) {
@@ -127,7 +126,7 @@ void CGameControllerSheep::ConStats(IConsole::IResult *pResult, void *pUserData)
         }
 
         for(CPlayer *pOther : pGameServer->m_apPlayers) {
-            if(pOther != nullptr && pOther->IsLoggedIn() && !strcmp(pController->Server()->ClientName(pOther->GetCid()), pResult->GetString(0))) {
+            if(pOther != nullptr && pOther->IsLoggedIn() && !strcmp(pGameServer->Server()->ClientName(pOther->GetCid()), pResult->GetString(0))) {
                 pPlayer->m_AccountStatsResult = pOther->m_AccountLoginResult;
                 return;
             }
@@ -139,6 +138,6 @@ void CGameControllerSheep::ConStats(IConsole::IResult *pResult, void *pUserData)
         Tmp->m_Type = CSqlAccountCredentialsRequest::TYPE_FORCED;
         str_copy(Tmp->m_Username, pResult->GetString(0), sizeof(Tmp->m_Username));
 
-	    pController->m_pPool->Execute(CGameControllerSheep::ExecuteLogin, std::move(Tmp), "account stats");
+	    pGameServer->Sheep()->m_pPool->Execute(CGameControllerSheep::ExecuteLogin, std::move(Tmp), "account stats");
     }
 }

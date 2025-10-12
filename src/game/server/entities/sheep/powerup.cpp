@@ -67,12 +67,10 @@ void CPowerUp::Reset()
 
 		Server()->SnapFreeId(m_Snap.m_aLaserIds[i]);
 
-    CGameControllerSheep* pController = (CGameControllerSheep*)(GameServer()->m_pController);
-
-	for(size_t i = 0; i < pController->m_vPowerups.size(); i++)
+	for(size_t i = 0; i < GameServer()->Sheep()->m_vPowerups.size(); i++)
 	{
-		if(pController->m_vPowerups[i] == this)
-			pController->m_vPowerups.erase(pController->m_vPowerups.begin() + i);
+		if(GameServer()->Sheep()->m_vPowerups[i] == this)
+			GameServer()->Sheep()->m_vPowerups.erase(GameServer()->Sheep()->m_vPowerups.begin() + i);
 	}
 
 	GameWorld()->RemoveEntity(this);
@@ -100,8 +98,7 @@ void CPowerUp::Tick()
 
 		if(PointInSquare(m_Pos, pChr->GetPos(), 54.0f))
 		{
-            CGameControllerSheep* pController = (CGameControllerSheep*)GameServer()->m_pController;
-			if(pController->OnCharacterPowerup(pChr, &m_Data)) {
+			if(GameServer()->Sheep()->OnCharacterPowerup(pChr, &m_Data)) {
 				GameServer()->CreateSound(m_Pos, SOUND_PICKUP_ARMOR, pChr->TeamMask());
 				Reset();
 				return;

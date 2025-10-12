@@ -608,21 +608,17 @@ void CGameControllerSheep::OnCharacterTick(CCharacter *pCharacter) {
 			pPlayer->m_AccountItemResult->m_Processed = true;
 		} else {
 			if(pCharacter->Team() != TEAM_SPECTATORS && pCharacter->IsAlive()) {
-				if(pPlayer->m_AccountItemResult->m_AccountItem.find(EItemVariant::ITEM_BLOODY_STRONG) != pPlayer->m_AccountItemResult->m_AccountItem.end() || pPlayer->m_AccountItemResult->m_AccountItem.find(EItemVariant::ITEM_BLOODY) != pPlayer->m_AccountItemResult->m_AccountItem.end() && Server()->Tick() % 6 == 0)
+				if(pPlayer->IsItemActive(EItemVariant::ITEM_BLOODY_STRONG) || pPlayer->IsItemActive(EItemVariant::ITEM_BLOODY) && Server()->Tick() % 6 == 0)
 					GameServer()->CreateDeath(pCharacter->m_Pos, pPlayer->GetCid(), pCharacter->TeamMask());
 			}
+
+			if(pPlayer->IsItemActive(EItemVariant::ITEM_RAINBOW_BODY) || pPlayer->IsItemActive(EItemVariant::ITEM_RAINBOW_FEET)) {
+				int RainbowSpeed = 1; // todo: make configurable
+
+				if(Server()->Tick() % 2 == 1)
+					m_RainbowColor[pPlayer->GetCid()] = (m_RainbowColor[pPlayer->GetCid()] + RainbowSpeed) % 256;
+			}
 		}
-	}
-
-	if(pPlayer->m_AccountItemResult != nullptr && pPlayer->m_AccountItemResult->m_Completed && pPlayer->m_AccountItemResult->m_Processed 
-		&& (pPlayer->m_AccountItemResult->m_AccountItem.find(EItemVariant::ITEM_RAINBOW_BODY) != pPlayer->m_AccountItemResult->m_AccountItem.end()
-		|| pPlayer->m_AccountItemResult->m_AccountItem.find(EItemVariant::ITEM_RAINBOW_FEET) != pPlayer->m_AccountItemResult->m_AccountItem.end())) {
-		
-		int RainbowSpeed = 1; // todo: make configurable
-
-		if(Server()->Tick() % 2 == 1)
-			m_RainbowColor[pPlayer->GetCid()] = (m_RainbowColor[pPlayer->GetCid()] + RainbowSpeed) % 256;
-
 	}
 }
 

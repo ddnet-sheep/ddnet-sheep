@@ -139,6 +139,8 @@ public:
 	int NumDDraceHudRows();
 	void SendBroadcastHud(const char *pMessage);
 	bool IsLoggedIn();
+	bool IsItemsLoaded();
+	bool IsItemActive(EItemVariant Item);
 
 	double m_PredLatency = 0.0;
 	void Repredict(int PredMargin = 6);

@@ -637,6 +637,7 @@ public:
 
 	//<sheep>
 	bool IncludedInServerInfo(int ClientId) override;
+	CGameControllerSheep *Sheep() { return (CGameControllerSheep *)m_pController; }
 	//</sheep>
 };
 
