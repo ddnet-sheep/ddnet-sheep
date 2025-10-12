@@ -10,7 +10,7 @@
 #include <game/server/gamecontroller.h>
 
 CDotTrail::CDotTrail(CCharacter* pCharacter)
-	: CEntityOwned(CGameWorld::ENTTYPE_DOT_TRAIL, EItemVariant::ITEM_DOT_TRAIL, pCharacter, 0, pCharacter->GetPos())
+	: CEntityOwned(CGameWorld::ENTTYPE_DOT_TRAIL, COSMETIC_DOT_TRAIL, pCharacter, 0, pCharacter->GetPos())
 {
 }
 

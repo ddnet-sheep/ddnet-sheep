@@ -40,7 +40,7 @@ static int GetNeededIds(int Type) {
 }
 
 CWeaponDrop::CWeaponDrop(CCharacter* pCharacter, vec2 Pos, int Team, int TeleCheckpoint, vec2 Vel, int Lifetime, int Type) :
-	CEntityOwned(CGameWorld::ENTTYPE_WEAPON_DROP, EItemVariant::ITEM_NONE, pCharacter, 0, Pos, 28)
+	CEntityOwned(CGameWorld::ENTTYPE_WEAPON_DROP, -1, pCharacter, 0, Pos, 28)
 {
     m_Team = Team;
 

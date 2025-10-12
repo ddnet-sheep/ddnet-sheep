@@ -31,9 +31,13 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 	IGameController(pGameServer),
 	m_pPool(((CServer *)Server())->DbPool())
 {
-	for(int i = 0; i < MAX_CLIENTS; i++)
+	for(int i = 0; i < MAX_CLIENTS; i++) {
 		m_RainbowColor[i] = 0;
-		
+
+		for(int j = 0; j < NUM_COSMETICS; j++)
+			m_Cosmetics[i][j] = nullptr;
+	}
+	
 	/*
 		CREATE TABLE `sheep_accounts` ( 
 			`id` INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
@@ -64,26 +68,6 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 			`description` VARCHAR(255) NOT NULL DEFAULT ""
 		);
 
-		// seed
-		for (const auto &Item : EItemVariant)
-		
-		INSERT INTO `sheep_items` (`name`, `type`, `description`) VALUES
-			('Rainbow Body', 0, 'Makes your body cycle through all colors'),
-			('Rainbow Feet', 0, 'Makes your feet cycle through all colors'),
-			('Rainbow Speed', 0, 'Makes your speed lines cycle through all colors'),
-			('Sparkle', 0, 'Adds sparkles around you'),
-			('Dot Trail', 0, 'Adds a dot trail behind you'),
-			('Star Trail', 0, 'Adds a star trail behind you'),
-			('Inverse Aim', 0, 'Inverts your aim'),
-			('Lovely', 1, 'Adds lovely hearts around you'),
-			('Rotating Ball', 1, 'Adds a rotating ball around you'),
-			('Epic Circle', 1, 'Adds an epic circle around you'),
-			('Bloody', 1, 'Adds a bloody effect to your character'),
-			-- ('Strong Bloody', 1, 'Adds a strong bloody effect to your character'),
-			('Heart Hat', 1, 'Adds a heart hat on your head'),
-			('Staff Indicator', 1, 'Shows that you are staff above your head'),
-			('Death Effect', 1, 'Adds an effect when you die');
-
 		CREATE TABLE `sheep_account_item` ( 
 			`account_id` INT NOT NULL,
 			`item_id` INT NOT NULL,
@@ -112,7 +96,8 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 	GameServer()->Console()->Register("projectiletext", "r[string]", CFGFLAG_SERVER, ConProjectileText, GameServer(), "projectile text");
 
 	// admin commands
-	GameServer()->Console()->Register("weapon", "s[user|weapon] ?s[weapon]", CFGFLAG_SERVER, ConWeapon, GameServer(), "toggles a weapon");
+	GameServer()->Console()->Register("weapon", "s[?user|weapon] ?s[weapon]", CFGFLAG_SERVER, ConWeapon, GameServer(), "toggles a weapon");
+	GameServer()->Console()->Register("cosmetic", "s[?user|item] ?s[item]", CFGFLAG_SERVER, ConCosmetic, GameServer(), "toggles a cosmetic");
 	GameServer()->Console()->Register("vanish", "?s[user]", CFGFLAG_SERVER, ConVanish, GameServer(), "toggles the vanish state");
 	GameServer()->Console()->Register("invisible", "?s[user]", CFGFLAG_SERVER, ConInvisible, GameServer(), "toggles the invisible state");
 	GameServer()->Console()->Register("ignoreinvisible", "?s[user]", CFGFLAG_SERVER, ConIgnoreInvisible, GameServer(), "toggles the ignore invisible state");
@@ -144,8 +129,6 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 
 
 	GameServer()->Console()->Chain("sv_sheep_discord_token", ConChainSheepDiscordTokenChange, this);
- 
-	LoadItems();
 
 	m_PowerupDelay = Server()->Tick() + Server()->TickSpeed() * 5;
 }
@@ -338,8 +321,10 @@ void CGameControllerSheep::Tick() {
 	// save account every 10 minutes
 	if(Server()->Tick() % (Server()->TickSpeed() * 60 * 10) == 0)
 		for(auto pPlayer : GameServer()->m_apPlayers)
-			if(pPlayer != nullptr && pPlayer->IsLoggedIn())
+			if(pPlayer != nullptr && pPlayer->IsLoggedIn()) {
 				SaveAccount(pPlayer);
+				SaveCosmetics(pPlayer);
+			}
 
 	for(auto it = m_vLaserDeaths.begin(); it != m_vLaserDeaths.end(); it++) {
 		const size_t count = std::min<size_t>((size_t)it->m_Remaining, it->m_vStartTick.size());
@@ -601,22 +586,24 @@ void CGameControllerSheep::OnCharacterTick(CCharacter *pCharacter) {
 		}
 	}
 
-	CPlayer* pPlayer = pCharacter->GetPlayer();
-	if (pPlayer != nullptr && pPlayer->m_AccountItemResult != nullptr && pPlayer->m_AccountItemResult->m_Completed) { 
-		if(!pPlayer->m_AccountItemResult->m_Processed) {
-			SpawnCosmetics(pCharacter);
-			pPlayer->m_AccountItemResult->m_Processed = true;
-		} else {
-			if(pCharacter->Team() != TEAM_SPECTATORS && pCharacter->IsAlive()) {
-				if(pPlayer->IsItemActive(EItemVariant::ITEM_BLOODY_STRONG) || pPlayer->IsItemActive(EItemVariant::ITEM_BLOODY) && Server()->Tick() % 6 == 0)
-					GameServer()->CreateDeath(pCharacter->m_Pos, pPlayer->GetCid(), pCharacter->TeamMask());
-			}
+	if(pCharacter->GetPlayer()) {
+		int ClientId = pCharacter->GetPlayer()->GetCid();
+		if (m_CosmeticsResult[ClientId] != nullptr && m_CosmeticsResult[ClientId]->m_Completed) { 
+			if(!m_CosmeticsResult[ClientId]->m_Processed) {
+				SpawnCosmetics(ClientId);
+				m_CosmeticsResult[ClientId]->m_Processed = true;
+			} else {
+				if(pCharacter->Team() != TEAM_SPECTATORS && pCharacter->IsAlive()) {
+					if(m_CosmeticsResult[ClientId]->m_State[COSMETIC_BLOODY_STRONG] > 0 || m_CosmeticsResult[ClientId]->m_State[COSMETIC_BLOODY] > 0 && Server()->Tick() % 6 == 0)
+						GameServer()->CreateDeath(pCharacter->m_Pos, ClientId, pCharacter->TeamMask());
+				}
 
-			if(pPlayer->IsItemActive(EItemVariant::ITEM_RAINBOW_BODY) || pPlayer->IsItemActive(EItemVariant::ITEM_RAINBOW_FEET)) {
-				int RainbowSpeed = 1; // todo: make configurable
+				if(m_CosmeticsResult[ClientId]->m_State[COSMETIC_RAINBOW_BODY] > 0 || m_CosmeticsResult[ClientId]->m_State[COSMETIC_RAINBOW_FEET] > 0) {
+					int RainbowSpeed = 1; // todo: make configurable
 
-				if(Server()->Tick() % 2 == 1)
-					m_RainbowColor[pPlayer->GetCid()] = (m_RainbowColor[pPlayer->GetCid()] + RainbowSpeed) % 256;
+					if(Server()->Tick() % 2 == 1)
+						m_RainbowColor[ClientId] = (m_RainbowColor[ClientId] + RainbowSpeed) % 256;
+				}
 			}
 		}
 	}

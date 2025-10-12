@@ -3,10 +3,10 @@
 #include <game/server/entities/character.h>
 #include <game/server/gamemodes/sheep/sheep.h>
 
-CEntityOwned::CEntityOwned(int EntityId, EItemVariant ItemVariant, CCharacter* pCharacter, int ExtraIds, vec2 Pos, int ProximityRadius)
+CEntityOwned::CEntityOwned(int EntityId, int ItemId, CCharacter* pCharacter, int ExtraIds, vec2 Pos, int ProximityRadius)
     : CEntity(pCharacter->GameWorld(), EntityId, Pos, ProximityRadius)
     , m_Player(pCharacter->GetPlayer())
-    , m_ItemVariant(ItemVariant)
+    , m_ItemId(ItemId)
 {
     if(!pCharacter)
         return;
@@ -25,14 +25,7 @@ void CEntityOwned::Reset() {
 }
 
 bool CEntityOwned::ShouldReset() {
-    return
-        m_ItemVariant != EItemVariant::ITEM_NONE && (
-            !Player() ||
-            GameServer()->Sheep()->m_Cosmetics.find(Player()) == GameServer()->Sheep()->m_Cosmetics.end() ||
-            GameServer()->Sheep()->m_Cosmetics[Player()].find(m_ItemVariant) == GameServer()->Sheep()->m_Cosmetics[Player()].end() ||
-            GameServer()->Sheep()->m_Cosmetics[Player()][m_ItemVariant] != this
-        )
-    ;
+    return m_ItemId > -1 && (!Player() || GameServer()->Sheep()->m_Cosmetics[Player()->GetCid()][m_ItemId] != this);
 }
 
 bool CEntityOwned::HasReset() {

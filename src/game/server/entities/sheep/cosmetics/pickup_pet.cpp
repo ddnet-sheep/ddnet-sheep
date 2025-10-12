@@ -44,7 +44,7 @@ void CPickupPet::Reset()
 
 void CPickupPet::Tick() {
 	const CPlayer *pOwnerPl = GameServer()->m_apPlayers[m_Owner];
-	if(!pOwnerPl || !pOwnerPl->m_Cosmetics.m_PickupPet)
+	if(!pOwnerPl)
 	{
 		Reset();
 		return;

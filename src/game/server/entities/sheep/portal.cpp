@@ -33,7 +33,7 @@ constexpr float Lifetime = INFINITY;
 //constexpr int Lifetime = 12.5 * SERVER_TICK_SPEED;
 
 CPortal::CPortal(CCharacter* pCharacter, vec2 Pos) :
-	CEntityOwned(CGameWorld::ENTTYPE_PORTAL, EItemVariant::ITEM_NONE, pCharacter, 0, Pos)
+	CEntityOwned(CGameWorld::ENTTYPE_PORTAL, -1, pCharacter, 0, Pos)
 {
 	m_State = STATE_NONE;
 

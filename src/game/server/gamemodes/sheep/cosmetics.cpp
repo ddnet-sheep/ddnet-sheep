@@ -12,79 +12,70 @@
 
 #include <random>
 
-void CGameControllerSheep::ConInverseAim(IConsole::IResult *pResult, void *pUserData)
-{
-	CGameContext *pSelf = (CGameContext *)pUserData;
-	int Victim = pResult->NumArguments() ? pResult->GetVictim() : pResult->m_ClientId;
-
-	if(pResult->GetInteger(0) == -1)
-		Victim = pResult->m_ClientId;
-
-	CPlayer *pPl = pSelf->m_apPlayers[Victim];
-
-	if(!pPl)
-		return;
-
-	bool Set = !pPl->m_Cosmetics.m_InverseAim;
-	pPl->SetInverseAim(Set);
-	log_info("cosmetics", "Set inverse aim to %d for player %s", Set, pSelf->Server()->ClientName(Victim));
+void CGameControllerSheep::LoadCosmetics(CPlayer* pPlayer) {
+    m_CosmeticsResult[pPlayer->GetCid()] = std::make_shared<CCosmeticsResult>();
+    auto Tmp = std::make_unique<CSqlAccountIdRequest>(m_CosmeticsResult[pPlayer->GetCid()]);
+    Tmp->m_AccountId = pPlayer->m_AccountLoginResult->m_AccountId;
+	m_pPool->Execute(CGameControllerSheep::ExecuteLoadCosmetics, std::move(Tmp), "load cosmetics");
 }
 
-void CGameControllerSheep::ConDamageIndEffect(IConsole::IResult *pResult, void *pUserData)
-{
-	CGameContext *pSelf = (CGameContext *)pUserData;
+bool CGameControllerSheep::ExecuteLoadCosmetics(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {
+    auto *pResult = dynamic_cast<CCosmeticsResult *>(pGameData->m_pResult.get());
 
-	int Victim = pResult->NumArguments() > 1 ? pResult->GetVictim() : pResult->m_ClientId;
+	if(!pSqlServer->PrepareStatement("SELECT item_id, state FROM sheep_cosmetics WHERE account_id = ?", pError, ErrorSize))
+	    return false;
 
-	if(pResult->GetInteger(1) == -1)
-		Victim = pResult->m_ClientId;
+    const auto *pData = dynamic_cast<const CSqlAccountIdRequest *>(pGameData);
+    pSqlServer->BindInt(1, pData->m_AccountId);
 
-	CPlayer *pPl = pSelf->m_apPlayers[Victim];
+	for(int i = 0; i < NUM_COSMETICS; i++)
+		pResult->m_State[i] = 0;
 
-	if(!pPl)
-		return;
+    bool End;
+    do {
+        pSqlServer->Step(&End, pError, ErrorSize);
+        
+        if(End)
+            break;
 
-	int Type = pResult->NumArguments() < 1 ? 0 : pResult->GetInteger(0);
-	pPl->SetDamageIndType(Type);
-	log_info("cosmetics", "Set damage ind to %d for player %s", Type, pSelf->Server()->ClientName(Victim));
+        pResult->m_State[pSqlServer->GetInt(1)] = pSqlServer->GetInt(2);
+    } while(!End);
+
+	return true;
 }
 
-void CGameControllerSheep::DespawnCosmetics(CPlayer* pPlayer) {
-	if(!pPlayer)
-		return;
-
-	for (const auto& [Variant, Cosmetic] : m_Cosmetics[pPlayer])
+void CGameControllerSheep::DespawnCosmetics(int ClientId) {
+	for(CEntity* Cosmetic : m_Cosmetics[ClientId])
 		if(Cosmetic != nullptr)
 			Cosmetic->Destroy();
 
-	m_Cosmetics.erase(pPlayer);
+	for(int i = 0; i < NUM_COSMETICS; i++)
+		m_Cosmetics[ClientId][i] = nullptr;
 }
 
-CEntityOwned* BuildCosmetic(CCharacter* pCharacter, EItemVariant Variant) {
-	switch(Variant) {
-		case EItemVariant::ITEM_HEART_HAT: return new CHeartHat(pCharacter);
-		case EItemVariant::ITEM_LOVELY: return new CLovely(pCharacter);
-		case EItemVariant::ITEM_DOT_TRAIL: return new CDotTrail(pCharacter);
-		case EItemVariant::ITEM_STAFF_IND: return new CStaffInd(pCharacter);
-		case EItemVariant::ITEM_ROTATING_BALL: return new CRotatingBall(pCharacter);
-		case EItemVariant::ITEM_EPIC_CIRCLE: return new CEpicCircle(pCharacter);
+CEntityOwned* BuildCosmetic(CCharacter* pCharacter, int Cosmetic) {
+	switch(Cosmetic) {
+		case COSMETIC_HEART_HAT: return new CHeartHat(pCharacter);
+		case COSMETIC_LOVELY: return new CLovely(pCharacter);
+		case COSMETIC_DOT_TRAIL: return new CDotTrail(pCharacter);
+		case COSMETIC_STAFF_IND: return new CStaffInd(pCharacter);
+		case COSMETIC_ROTATING_BALL: return new CRotatingBall(pCharacter);
+		case COSMETIC_EPIC_CIRCLE: return new CEpicCircle(pCharacter);
 	}
 	return nullptr;
 }
 
-void CGameControllerSheep::SpawnCosmetics(CCharacter *pCharacter) {
-	DespawnCosmetics(pCharacter->GetPlayer());
+void CGameControllerSheep::SpawnCosmetics(int ClientId) {
+	DespawnCosmetics(ClientId);
 
-	if(!pCharacter || !pCharacter->GetPlayer()->IsLoggedIn() || !pCharacter->GetPlayer()->IsItemsLoaded())
+	CPlayer* pPlayer = GameServer()->m_apPlayers[ClientId];
+	if(!GameServer()->GetPlayerChar(ClientId) || !pPlayer->IsLoggedIn())
 		return;
 
-	for (const auto& [Type, AccountItem] : pCharacter->GetPlayer()->m_AccountItemResult->m_AccountItem) {
-		auto Pair = m_ItemsResult->m_Items.find(Type);
-        if(Pair == m_ItemsResult->m_Items.end() || Pair->second.m_Type != EItemType::TYPE_COSMETIC || AccountItem.m_State != (int)EItemState::ITEM_STATE_ACTIVE)
-			continue;
-
-		m_Cosmetics[pCharacter->GetPlayer()][AccountItem.m_Variant] = BuildCosmetic(pCharacter, AccountItem.m_Variant);
-    }
+	for (int i = 0; i < NUM_COSMETICS; i++) {
+		if(m_CosmeticsResult[ClientId]->m_State[i] > 0)
+			m_Cosmetics[ClientId][i] = BuildCosmetic(GameServer()->GetPlayerChar(ClientId), i);
+	}
 }
 
 void CGameControllerSheep::CreateLaserDeath(int Type, int pOwner, vec2 pPos, CClientMask pMask) {
@@ -114,4 +105,94 @@ void CGameControllerSheep::CreateLaserDeath(int Type, int pOwner, vec2 pPos, CCl
 	}
 
 	m_vLaserDeaths.push_back(effect);
+}
+
+void CGameControllerSheep::ConCosmetic(IConsole::IResult *pResult, void *pUserData) {
+	CPlayer* pVictim;
+	if (pResult->NumArguments() > 1) {
+		pVictim = CCommands::GetVictimOrCaller(pResult, pUserData);
+		if(!CCommands::ValidateAuthenticated(pVictim)) {
+			CGameContext *pGameServer = (CGameContext *)pUserData;
+			pGameServer->SendChatTarget(pResult->m_ClientId, "The player is not logged in.");
+			return;
+		}
+	} else {
+		pVictim = CCommands::GetCaller(pResult, pUserData);
+	}
+
+	CCharacter *pVictimChar = pVictim->GetCharacter();
+	CGameContext *pGameServer = (CGameContext *)pUserData;
+
+	if(!pVictimChar) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "The player is not spawned");
+		return;
+	}
+
+	int CosmeticId = CCosmetics::GetId(pResult->GetString(pResult->NumArguments() - 1));
+	if(std::clamp(CosmeticId, 0, NUM_COSMETICS - 1) != CosmeticId) {
+		char aBuf[256] = "Invalid cosmetic. Available cosmetics: ";
+		for (int i = 0; i < NUM_COSMETICS; i++) {
+			str_append(aBuf, CCosmetics::GetName(i), sizeof(aBuf));
+			if (i == NUM_COSMETICS - 1) break;
+			str_append(aBuf, ", ", sizeof(aBuf));
+		}
+
+		pGameServer->SendChatTarget(pResult->m_ClientId, aBuf);
+		return;
+	}
+
+	if(pGameServer->Sheep()->m_CosmeticsResult[pVictim->GetCid()]->m_State[CosmeticId] == 0) {
+		pGameServer->Sheep()->m_CosmeticsResult[pVictim->GetCid()]->m_State[CosmeticId] = 1;
+		pGameServer->SendChatTarget(pResult->m_ClientId, "Gave cosmetic");
+	} else {
+		pGameServer->Sheep()->m_CosmeticsResult[pVictim->GetCid()]->m_State[CosmeticId] = 0;
+		pGameServer->SendChatTarget(pResult->m_ClientId, "Removed cosmetic");
+	}
+
+	pGameServer->Sheep()->SpawnCosmetics(pVictim->GetCid());
+}
+
+void CGameControllerSheep::SaveCosmetics(CPlayer *pPlayer) {
+	if(!pPlayer->IsLoggedIn())
+		return;
+
+	std::shared_ptr<ISheepSqlResult> Result = std::make_shared<ISheepSqlResult>();
+
+	auto Tmp = std::make_unique<CSqlCosmeticsRequest>(Result);
+	Tmp->m_AccountId = pPlayer->m_AccountLoginResult->m_AccountId;
+	log_error("sql", "saving cosmetics for account %d", Tmp->m_AccountId);
+	for(int i = 0; i < NUM_COSMETICS; i++)
+		Tmp->m_State[i] = m_CosmeticsResult[pPlayer->GetCid()]->m_State[i];
+
+	m_pPool->Execute(CGameControllerSheep::ExecuteSaveCosmetic, std::move(Tmp), "cosmetics save");
+}
+
+bool CGameControllerSheep::ExecuteSaveCosmetic(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {
+	auto *pResult = dynamic_cast<CAccountDataResult *>(pGameData->m_pResult.get());
+	const auto *pData = dynamic_cast<const CSqlCosmeticsRequest *>(pGameData);
+
+	char aSql[1024] = "INSERT INTO sheep_cosmetics (account_id, item_id, state, created_at, updated_at) VALUES ";
+	int Bind = 1;
+	for(int i = 0; i < NUM_COSMETICS; i++) {
+		char aBuf[64];
+		str_format(aBuf, sizeof(aBuf), "(%d, %d, %d, NOW(), NOW())", pData->m_AccountId, i, pData->m_State[i]);
+		str_append(aSql, aBuf, sizeof(aSql));
+
+		if(i < NUM_COSMETICS - 1)
+			str_append(aSql, ", ");
+	}
+
+
+	str_append(aSql, " ON DUPLICATE KEY UPDATE state=VALUES(state), updated_at=NOW()");
+
+	if(!pSqlServer->PrepareStatement(aSql, pError, ErrorSize))
+		return false;
+	
+	int NumUpdated;
+	if(!pSqlServer->ExecuteUpdate(&NumUpdated, pError, ErrorSize)) {
+		log_error("sql", "failed to execute update: %s", pError);
+		return false;
+	}
+
+	return NumUpdated != 0;
 }

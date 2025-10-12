@@ -20,7 +20,7 @@ bool VerifyPassword(const char *pExpected, const char* pPassword)
 }
 
 void CGameControllerSheep::OnPlayerLogin(CPlayer *pPlayer, bool Autologin) {
-	LoadAccountItem(pPlayer);
+	LoadCosmetics(pPlayer);
 
 	pPlayer->m_LoginTick = Server()->Tick();
 
@@ -152,7 +152,10 @@ void CGameControllerSheep::OnPlayerLogout(CPlayer *pPlayer, const char *pReason,
 	}
 	
 	SaveAccount(pPlayer);
+	SaveCosmetics(pPlayer);
 	pPlayer->m_AccountLoginResult = nullptr;
+	DespawnCosmetics(pPlayer->GetCid());
+	m_CosmeticsResult[pPlayer->GetCid()] = nullptr;
 
 	AuthPlayer(pPlayer);
 
@@ -718,6 +721,9 @@ void CGameControllerSheep::ConSetVip(IConsole::IResult *pResult, void *pUserData
 	pVictim->m_AccountLoginResult->m_Vip = pResult->GetInteger(pResult->NumArguments() - 1);
 	pGameServer->Sheep()->SaveAccount(pVictim);
 
+	// todo: give vipind
+	pGameServer->Sheep()->SaveCosmetics(pVictim);
+
 	char aBuf[256];
 	str_format(aBuf, sizeof(aBuf), "Your VIP level has been set to %d by %s.", pVictim->m_AccountLoginResult->m_Vip, pGameServer->Server()->ClientName(pResult->m_ClientId));
 	pGameServer->SendChatTarget(pVictim->GetCid(), aBuf);
@@ -761,6 +767,9 @@ void CGameControllerSheep::ConSetStaff(IConsole::IResult *pResult, void *pUserDa
 		pGameServer->SendChatTarget(pResult->m_ClientId, "Player is not logged in.");
 		return;
 	}
+
+	// todo: give staffind
+	pGameServer->Sheep()->SaveCosmetics(pVictim);
 
 	pVictim->m_AccountLoginResult->m_Staff = pResult->GetInteger(pResult->NumArguments() - 1);
 	pGameServer->Sheep()->SaveAccount(pVictim);

@@ -338,13 +338,13 @@ void CPlayer::Snap(int SnappingClient)
 	pClientInfo->m_ColorFeet = m_TeeInfos.m_ColorFeet;
 
 	//<sheep>
-	if(IsItemsLoaded()) {
-		int Color = GameServer()->Sheep()->m_RainbowColor[m_ClientId] * 0x010000 + 0xff32;
+	int Color = GameServer()->Sheep()->m_RainbowColor[m_ClientId] * 0x010000 + 0xff32;
 
-		if(IsItemActive(EItemVariant::ITEM_RAINBOW_BODY))
+	if(GameServer()->Sheep()->m_CosmeticsResult[m_ClientId] != nullptr) { 
+		if(GameServer()->Sheep()->m_CosmeticsResult[m_ClientId]->m_State[COSMETIC_RAINBOW_BODY] > 0)
 			pClientInfo->m_ColorBody = Color;
 
-		if(IsItemActive(EItemVariant::ITEM_RAINBOW_FEET))
+		if(GameServer()->Sheep()->m_CosmeticsResult[m_ClientId]->m_State[COSMETIC_RAINBOW_FEET] > 0)
 			pClientInfo->m_ColorFeet = Color;
 	}
 	//</sheep>
@@ -1134,14 +1134,6 @@ bool CPlayer::IsLoggedIn() {
 	return m_AccountLoginResult != nullptr && m_AccountLoginResult->m_Success;
 }
 
-bool CPlayer::IsItemsLoaded() {
-	return m_AccountItemResult != nullptr && m_AccountItemResult->m_Success;
-}
-
-bool CPlayer::IsItemActive(EItemVariant Item) {
-	return IsItemsLoaded() && m_AccountItemResult->m_AccountItem.find(Item) != m_AccountItemResult->m_AccountItem.end() && m_AccountItemResult->m_AccountItem[Item].m_State > 0;
-}
-
 void CPlayer::Repredict(int PredMargin)
 {
 	int PingMs = m_Latency.m_Min + PredMargin;
@@ -1200,26 +1192,3 @@ void CPlayer::Repredict(int PredMargin)
 
 	m_PredLatency = PredIndex;
 }
-
-//tmp
-void CPlayer::SetInverseAim(bool Active)
-{
-	m_Cosmetics.m_InverseAim = Active;
-}
-
-void CPlayer::SetPickupPet(bool Active)
-{
-	if(m_Cosmetics.m_PickupPet == Active)
-		return;
-	m_Cosmetics.m_PickupPet = Active;
-	const vec2 Pos = GetCharacter() ? GetCharacter()->GetPos() : vec2(0, 0);
-	if(m_Cosmetics.m_PickupPet)
-		m_pPickupPet = new CPickupPet(&GameServer()->m_World, GetCid(), Pos);
-}
-
-void CPlayer::SetDamageIndType(int Type)
-{
-	m_Cosmetics.m_DamageIndType = Type;
-}
-
-//</sheep>

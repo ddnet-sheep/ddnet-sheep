@@ -25,6 +25,7 @@
 
 //<sheep>
 #include <game/server/gamemodes/sheep/sheep.h>
+#include <game/server/gamemodes/sheep/cosmetics.h>
 //</sheep>
 
 MACRO_ALLOC_POOL_ID_IMPL(CCharacter, MAX_CLIENTS)
@@ -1027,8 +1028,9 @@ void CCharacter::Die(int Killer, int Weapon, bool SendKillMsg)
 	// a nice sound, and bursting tee death effect
 	GameServer()->CreateSound(m_Pos, SOUND_PLAYER_DIE, TeamMask());
 
-	if(GetPlayer() && GetPlayer()->IsItemActive(EItemVariant::ITEM_DEATH_EFFECT)) {
-		switch(GetPlayer()->m_AccountItemResult->m_AccountItem[EItemVariant::ITEM_DEATH_EFFECT].m_State) {
+	//<sheep>
+	if(GameServer()->Sheep()->m_CosmeticsResult[GetPlayer()->GetCid()] != nullptr) {
+		switch(GameServer()->Sheep()->m_CosmeticsResult[GetPlayer()->GetCid()]->m_State[COSMETIC_DEATH_EFFECT]) {
 			case DEATH_HAMMERHIT:
 			{
 				GameServer()->CreateHammerHit(m_Pos, TeamMask());
@@ -1053,11 +1055,12 @@ void CCharacter::Die(int Killer, int Weapon, bool SendKillMsg)
 				break;
 			}
 			default:
+	//</sheep>
 				GameServer()->CreateDeath(m_Pos, m_pPlayer->GetCid(), TeamMask());
+	//<sheep>
 		}
-	} else {
-		GameServer()->CreateDeath(m_Pos, m_pPlayer->GetCid(), TeamMask());
 	}
+	//</sheep>
 
 	// this is to rate limit respawning to 3 secs
 	m_pPlayer->m_PreviousDieTick = m_pPlayer->m_DieTick;
@@ -1398,7 +1401,7 @@ void CCharacter::Snap(int SnappingClient)
 	pDDNetCharacter->m_TuneZoneOverride = -1;
 
 	//<sheep>
-	if(GetPlayer()->IsItemActive(EItemVariant::ITEM_SPARKLE))
+	if(GameServer()->Sheep()->m_CosmeticsResult[Id] != nullptr && GameServer()->Sheep()->m_CosmeticsResult[Id]->m_State[COSMETIC_SPARKLE] > 0)
 		pDDNetCharacter->m_Flags |= CHARACTERFLAG_INVINCIBLE;
 	//</sheep>
 }

@@ -8,7 +8,6 @@
 #include <map>
 #include <base/hash.h>
 #include <base/hash_ctxt.h>
-#include "item.h"
 #include "sql.h"
 
 #include <generated/protocol.h>
@@ -30,6 +29,16 @@ struct CSqlAccountCredentialsRequest : ISqlData
 	char m_Username[64] = "";
 	char m_Password[64] = "";
     char m_IP[64] = "";
+};
+
+struct CSqlAccountIdRequest : ISqlData
+{
+    uint64_t m_AccountId;
+
+    CSqlAccountIdRequest(std::shared_ptr<ISqlResult> pResult) :
+        ISqlData(std::move(pResult))
+    {
+    }
 };
 
 struct CAccountDataResult : ISheepSqlResult
@@ -80,8 +89,6 @@ struct CAccountDataResult : ISheepSqlResult
     bool m_Vanish; // silent join and not visible in the player list
 
     char m_Title[32];
-
-    std::unordered_map<EItemType, uint64_t> m_Items;
 };
 
 #endif

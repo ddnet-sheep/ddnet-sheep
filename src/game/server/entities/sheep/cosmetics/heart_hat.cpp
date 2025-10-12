@@ -15,7 +15,7 @@
 #include <base/vmath.h>
 
 CHeartHat::CHeartHat(CCharacter* pCharacter) :
-	CEntityOwned(CGameWorld::ENTTYPE_HEART_HAT, EItemVariant::ITEM_HEART_HAT, pCharacter, NUM_HEARTS, pCharacter->GetPos())
+	CEntityOwned(CGameWorld::ENTTYPE_HEART_HAT, COSMETIC_HEART_HAT, pCharacter, NUM_HEARTS, pCharacter->GetPos())
 {
 }
 

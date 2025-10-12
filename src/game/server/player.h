@@ -129,18 +129,13 @@ public:
 	//<sheep>
 	std::shared_ptr<CAccountDataResult> m_AccountLoginResult;
 	std::shared_ptr<CAccountDataResult> m_AccountStatsResult;
-	std::shared_ptr<CAccountItemResult> m_AccountItemResult;
 	std::shared_ptr<CSqlSuccessResult> m_PasswordChangeSuccessResult;
 
 	int64_t m_LoginTick;
 
-	CCosmetics m_Cosmetics;
-
 	int NumDDraceHudRows();
 	void SendBroadcastHud(const char *pMessage);
 	bool IsLoggedIn();
-	bool IsItemsLoaded();
-	bool IsItemActive(EItemVariant Item);
 
 	double m_PredLatency = 0.0;
 	void Repredict(int PredMargin = 6);

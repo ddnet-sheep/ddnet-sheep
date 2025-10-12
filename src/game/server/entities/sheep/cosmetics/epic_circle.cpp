@@ -17,7 +17,7 @@
 
 
 CEpicCircle::CEpicCircle(CCharacter* pCharacter) :
-	CEntityOwned(CGameWorld::ENTTYPE_PROJECTILE, EItemVariant::ITEM_EPIC_CIRCLE, pCharacter, MAX_PARTICLES, pCharacter->GetPos())
+	CEntityOwned(CGameWorld::ENTTYPE_PROJECTILE, COSMETIC_EPIC_CIRCLE, pCharacter, MAX_PARTICLES, pCharacter->GetPos())
 {
 }
 

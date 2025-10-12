@@ -19,7 +19,7 @@
 
 
 CStaffInd::CStaffInd(CCharacter* pCharacter) :
-	CEntityOwned(CGameWorld::ENTTYPE_STAFF_IND, EItemVariant::ITEM_STAFF_IND, pCharacter, NUM_IDS, pCharacter->GetPos())
+	CEntityOwned(CGameWorld::ENTTYPE_STAFF_IND, COSMETIC_STAFF_IND, pCharacter, NUM_IDS, pCharacter->GetPos())
 {
 	m_Dist = 0.f;
 	m_BallFirst = true;

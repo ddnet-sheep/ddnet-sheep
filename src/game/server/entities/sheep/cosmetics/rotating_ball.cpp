@@ -13,7 +13,7 @@
 #include "rotating_ball.h"
 
 CRotatingBall::CRotatingBall(CCharacter* pCharacter) :
-	CEntityOwned(CGameWorld::ENTTYPE_ROTATING_BALL, EItemVariant::ITEM_ROTATING_BALL, pCharacter, 1, pCharacter->GetPos())
+	CEntityOwned(CGameWorld::ENTTYPE_ROTATING_BALL, COSMETIC_ROTATING_BALL, pCharacter, 1, pCharacter->GetPos())
 {
 	m_IsRotating = true;
 

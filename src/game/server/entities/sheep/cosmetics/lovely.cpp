@@ -13,7 +13,7 @@
 #include <generated/protocol.h>
 
 CLovely::CLovely(CCharacter* pCharacter) :
-	CEntityOwned(CGameWorld::ENTTYPE_LOVELY, EItemVariant::ITEM_LOVELY, pCharacter, MAX_HEARTS, pCharacter->GetPos())
+	CEntityOwned(CGameWorld::ENTTYPE_LOVELY, COSMETIC_LOVELY, pCharacter, MAX_HEARTS, pCharacter->GetPos())
 {
 	m_SpawnDelay = 0;	
 }

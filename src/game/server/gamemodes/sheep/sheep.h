@@ -12,7 +12,6 @@
 
 #include <game/server/gamecontroller.h>
 
-#include "item.h"
 #include "vote.h"
 #include "commands.h"
 
@@ -41,21 +40,25 @@ public:
 	CGameControllerSheep(class CGameContext *pGameServer);
 	~CGameControllerSheep();
 	
-	// functions
 	void DiscordInit();
 	void DiscordShutdown();
 	void SendDiscordChat(int ChatterClientId, int Team, const char *pText, int SpamProtectionClientId, int VersionFlags);
 	
 	void SendActionMessage(CPlayer *pPlayer, enum CAccountActions Action, char* pExtra = "");
-	
-	void LoadItems();
-	void SpawnCosmetics(CCharacter* pCharacter);
-	void DespawnCosmetics(CPlayer* pPlayer);
+		
 	void AuthPlayer(CPlayer* pPlayer);
-	void SaveAccount(CPlayer* pPlayer);
-	static bool ExecuteLoadItems(IDbConnection* pSqlServer, const ISqlData* pGameData, char* pError, int ErrorSize);
-	void LoadAccountItem(class CPlayer* pPlayer);
-	static bool ExecuteLoadAccountItem(IDbConnection *pSqlServer, const ISqlData* pGameData, char *pError, int ErrorSize);
+	void SaveAccount(CPlayer* pPlayer);	
+    static bool ExecuteLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
+	static bool ExecuteRegister(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
+	static bool ExecutePassword(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
+	static bool ExecuteSave(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
+	
+	void SpawnCosmetics(int ClientId);
+	void DespawnCosmetics(int ClientId);
+	void LoadCosmetics(CPlayer* pPlayer);
+	void SaveCosmetics(CPlayer* pPlayer);
+	static bool ExecuteLoadCosmetics(IDbConnection *pSqlServer, const ISqlData* pGameData, char *pError, int ErrorSize);
+	static bool ExecuteSaveCosmetic(IDbConnection *pSqlServer, const ISqlData* pGameData, char *pError, int ErrorSize);
 	
 	int CalcPlayerNeededExp(CPlayer *pPlayer);
 	std::optional<vec2> GetRandomAccessablePos();
@@ -63,12 +66,6 @@ public:
 	void CreateLaserDeath(int Type, int pOwner, vec2 pPos, CClientMask pMask);
 
 	CClientMask CosmeticMask(int Team, int ExceptId = -1, int Asker = -1, int VersionFlags = CGameContext::FLAG_SIX | CGameContext::FLAG_SIXUP, bool Opposite = false);
-
-	// database
-    static bool ExecuteLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
-	static bool ExecuteRegister(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
-	static bool ExecutePassword(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
-	static bool ExecuteSave(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	
 	// user commands
 	static void ConLogin(IConsole::IResult *pResult, void *pUserData);
@@ -114,6 +111,7 @@ public:
 	static void ConForceLogout(IConsole::IResult *pResult, void *pUserData);
 	static void ConForceLogin(IConsole::IResult *pResult, void *pUserData);
 	static void ConWeapon(IConsole::IResult *pResult, void *pUserData);
+	static void ConCosmetic(IConsole::IResult *pResult, void *pUserData);
 	
 	// chains
 	static void ConChainSheepDiscordTokenChange(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
@@ -165,7 +163,8 @@ public:
 	CLightsaber *m_pLightsabers[MAX_CLIENTS] = {};
 	int m_RainbowColor[MAX_CLIENTS] = {};
 	std::unordered_map<CEntity*, CCharacter*> m_vGravityTarget;
-	std::unordered_map<CPlayer*, std::unordered_map<EItemVariant, CEntity*>> m_Cosmetics; // todo: make this better, i dont like EItemVariant as key here, maybe use 
+	CEntity* m_Cosmetics[MAX_CLIENTS][NUM_COSMETICS];
+	std::shared_ptr<CCosmeticsResult> m_CosmeticsResult[MAX_CLIENTS];
 	
 	// server bound
 	std::vector<CWeaponDrop*> m_vWeaponDrops = {};
@@ -175,7 +174,6 @@ public:
 private:
 	// server bound
     dpp::cluster *m_DiscordBot = nullptr;
-	std::shared_ptr<CItemsResult> m_ItemsResult;
 	std::vector<CFakePlayerMessage> m_FakePlayerMessageQueue;
 	
 	std::vector<SLaserDeath> m_vLaserDeaths;

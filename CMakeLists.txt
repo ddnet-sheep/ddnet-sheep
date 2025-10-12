@@ -2861,8 +2861,6 @@ if(SERVER)
     gamemodes/sheep/cosmetics.cpp
     gamemodes/sheep/cosmetics.h
     gamemodes/sheep/discord.cpp
-    gamemodes/sheep/item.cpp
-    gamemodes/sheep/item.h
     gamemodes/sheep/sheep.cpp
     gamemodes/sheep/sheep.h
     gamemodes/sheep/sql.h
