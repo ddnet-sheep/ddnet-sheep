@@ -209,18 +209,16 @@ void CCustomProjectile::Snap(int SnappingClient)
 
 						pPickup->m_X = (int)m_Pos.x;
 						pPickup->m_Y = (int)m_Pos.y;
-						pPickup->m_Type = m_Type;
+						pPickup->m_Type = POWERUP_HEALTH;
 						pPickup->m_Flags = PICKUPFLAG_NO_PREDICT;
-					}
-					else
-					{
+					} else {
 						CNetObj_Pickup *pPickup = Server()->SnapNewItem<CNetObj_Pickup>(GetId());
 						if(!pPickup)
 							return;
 
 						pPickup->m_X = (int)m_Pos.x;
 						pPickup->m_Y = (int)m_Pos.y;
-						pPickup->m_Type = m_Type;
+						pPickup->m_Type = POWERUP_HEALTH;
 					}
 				}
 				break;

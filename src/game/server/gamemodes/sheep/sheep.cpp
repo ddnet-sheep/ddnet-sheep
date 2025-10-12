@@ -783,7 +783,7 @@ bool CGameControllerSheep::OnCharacterWeaponFire(CCharacter *pCharacter, int Wea
 				false, // explosive
 				false, // freeze
 				false, // unfreeze
-				POWERUP_HEALTH // type
+				WEAPON_HEARTGUN // type
 			);
 			GameServer()->CreateSound(pCharacter->m_Pos, SOUND_PICKUP_HEALTH, pCharacter->TeamMask());
 			return true;
