@@ -146,10 +146,8 @@ void CPowerUp::Snap(int SnappingClient)
 	if(m_Lifetime < Server()->TickSpeed() * 10 && (Server()->Tick() / (Server()->TickSpeed() / 4)) % 2 == 0)
 		return;
 
-    // todo: mask
-	// CGameTeams Teams = GameServer()->m_pController->Teams();
-	// if(!Teams.SetMaskWithFlags(SnappingClient, TEAM_FLOCK, CGameTeams::IGNORE_SOLO))
-	// 	return;
+	if(GameServer()->GetDDRaceTeam(SnappingClient) != TEAM_FLOCK)
+		return;
 
 	const int SnappingClientVersion = Server()->GetClientVersion(SnappingClient);
 	const bool SixUp = Server()->IsSixup(SnappingClient);

@@ -18,8 +18,8 @@
 #include <iterator>
 
 
-CStaffInd::CStaffInd(CPlayer* Owner) :
-	CCosmetic(Owner->GetCharacter()->GameWorld(), CGameWorld::ENTTYPE_STAFF_IND, EItemVariant::ITEM_STAFF_IND, Owner, Owner->GetCharacter()->GetPos(), NUM_IDS)
+CStaffInd::CStaffInd(CCharacter* pCharacter) :
+	CEntityOwned(CGameWorld::ENTTYPE_STAFF_IND, EItemVariant::ITEM_STAFF_IND, pCharacter, NUM_IDS, pCharacter->GetPos())
 {
 	m_Dist = 0.f;
 	m_BallFirst = true;
@@ -60,9 +60,8 @@ void CStaffInd::Snap(int SnappingClient)
 	CGameTeams Teams = GameServer()->m_pController->Teams();
 	const int Team = Character()->Team();
 
-	// todo: mask
-	// if(!Teams.SetMask(SnappingClient, Team))
-	// 	return;
+	if(!TeamMask().test(SnappingClient))
+		return;
 
 	// todo: vanish
 	// if(pOwnerChr->GetPlayer()->m_Vanish && SnappingClient != pOwnerChr->GetPlayer()->GetCid() && SnappingClient != -1)

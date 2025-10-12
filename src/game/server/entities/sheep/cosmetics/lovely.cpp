@@ -12,8 +12,8 @@
 #include <game/server/teams.h>
 #include <generated/protocol.h>
 
-CLovely::CLovely(CPlayer* Owner) :
-	CCosmetic(Owner->GetCharacter()->GameWorld(), CGameWorld::ENTTYPE_LOVELY, EItemVariant::ITEM_LOVELY, Owner, Owner->GetCharacter()->GetPos(), MAX_HEARTS)
+CLovely::CLovely(CCharacter* pCharacter) :
+	CEntityOwned(CGameWorld::ENTTYPE_LOVELY, EItemVariant::ITEM_LOVELY, pCharacter, MAX_HEARTS, pCharacter->GetPos())
 {
 	m_SpawnDelay = 0;	
 }
@@ -70,9 +70,8 @@ void CLovely::Snap(int SnappingClient)
 	CGameTeams Teams = GameServer()->m_pController->Teams();
 	const int Team = Character()->Team();
 
-	// todo: mask
-	// if(!Teams.SetMask(SnappingClient, Team))
-	// 	return;
+	if(!TeamMask().test(SnappingClient))
+		return;
 
 	// todo: vanish
 	// if(Character()->GetPlayer()->m_Vanish && SnappingClient != Character()->GetPlayer()->GetCid() && SnappingClient != -1)

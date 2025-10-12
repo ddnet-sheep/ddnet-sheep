@@ -1,3 +1,4 @@
+#include "portal.h"
 
 #include <game/server/entities/character.h>
 #include <game/server/entity.h>
@@ -17,7 +18,6 @@
 #include <base/vmath.h>
 #include <iterator>
 
-#include "portal.h"
 #include <algorithm>
 #include <engine/server.h>
 
@@ -32,17 +32,10 @@ constexpr float MaxDistanceFromPlayer = 1500.0f;
 constexpr float Lifetime = INFINITY;
 //constexpr int Lifetime = 12.5 * SERVER_TICK_SPEED;
 
-CPortal::CPortal(CGameWorld *pGameWorld, int Owner, vec2 Pos) :
-	CEntity(pGameWorld, CGameWorld::ENTTYPE_PORTAL, Pos)
+CPortal::CPortal(CCharacter* pCharacter, vec2 Pos) :
+	CEntityOwned(CGameWorld::ENTTYPE_PORTAL, EItemVariant::ITEM_NONE, pCharacter, 0, Pos)
 {
-	m_Owner = Owner;
-	m_Pos = Pos;
 	m_State = STATE_NONE;
-
-	if(CCharacter *pChr = GameServer()->GetPlayerChar(m_Owner))
-		m_TeamMask = pChr->TeamMask();
-	else
-		m_TeamMask = CClientMask().set();
 
 	for(int p = 0; p < NUM_PORTALS; p++)
 	{
@@ -54,8 +47,6 @@ CPortal::CPortal(CGameWorld *pGameWorld, int Owner, vec2 Pos) :
 		for(int i = 0; i < NUM_PRTCL; i++)
 			m_Snap[p].m_aParticleIds[i] = Server()->SnapNewId();
 	}
-
-	GameWorld()->InsertEntity(this);
 }
 
 void CPortal::Reset()
@@ -227,11 +218,11 @@ void CPortal::OnFire()
 	CCharacter *pOwnerChar = GameServer()->GetPlayerChar(m_Owner);
 	if(TrySetPortal())
 	{
-		GameServer()->CreateSound(pOwnerChar->m_Pos, SOUND_PICKUP_HEALTH, m_TeamMask);
+		GameServer()->CreateSound(pOwnerChar->m_Pos, SOUND_PICKUP_HEALTH, TeamMask());
 	}
 	else
 	{
-		GameServer()->CreateSound(pOwnerChar->m_Pos, SOUND_WEAPON_NOAMMO, m_TeamMask);
+		GameServer()->CreateSound(pOwnerChar->m_Pos, SOUND_WEAPON_NOAMMO, TeamMask());
 		pOwnerChar->SetReloadTimer(250 * Server()->TickSpeed() / 1000);
 	}
 }
@@ -281,7 +272,7 @@ bool CPortal::TrySetPortal()
 		m_apData[0].m_Pos = m_apData[1].m_Pos;
 		m_apData[0].m_Team = m_apData[1].m_Team;
 
-		GameServer()->CreateDeath(m_apData[1].m_Pos, m_Owner, m_TeamMask);
+		GameServer()->CreateDeath(m_apData[1].m_Pos, m_Owner, TeamMask());
 
 		m_apData[1].m_Pos = CursorPos;
 		m_apData[1].m_Team = pOwnerChr->Team();
@@ -295,7 +286,7 @@ void CPortal::RemovePortals()
 	{
 		if(m_apData[i].m_Active)
 		{
-			GameServer()->CreateDeath(m_apData[i].m_Pos, m_Owner, m_TeamMask);
+			GameServer()->CreateDeath(m_apData[i].m_Pos, m_Owner, TeamMask());
 			m_apData[i].m_Active = false;
 			m_apData[i].m_Pos = vec2(0, 0);
 			m_State = STATE_NONE;
@@ -322,10 +313,8 @@ void CPortal::Snap(int SnappingClient)
 			return;
 	}
 
-	// todo: mask
-	// CGameTeams Teams = GameServer()->m_pController->Teams();
-	// if(!Teams.SetMaskWithFlags(SnappingClient, m_apData[0].m_Team, CGameTeams::EXTRAFLAG_IGNORE_SOLO))
-	// 	return;
+	if(!TeamMask().test(SnappingClient))
+		return;
 
 	const int SnapVer = Server()->GetClientVersion(SnappingClient);
 	const bool SixUp = Server()->IsSixup(SnappingClient);

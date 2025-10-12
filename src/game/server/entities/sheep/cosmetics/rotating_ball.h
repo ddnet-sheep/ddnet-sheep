@@ -1,13 +1,13 @@
 #ifndef GAME_SERVER_FOXNET_COSMETICS_ROTATING_BALL_H
 #define GAME_SERVER_FOXNET_COSMETICS_ROTATING_BALL_H
 
-#include <game/server/entities/sheep/cosmetics/cosmetic.h>
+#include <game/server/entities/sheep/entity_owned.h>
 
 #include <base/vmath.h>
 #include <game/server/entity.h>
 #include <game/server/gameworld.h>
 
-class CRotatingBall : public CCosmetic
+class CRotatingBall : public CEntityOwned
 {
 	int m_RotateDelay;
 	int m_LaserDirAngle;
@@ -20,7 +20,7 @@ class CRotatingBall : public CCosmetic
 	int m_TableDirV[2][2];
 
 public:
-	CRotatingBall(CPlayer* Owner);
+	CRotatingBall(CCharacter* pCharacter);
 
 	virtual void Tick() override;
 	virtual void Snap(int SnappingClient) override;

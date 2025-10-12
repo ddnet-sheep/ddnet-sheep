@@ -49,7 +49,7 @@ void CGameControllerSheep::ConDamageIndEffect(IConsole::IResult *pResult, void *
 	log_info("cosmetics", "Set damage ind to %d for player %s", Type, pSelf->Server()->ClientName(Victim));
 }
 
-void CGameControllerSheep::DespawnCosmetics(CPlayer *pPlayer) {
+void CGameControllerSheep::DespawnCosmetics(CPlayer* pPlayer) {
 	if(!pPlayer)
 		return;
 
@@ -60,30 +60,30 @@ void CGameControllerSheep::DespawnCosmetics(CPlayer *pPlayer) {
 	m_Cosmetics.erase(pPlayer);
 }
 
-CCosmetic* BuildCosmetic(CPlayer* pPlayer, EItemVariant Variant) {
+CEntityOwned* BuildCosmetic(CCharacter* pCharacter, EItemVariant Variant) {
 	switch(Variant) {
-		case EItemVariant::ITEM_HEART_HAT: return new CHeartHat(pPlayer);
-		case EItemVariant::ITEM_LOVELY: return new CLovely(pPlayer);
-		case EItemVariant::ITEM_DOT_TRAIL: return new CDotTrail(pPlayer);
-		case EItemVariant::ITEM_STAFF_IND: return new CStaffInd(pPlayer);
-		case EItemVariant::ITEM_ROTATING_BALL: return new CRotatingBall(pPlayer);
-		case EItemVariant::ITEM_EPIC_CIRCLE: return new CEpicCircle(pPlayer);
+		case EItemVariant::ITEM_HEART_HAT: return new CHeartHat(pCharacter);
+		case EItemVariant::ITEM_LOVELY: return new CLovely(pCharacter);
+		case EItemVariant::ITEM_DOT_TRAIL: return new CDotTrail(pCharacter);
+		case EItemVariant::ITEM_STAFF_IND: return new CStaffInd(pCharacter);
+		case EItemVariant::ITEM_ROTATING_BALL: return new CRotatingBall(pCharacter);
+		case EItemVariant::ITEM_EPIC_CIRCLE: return new CEpicCircle(pCharacter);
 	}
 	return nullptr;
 }
 
-void CGameControllerSheep::SpawnCosmetics(CPlayer *pPlayer) {
-	DespawnCosmetics(pPlayer);
+void CGameControllerSheep::SpawnCosmetics(CCharacter *pCharacter) {
+	DespawnCosmetics(pCharacter->GetPlayer());
 
-	if(!pPlayer || !pPlayer->IsLoggedIn() || !pPlayer->IsItemsLoaded())
+	if(!pCharacter || !pCharacter->GetPlayer()->IsLoggedIn() || !pCharacter->GetPlayer()->IsItemsLoaded())
 		return;
-	
-	for (const auto& [Type, AccountItem] : pPlayer->m_AccountItemResult->m_AccountItem) {
+
+	for (const auto& [Type, AccountItem] : pCharacter->GetPlayer()->m_AccountItemResult->m_AccountItem) {
 		auto Pair = m_ItemsResult->m_Items.find(Type);
         if(Pair == m_ItemsResult->m_Items.end() || Pair->second.m_Type != EItemType::TYPE_COSMETIC || AccountItem.m_State != (int)EItemState::ITEM_STATE_ACTIVE)
 			continue;
 
-		m_Cosmetics[pPlayer][AccountItem.m_Variant] = BuildCosmetic(pPlayer, AccountItem.m_Variant);
+		m_Cosmetics[pCharacter->GetPlayer()][AccountItem.m_Variant] = BuildCosmetic(pCharacter, AccountItem.m_Variant);
     }
 }
 

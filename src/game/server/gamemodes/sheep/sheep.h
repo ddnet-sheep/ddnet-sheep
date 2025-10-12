@@ -40,7 +40,6 @@ class CGameControllerSheep : public IGameController
 public:
 	CGameControllerSheep(class CGameContext *pGameServer);
 	~CGameControllerSheep();
-
 	
 	// functions
 	void DiscordInit();
@@ -50,18 +49,20 @@ public:
 	void SendActionMessage(CPlayer *pPlayer, enum CAccountActions Action, char* pExtra = "");
 	
 	void LoadItems();
-	void SpawnCosmetics(CPlayer *pPlayer);
-	void DespawnCosmetics(CPlayer *pPlayer);
-	void AuthPlayer(CPlayer *pPlayer);
+	void SpawnCosmetics(CCharacter* pCharacter);
+	void DespawnCosmetics(CPlayer* pPlayer);
+	void AuthPlayer(CPlayer* pPlayer);
 	void SaveAccount(CPlayer* pPlayer);
-	static bool ExecuteLoadItems(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
+	static bool ExecuteLoadItems(IDbConnection* pSqlServer, const ISqlData* pGameData, char* pError, int ErrorSize);
 	void LoadAccountItem(class CPlayer* pPlayer);
-	static bool ExecuteLoadAccountItem(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
+	static bool ExecuteLoadAccountItem(IDbConnection *pSqlServer, const ISqlData* pGameData, char *pError, int ErrorSize);
 	
 	int CalcPlayerNeededExp(CPlayer *pPlayer);
 	std::optional<vec2> GetRandomAccessablePos();
 
 	void CreateLaserDeath(int Type, int pOwner, vec2 pPos, CClientMask pMask);
+
+	CClientMask CosmeticMask(int Team, int ExceptId = -1, int Asker = -1, int VersionFlags = CGameContext::FLAG_SIX | CGameContext::FLAG_SIXUP, bool Opposite = false);
 
 	// database
     static bool ExecuteLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);

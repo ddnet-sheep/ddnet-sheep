@@ -123,17 +123,15 @@ void CLightsaber::Snap(int SnappingClient)
 
 	if(SnappingClient != SERVER_DEMO_CLIENT)
 	{
+		if(!pOwnerChar->TeamMask().test(SnappingClient))
+			return;
+
+		CCharacter *pSnapper = GameServer()->GetPlayerChar(SnappingClient);
+
 		CPlayer *pSnapPlayer = GameServer()->m_apPlayers[SnappingClient];
 		if(!pSnapPlayer)
 			return;
-
-		CGameTeams Teams = GameServer()->m_pController->Teams();
-		int Team = pOwnerChar->Team();
-
-        // todo: mask
-		// if(!Teams.SetMask(SnappingClient, Team))
-		// 	return;
-
+	
 		if(pSnapPlayer->GetCharacter() && pOwnerChar)
 			if(!pOwnerChar->CanSnapCharacter(SnappingClient))
 				return;

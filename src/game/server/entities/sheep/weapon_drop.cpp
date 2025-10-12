@@ -39,10 +39,9 @@ static int GetNeededIds(int Type) {
 	}
 }
 
-CWeaponDrop::CWeaponDrop(CGameWorld *pGameWorld, CPlayer* Dropper, vec2 Pos, int Team, int TeleCheckpoint, vec2 Vel, int Lifetime, int Type) :
-	CEntity(pGameWorld, CGameWorld::ENTTYPE_WEAPON_DROP, Pos, 28)
+CWeaponDrop::CWeaponDrop(CCharacter* pCharacter, vec2 Pos, int Team, int TeleCheckpoint, vec2 Vel, int Lifetime, int Type) :
+	CEntityOwned(CGameWorld::ENTTYPE_WEAPON_DROP, EItemVariant::ITEM_NONE, pCharacter, 0, Pos, 28)
 {
-    m_Dropper = Dropper;
     m_Team = Team;
 
     m_Type = Type;
@@ -58,8 +57,6 @@ CWeaponDrop::CWeaponDrop(CGameWorld *pGameWorld, CPlayer* Dropper, vec2 Pos, int
 	
 	m_TuneZone = -1;
 	m_TeleCheckpoint = TeleCheckpoint;
-
-	GameWorld()->InsertEntity(this);
 }
 
 void CWeaponDrop::Reset(bool PickedUp)
@@ -70,7 +67,7 @@ void CWeaponDrop::Reset(bool PickedUp)
 	
 	CClientMask TeamMask = CClientMask().set();
 	if(!PickedUp)
-		GameServer()->CreateDeath(m_Pos, m_Dropper->GetCid(), TeamMask);
+		GameServer()->CreateDeath(m_Pos, m_Player->GetCid(), TeamMask);
 
 	GameWorld()->RemoveEntity(this);
 }
@@ -298,10 +295,8 @@ void CWeaponDrop::Snap(int ClientId) {
 
 	CPlayer *pPlayer = GameServer()->m_apPlayers[ClientId];
 
-	// TODO: mask
-	// CGameTeams Teams = GameServer()->m_pController->Teams();
-	// if(!Teams.SetMask(ClientId, m_Team))
-	// 	return;
+	if(!TeamMask().test(ClientId))
+		return;
 
 	// Make the pickup blink when about to disappear
 	if(m_Lifetime < Server()->TickSpeed() * 10 && (Server()->Tick() / (Server()->TickSpeed() / 4)) % 2 == 0)

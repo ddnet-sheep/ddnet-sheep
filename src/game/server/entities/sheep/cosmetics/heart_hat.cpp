@@ -2,7 +2,6 @@
 #include "heart_hat.h"
 
 #include "game/server/entities/character.h"
-#include <game/server/entity.h>
 #include <game/server/gamecontext.h>
 #include <game/server/gamecontroller.h>
 #include <game/server/gameworld.h>
@@ -15,8 +14,8 @@
 
 #include <base/vmath.h>
 
-CHeartHat::CHeartHat(CPlayer* Owner) :
-	CCosmetic(Owner->GetCharacter()->GameWorld(), CGameWorld::ENTTYPE_HEART_HAT, EItemVariant::ITEM_HEART_HAT, Owner, Owner->GetCharacter()->GetPos(), NUM_HEARTS)
+CHeartHat::CHeartHat(CCharacter* pCharacter) :
+	CEntityOwned(CGameWorld::ENTTYPE_HEART_HAT, EItemVariant::ITEM_HEART_HAT, pCharacter, NUM_HEARTS, pCharacter->GetPos())
 {
 }
 
@@ -61,9 +60,8 @@ void CHeartHat::Snap(int SnappingClient)
 	CGameTeams Teams = GameServer()->m_pController->Teams();
 	const int Team = Character()->Team();
 
-	// todo: mask
-	// if(!Teams.SetMask(SnappingClient, Team))
-	// 	return;
+	if(!TeamMask().test(SnappingClient))
+		return;
 
 	// todo: vanish
 	// if(Character()->GetPlayer()->m_Vanish && SnappingClient != Character()->GetPlayer()->GetCid() && SnappingClient != -1)

@@ -2,6 +2,8 @@
 #ifndef GAME_SERVER_ENTITIES_SHEEP_PORTAL_H
 #define GAME_SERVER_ENTITIES_SHEEP_PORTAL_H
 
+#include <game/server/entities/sheep/entity_owned.h>
+
 #include <base/vmath.h>
 #include <game/server/entity.h>
 #include <game/server/gameworld.h>
@@ -14,7 +16,7 @@ struct CPortalData
 	int m_Team;
 };
 
-class CPortal : public CEntity
+class CPortal : public CEntityOwned
 {
 	enum
 	{
@@ -46,8 +48,6 @@ class CPortal : public CEntity
 
 	bool m_aCanTeleport[MAX_CLIENTS];
 
-	CClientMask m_TeamMask;
-
 	enum States
 	{
 		STATE_NONE = 0,
@@ -60,13 +60,13 @@ class CPortal : public CEntity
 	void HandleTele();
 
 public:
-	CPortal(CGameWorld *pGameWorld, int Owner, vec2 Pos);
+	CPortal(CCharacter* pCharacter, vec2 Pos);
 
 	void OnFire();
 
-	virtual void Reset() override;
-	virtual void Tick() override;
-	virtual void Snap(int SnappingClient) override;
+	void Reset() override;
+	void Tick() override;
+	void Snap(int SnappingClient) override;
 };
 
 #endif // GAME_SERVER_FOXNET_ENTITIES_PORTAL_H

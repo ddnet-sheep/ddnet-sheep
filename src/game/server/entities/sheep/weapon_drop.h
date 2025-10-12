@@ -4,17 +4,15 @@
 
 #include <base/vmath.h>
 #include <game/mapitems.h>
-#include <game/server/entity.h>
+#include <game/server/entities/sheep/entity_owned.h>
 #include <game/server/gameworld.h>
 
 #include <game/server/player.h>
 
 #include <game/server/gamemodes/sheep/weapon.h>
 
-class CWeaponDrop : public CEntity
+class CWeaponDrop : public CEntityOwned
 {
-    CPlayer* m_Dropper;
-
 	uint m_Lifetime; // In ticks
 	uint m_PickupDelay; // In ticks
 	
@@ -41,11 +39,12 @@ class CWeaponDrop : public CEntity
 
 	bool CollectItem();
 public:
-	CWeaponDrop(CGameWorld *pGameWorld, CPlayer* Dropper, vec2 Pos, int Team, int TeleCheckpoint, vec2 Vel, int Lifetime, int Type);
+	CWeaponDrop(CCharacter* Dropper, vec2 Pos, int Team, int TeleCheckpoint, vec2 Vel, int Lifetime, int Type);
 
 	virtual void Tick() override;
 	virtual void Snap(int SnappingClient) override;
 	virtual void Reset() override { Reset(false); }
+	int Team() override { return m_Team; };
 	
 	void Reset(bool PickedUp);
 };

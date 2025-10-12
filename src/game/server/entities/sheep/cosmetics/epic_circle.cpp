@@ -1,7 +1,6 @@
 #include "epic_circle.h"
 
 #include "game/server/entities/character.h"
-#include <game/server/entity.h>
 #include <game/server/gamecontext.h>
 #include <game/server/gamecontroller.h>
 #include <game/server/gameworld.h>
@@ -17,8 +16,8 @@
 #include <base/vmath.h>
 
 
-CEpicCircle::CEpicCircle(CPlayer* Owner) :
-	CCosmetic(Owner->GetCharacter()->GameWorld(), CGameWorld::ENTTYPE_PROJECTILE, EItemVariant::ITEM_EPIC_CIRCLE, Owner, Owner->GetCharacter()->GetPos(), MAX_PARTICLES)
+CEpicCircle::CEpicCircle(CCharacter* pCharacter) :
+	CEntityOwned(CGameWorld::ENTTYPE_PROJECTILE, EItemVariant::ITEM_EPIC_CIRCLE, pCharacter, MAX_PARTICLES, pCharacter->GetPos())
 {
 }
 
@@ -49,9 +48,8 @@ void CEpicCircle::Snap(int SnappingClient)
 	CGameTeams Teams = GameServer()->m_pController->Teams();
 	const int Team = Character()->Team();
 
-	// todo: mask
-	// if(!Teams.SetMask(SnappingClient, Team))
-	// 	return;
+	if(!TeamMask().test(SnappingClient))
+		return;
 
 	// todo: vanish
 	// if(pOwnerChr->GetPlayer()->m_Vanish && SnappingClient != pOwnerChr->GetPlayer()->GetCid() && SnappingClient != -1)

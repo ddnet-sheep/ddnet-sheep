@@ -604,7 +604,7 @@ void CGameControllerSheep::OnCharacterTick(CCharacter *pCharacter) {
 	CPlayer* pPlayer = pCharacter->GetPlayer();
 	if (pPlayer != nullptr && pPlayer->m_AccountItemResult != nullptr && pPlayer->m_AccountItemResult->m_Completed) { 
 		if(!pPlayer->m_AccountItemResult->m_Processed) {
-			SpawnCosmetics(pPlayer);
+			SpawnCosmetics(pCharacter);
 			pPlayer->m_AccountItemResult->m_Processed = true;
 		} else {
 			if(pCharacter->Team() != TEAM_SPECTATORS && pCharacter->IsAlive()) {
@@ -644,8 +644,7 @@ void CGameControllerSheep::OnCharacterWeaponDrop(CCharacter *pCharacter, int Typ
 		return;
 
 	CWeaponDrop *pWeaponDrop = new CWeaponDrop(
-		pCharacter->GameWorld(), 
-		pCharacter->GetPlayer(), 
+		pCharacter, 
 		pCharacter->m_Pos, 
 		pCharacter->Team(), 
 		pCharacter->m_TeleCheckpoint, 
@@ -795,7 +794,7 @@ bool CGameControllerSheep::OnCharacterWeaponFire(CCharacter *pCharacter, int Wea
 			return true;
 		case WEAPON_PORTALGUN:
 			if(m_pPortals[ClientId] == nullptr)
-				m_pPortals[ClientId] = new CPortal(pCharacter->GameWorld(), ClientId, pCharacter->m_Pos);
+				m_pPortals[ClientId] = new CPortal(pCharacter, pCharacter->m_Pos);
 			m_pPortals[ClientId]->OnFire();
 			return true;
 	}

@@ -2,14 +2,14 @@
 #ifndef GAME_SERVER_FOXNET_COSMETICS_HEARTHAT_H
 #define GAME_SERVER_FOXNET_COSMETICS_HEARTHAT_H
 
-#include <game/server/entities/sheep/cosmetics/cosmetic.h>
+#include <game/server/entities/sheep/entity_owned.h>
 
 #include <game/server/entity.h>
 #include <game/server/gameworld.h>
 
 #include <base/vmath.h>
 
-class CHeartHat : public CCosmetic
+class CHeartHat : public CEntityOwned
 {
 	enum
 	{
@@ -24,7 +24,7 @@ class CHeartHat : public CCosmetic
 	vec2 m_aPos[NUM_HEARTS];
 
 public:
-	CHeartHat(CPlayer* Owner);
+	CHeartHat(CCharacter* pCharacter);
 	
 	virtual void Tick() override;
 	virtual void Snap(int SnappingClient) override;

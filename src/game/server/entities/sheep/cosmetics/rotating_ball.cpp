@@ -12,8 +12,8 @@
 
 #include "rotating_ball.h"
 
-CRotatingBall::CRotatingBall(CPlayer* Owner) :
-	CCosmetic(Owner->GetCharacter()->GameWorld(), CGameWorld::ENTTYPE_ROTATING_BALL, EItemVariant::ITEM_ROTATING_BALL, Owner, Owner->GetCharacter()->GetPos(), 1)
+CRotatingBall::CRotatingBall(CCharacter* pCharacter) :
+	CEntityOwned(CGameWorld::ENTTYPE_ROTATING_BALL, EItemVariant::ITEM_ROTATING_BALL, pCharacter, 1, pCharacter->GetPos())
 {
 	m_IsRotating = true;
 
@@ -65,9 +65,8 @@ void CRotatingBall::Snap(int SnappingClient)
 	CGameTeams Teams = GameServer()->m_pController->Teams();
 	const int Team = Character()->Team();
 
-	// todo: mask
-	// if(!Teams.SetMask(SnappingClient, Team))
-	// 	return;
+	if(!TeamMask().test(SnappingClient))
+		return;
 
 	// todo: vanish
 	// if(pOwnerChr->GetPlayer()->m_Vanish && SnappingClient != pOwnerChr->GetPlayer()->GetCid() && SnappingClient != -1)

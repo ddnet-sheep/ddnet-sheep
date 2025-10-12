@@ -1,14 +1,16 @@
 // Made by qxdFox
 #include "dot_trail.h"
 
+#include <game/server/gamecontext.h>
 #include <game/server/entities/character.h>
 #include <game/server/teams.h>
 #include <engine/shared/config.h>
 #include <generated/protocol.h>
 #include <base/vmath.h>
+#include <game/server/gamecontroller.h>
 
-CDotTrail::CDotTrail(CPlayer* Owner) 
-	: CCosmetic(Owner->GetCharacter()->GameWorld(), CGameWorld::ENTTYPE_DOT_TRAIL, EItemVariant::ITEM_DOT_TRAIL, Owner, Owner->GetCharacter()->GetPos(), 0) 
+CDotTrail::CDotTrail(CCharacter* pCharacter)
+	: CEntityOwned(CGameWorld::ENTTYPE_DOT_TRAIL, EItemVariant::ITEM_DOT_TRAIL, pCharacter, 0, pCharacter->GetPos())
 {
 }
 
@@ -22,9 +24,8 @@ void CDotTrail::Snap(int SnappingClient)
 	CGameTeams Teams = GameServer()->m_pController->Teams();
 	const int Team = Character()->Team();
 
-	// todo: mask
-	// if(!Teams.SetMask(SnappingClient, Team))
-	// 	return;
+	if(!TeamMask().test(SnappingClient))
+		return;
 
 	// if(pOwnerChr->GetPlayer()->m_Vanish && SnappingClient != pOwnerChr->GetPlayer()->GetCid() && SnappingClient != -1)
 	// 	if(!pSnapPlayer->m_Vanish && Server()->GetAuthedState(SnappingClient) < AUTHED_ADMIN)

@@ -56,6 +56,9 @@ class IEngine;
 class IStorage;
 struct CAntibotRoundData;
 struct CScoreRandomMapResult;
+//<sheep>
+class CGameControllerSheep;
+//</sheep>
 
 struct CSnapContext
 {

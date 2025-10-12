@@ -1,13 +1,13 @@
 #ifndef GAME_SERVER_FOXNET_COSMETICS_STAFF_IND_H
 #define GAME_SERVER_FOXNET_COSMETICS_STAFF_IND_H
 
-#include <game/server/entities/sheep/cosmetics/cosmetic.h>
+#include <game/server/entities/sheep/entity_owned.h>
 
 #include <base/vmath.h>
 #include <engine/shared/protocol.h>
 #include <game/server/gameworld.h>
 
-class CStaffInd : public CCosmetic
+class CStaffInd : public CEntityOwned
 {
 	enum
 	{
@@ -23,7 +23,7 @@ class CStaffInd : public CCosmetic
 	bool m_BallFirst;
 
 public:
-	CStaffInd(CPlayer* Owner);
+	CStaffInd(CCharacter* pCharacter);
 
 	virtual void Tick() override;
 	virtual void Snap(int SnappingClient) override;

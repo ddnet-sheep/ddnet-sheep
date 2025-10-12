@@ -1,13 +1,13 @@
 #ifndef GAME_SERVER_FOXNET_COSMETICS_LOVELY_H
 #define GAME_SERVER_FOXNET_COSMETICS_LOVELY_H
 
-#include <game/server/entities/sheep/cosmetics/cosmetic.h>
+#include <game/server/entities/sheep/entity_owned.h>
 
 #include <base/vmath.h>
 #include <engine/shared/protocol.h>
 #include <game/server/gameworld.h>
 
-class CLovely : public CCosmetic
+class CLovely : public CEntityOwned
 {
 	static const int MAX_HEARTS = 4;
 	
@@ -23,7 +23,7 @@ class CLovely : public CCosmetic
 	void SpawnNewHeart();
 
 public:
-	CLovely(CPlayer* Owner);
+	CLovely(CCharacter* pCharacter);
 
 	virtual void Tick() override;
 	virtual void Snap(int SnappingClient) override;

@@ -2808,8 +2808,6 @@ if(SERVER)
     entities/projectile.cpp
     entities/projectile.h
     #<sheep>
-    entities/sheep/cosmetics/cosmetic.cpp
-    entities/sheep/cosmetics/cosmetic.h
     entities/sheep/cosmetics/dot_trail.cpp
     entities/sheep/cosmetics/dot_trail.h
     entities/sheep/cosmetics/epic_circle.cpp
@@ -2829,6 +2827,8 @@ if(SERVER)
 
     entities/sheep/custom_projectile.cpp
     entities/sheep/custom_projectile.h
+    entities/sheep/entity_owned.cpp
+    entities/sheep/entity_owned.h
     entities/sheep/lightninglaser.cpp
     entities/sheep/lightninglaser.h
     entities/sheep/lightsaber.cpp
