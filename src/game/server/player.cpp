@@ -341,11 +341,15 @@ void CPlayer::Snap(int SnappingClient)
 	int Color = GameServer()->Sheep()->m_RainbowColor[m_ClientId] * 0x010000 + 0xff32;
 
 	if(GameServer()->Sheep()->m_CosmeticsResult[m_ClientId] != nullptr) { 
-		if(GameServer()->Sheep()->m_CosmeticsResult[m_ClientId]->m_State[COSMETIC_RAINBOW_BODY] > 0)
+		if(GameServer()->Sheep()->m_CosmeticsResult[m_ClientId]->m_State[COSMETIC_RAINBOW_BODY] > 0) {
+			pClientInfo->m_UseCustomColor = true;
 			pClientInfo->m_ColorBody = Color;
+		}
 
-		if(GameServer()->Sheep()->m_CosmeticsResult[m_ClientId]->m_State[COSMETIC_RAINBOW_FEET] > 0)
+		if(GameServer()->Sheep()->m_CosmeticsResult[m_ClientId]->m_State[COSMETIC_RAINBOW_FEET] > 0) {
+			pClientInfo->m_UseCustomColor = true;
 			pClientInfo->m_ColorFeet = Color;
+		}
 	}
 	//</sheep>
 

@@ -88,59 +88,6 @@ void CGameControllerSheep::AuthPlayer(CPlayer *pPlayer) {
 	}
 }
 
-void CGameControllerSheep::SendActionMessage(CPlayer *pPlayer, enum CAccountActions Action, char *pExtra) {
-	int ClientId = pPlayer->GetCid();
-	CServer *pServer = (CServer*)Server();
-
-	bool IncludeClient = true;
-	char aAction[64];
-	switch (Action) {
-		case ACTION_ENTER:
-			str_copy(aAction, "entered", sizeof(aAction));
-			break;
-		case ACTION_JOIN:
-			IncludeClient = false;
-			str_copy(aAction, "joined", sizeof(aAction));
-			break;
-		case ACTION_ENTER_AND_JOIN:
-			str_copy(aAction, "entered and joined", sizeof(aAction));
-			break;
-		case ACTION_LOGOUT:
-			IncludeClient = false;
-			str_copy(aAction, "logged out of", sizeof(aAction));
-			break;
-		case ACTION_LEAVE:
-			IncludeClient = false;
-			str_copy(aAction, "left", sizeof(aAction));
-			break;
-		default:
-			IncludeClient = false;
-			str_copy(aAction, "did something unknown to", sizeof(aAction));
-			break;
-	}
-
-	char aExtra[128] = "";
-	if(pExtra && pExtra[0] != '\0') {
-		str_format(aExtra, sizeof(aExtra), " (%s)", pExtra);
-	} else if(IncludeClient) {
-		IServer::CClientInfo Info;
-		if(Server()->GetClientInfo(ClientId, &Info) && Info.m_GotDDNetVersion)
-			str_format(aExtra, sizeof(aExtra), " (%s %d)", pServer->m_aClients[ClientId].m_ClientName, Info.m_DDNetVersion);
-		else
-			str_format(aExtra, sizeof(aExtra), " (unknown)");
-	}
-
-	char aBuf[512];
-	char aTitle[33];
-	if(pPlayer->IsLoggedIn() && pPlayer->m_AccountLoginResult->m_Title[0] != '\0') {
-		str_format(aTitle, sizeof(aTitle), "%s ", pPlayer->m_AccountLoginResult->m_Title);
-	} else {
-		aTitle[0] = '\0';
-	}
-	str_format(aBuf, sizeof(aBuf), "%s'%s' %s the game%s", aTitle, Server()->ClientName(ClientId), aAction, aExtra);
-	GameServer()->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
-}
-
 void CGameControllerSheep::OnPlayerLogout(CPlayer *pPlayer, const char *pReason, bool Silent = false) {
 	if(g_Config.m_SvSheepEnforceAccount)
 		pPlayer->SetTeam(TEAM_SPECTATORS);

@@ -1209,7 +1209,7 @@ void CGameContext::AttemptJoinTeam(int ClientId, int Team)
 			}
 
 			char aBuf[512];
-			str_format(aBuf, sizeof(aBuf), "'%s' joined team %d",
+			str_format(aBuf, sizeof(aBuf), "'%s' switched to team %d",
 				Server()->ClientName(pPlayer->GetCid()),
 				Team);
 			SendChat(-1, TEAM_ALL, aBuf);
