@@ -445,7 +445,7 @@ void CGameControllerSheep::ConVanish(IConsole::IResult *pResult, void *pUserData
 	CPlayer *pVictim = CCommands::GetVictimOrCaller(pResult, pUserData);
 
 	pVictim->m_AccountLoginResult->m_Vanish = !pVictim->m_AccountLoginResult->m_Vanish;
-	pGameServer->Sheep()->SendActionMessage(pVictim, pVictim->m_AccountLoginResult->m_Vanish ? ACTION_LEAVE : ACTION_ENTER_AND_JOIN);
+	pGameServer->Sheep()->SendActionMessage(pVictim, pVictim->m_AccountLoginResult->m_Vanish ? ACTION_LEAVE : ACTION_AUTOLOGIN);
 
 	if (pVictim->GetCid() != pResult->m_ClientId) {
 		pGameServer->SendChatTarget(pResult->m_ClientId, pVictim->m_AccountLoginResult->m_Vanish ? "They are now vanished." : "They are no longer vanished.");
