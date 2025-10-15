@@ -30,7 +30,7 @@ void CGameControllerSheep::OnPlayerLogin(CPlayer *pPlayer, bool Autologin) {
 	AuthPlayer(pPlayer);
 
 	if (!pPlayer->m_AccountLoginResult->m_Vanish) {
-		SendActionMessage(pPlayer, Autologin ? ACTION_ENTER_AND_JOIN : ACTION_JOIN);
+		SendActionMessage(pPlayer, Autologin ? ACTION_AUTOLOGIN : ACTION_LOGIN);
 	}
 }
 

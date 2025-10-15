@@ -111,11 +111,6 @@ void CGameControllerSheep::ConCosmetic(IConsole::IResult *pResult, void *pUserDa
 	CPlayer* pVictim;
 	if (pResult->NumArguments() > 1) {
 		pVictim = CCommands::GetVictimOrCaller(pResult, pUserData);
-		if(!CCommands::ValidateAuthenticated(pVictim)) {
-			CGameContext *pGameServer = (CGameContext *)pUserData;
-			pGameServer->SendChatTarget(pResult->m_ClientId, "The player is not logged in.");
-			return;
-		}
 	} else {
 		pVictim = CCommands::GetCaller(pResult, pUserData);
 	}
