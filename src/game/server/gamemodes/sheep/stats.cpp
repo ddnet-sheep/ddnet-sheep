@@ -135,7 +135,7 @@ void CGameControllerSheep::ConStats(IConsole::IResult *pResult, void *pUserData)
         pPlayer->m_AccountStatsResult = std::make_shared<CAccountDataResult>();
 
         auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pPlayer->m_AccountStatsResult);
-        Tmp->m_Type = CSqlAccountCredentialsRequest::TYPE_FORCED;
+        Tmp->m_Type = CSqlAccountCredentialsRequest::TYPE_STATS;
         str_copy(Tmp->m_Username, pResult->GetString(0), sizeof(Tmp->m_Username));
 
 	    pGameServer->Sheep()->m_pPool->Execute(CGameControllerSheep::ExecuteLogin, std::move(Tmp), "account stats");

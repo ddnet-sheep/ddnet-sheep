@@ -155,18 +155,21 @@ void CGameControllerSheep::SaveCosmetics(CPlayer *pPlayer) {
 
 	auto Tmp = std::make_unique<CSqlCosmeticsRequest>(Result);
 	Tmp->m_AccountId = pPlayer->m_AccountLoginResult->m_AccountId;
-	log_error("sql", "saving cosmetics for account %d", Tmp->m_AccountId);
+
 	for(int i = 0; i < NUM_COSMETICS; i++)
 		Tmp->m_State[i] = m_CosmeticsResult[pPlayer->GetCid()]->m_State[i];
 
-	m_pPool->Execute(CGameControllerSheep::ExecuteSaveCosmetic, std::move(Tmp), "cosmetics save");
+	m_pPool->ExecuteWrite(CGameControllerSheep::ExecuteSaveCosmetic, std::move(Tmp), "cosmetics save");
 }
 
-bool CGameControllerSheep::ExecuteSaveCosmetic(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {
+bool CGameControllerSheep::ExecuteSaveCosmetic(IDbConnection *pSqlServer, const ISqlData *pGameData, Write w, char *pError, int ErrorSize) {
+	if(Write::NORMAL != w)
+		return true;
+		
 	auto *pResult = dynamic_cast<CAccountDataResult *>(pGameData->m_pResult.get());
 	const auto *pData = dynamic_cast<const CSqlCosmeticsRequest *>(pGameData);
 
-	char aSql[1024] = "INSERT INTO sheep_cosmetics (account_id, item_id, state, created_at, updated_at) VALUES ";
+	char aSql[2048] = "INSERT INTO sheep_cosmetics (account_id, item_id, state, created_at, updated_at) VALUES ";
 	int Bind = 1;
 	for(int i = 0; i < NUM_COSMETICS; i++) {
 		char aBuf[64];
@@ -180,12 +183,12 @@ bool CGameControllerSheep::ExecuteSaveCosmetic(IDbConnection *pSqlServer, const 
 
 	str_append(aSql, " ON DUPLICATE KEY UPDATE state=VALUES(state), updated_at=NOW()");
 
-	if(!pSqlServer->PrepareStatement(aSql, pError, ErrorSize))
+	if(!pSqlServer->PrepareStatement(aSql, pError, ErrorSize)) {
 		return false;
+	}
 	
 	int NumUpdated;
 	if(!pSqlServer->ExecuteUpdate(&NumUpdated, pError, ErrorSize)) {
-		log_error("sql", "failed to execute update: %s", pError);
 		return false;
 	}
 

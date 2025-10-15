@@ -47,18 +47,19 @@ public:
 	void SendActionMessage(CPlayer *pPlayer, enum CAccountActions Action, char* pExtra = "");
 		
 	void AuthPlayer(CPlayer* pPlayer);
-	void SaveAccount(CPlayer* pPlayer);	
+	void SaveAccount(CPlayer* pPlayer, bool Logout = false);	
     static bool ExecuteLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
-	static bool ExecuteRegister(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
-	static bool ExecutePassword(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
-	static bool ExecuteSave(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
+	static bool ExecuteRegister(IDbConnection *pSqlServer, const ISqlData *pGameData, Write w, char *pError, int ErrorSize);
+	static bool ExecutePassword(IDbConnection *pSqlServer, const ISqlData *pGameData, Write w, char *pError, int ErrorSize);
+	static bool ExecuteSave(IDbConnection *pSqlServer, const ISqlData *pGameData, Write w, char *pError, int ErrorSize);
+	static bool ExecuteUpdatePlayerIp(IDbConnection *pSqlServer, const ISqlData *pGameData, Write w, char *pError, int ErrorSize);
 	
 	void SpawnCosmetics(int ClientId);
 	void DespawnCosmetics(int ClientId);
 	void LoadCosmetics(CPlayer* pPlayer);
 	void SaveCosmetics(CPlayer* pPlayer);
 	static bool ExecuteLoadCosmetics(IDbConnection *pSqlServer, const ISqlData* pGameData, char *pError, int ErrorSize);
-	static bool ExecuteSaveCosmetic(IDbConnection *pSqlServer, const ISqlData* pGameData, char *pError, int ErrorSize);
+	static bool ExecuteSaveCosmetic(IDbConnection *pSqlServer, const ISqlData *pGameData, Write w, char *pError, int ErrorSize);
 	
 	int CalcPlayerNeededExp(CPlayer *pPlayer);
 	std::optional<vec2> GetRandomAccessablePos();

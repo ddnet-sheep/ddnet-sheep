@@ -22,18 +22,22 @@ struct CSqlAccountCredentialsRequest : ISqlData
     enum EType {
         TYPE_PASSWORD,
         TYPE_IP,
-        TYPE_FORCED
+        TYPE_FORCED,
+        TYPE_STATS
     };
 
     EType m_Type = TYPE_PASSWORD;
 	char m_Username[64] = "";
 	char m_Password[64] = "";
     char m_IP[64] = "";
+    char m_Lock[64] = "";
 };
 
 struct CSqlAccountIdRequest : ISqlData
 {
     uint64_t m_AccountId;
+    char m_IP[64] = "";
+    char m_Lock[65] = "";
 
     CSqlAccountIdRequest(std::shared_ptr<ISqlResult> pResult) :
         ISqlData(std::move(pResult))

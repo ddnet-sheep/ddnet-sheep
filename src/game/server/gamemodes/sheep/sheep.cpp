@@ -261,6 +261,10 @@ void CGameControllerSheep::OnPlayerConnect(CPlayer *pPlayer)
 		Tmp->m_Type = CSqlAccountCredentialsRequest::TYPE_IP;
 		str_copy(Tmp->m_Username, Server()->ClientName(ClientId), sizeof(Tmp->m_Username));
 		str_copy(Tmp->m_IP, Server()->ClientAddrString(ClientId, false), sizeof(Tmp->m_IP));
+		
+		CServer *pServer = (CServer*)Server();
+		str_format(Tmp->m_Lock, sizeof(Tmp->m_Lock), "%s:%d", pServer->m_NetServer.Address().ip, pServer->m_NetServer.Address().port);
+
 		m_pPool->Execute(CGameControllerSheep::ExecuteLogin, std::move(Tmp), "auto account login");
 	}
 }
@@ -269,6 +273,8 @@ void CGameControllerSheep::OnPlayerDisconnect(CPlayer *pPlayer, const char *pRea
 {
 	int ClientId = pPlayer->GetCid();
 	bool WasModerator = pPlayer->m_Moderating && Server()->ClientIngame(ClientId);
+
+	OnPlayerLogout(pPlayer, pReason, true);
 
 	pPlayer->OnDisconnect();
 	
@@ -890,7 +896,7 @@ void CGameControllerSheep::SendActionMessage(CPlayer *pPlayer, enum CAccountActi
 			str_copy(aAction, "logged in to", sizeof(aAction));
 			break;
 		case ACTION_AUTOLOGIN:
-			str_copy(aAction, "entered and logged in", sizeof(aAction));
+			str_copy(aAction, "entered and logged in to", sizeof(aAction));
 			break;
 		case ACTION_LOGOUT:
 			IncludeClient = false;

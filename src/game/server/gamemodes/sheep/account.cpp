@@ -20,6 +20,15 @@ bool VerifyPassword(const char *pExpected, const char* pPassword)
 }
 
 void CGameControllerSheep::OnPlayerLogin(CPlayer *pPlayer, bool Autologin) {
+	auto Tmp = std::make_unique<CSqlAccountIdRequest>(pPlayer->m_AccountLoginResult);
+	Tmp->m_AccountId = pPlayer->m_AccountLoginResult->m_AccountId;
+	str_copy(Tmp->m_IP, Server()->ClientAddrString(pPlayer->GetCid(), false), sizeof(Tmp->m_IP));
+	CServer *pServer = (CServer*)GameServer()->Server();
+	str_format(Tmp->m_Lock, sizeof(Tmp->m_Lock), "%s:%d", pServer->m_NetServer.Address().ip, pServer->m_NetServer.Address().port);
+
+	// todo: bei einem forced login die ip nicht updaten?
+	m_pPool->ExecuteWrite(CGameControllerSheep::ExecuteUpdatePlayerIp, std::move(Tmp), "update player ip");
+
 	LoadCosmetics(pPlayer);
 
 	pPlayer->m_LoginTick = Server()->Tick();
@@ -32,6 +41,25 @@ void CGameControllerSheep::OnPlayerLogin(CPlayer *pPlayer, bool Autologin) {
 	if (!pPlayer->m_AccountLoginResult->m_Vanish) {
 		SendActionMessage(pPlayer, Autologin ? ACTION_AUTOLOGIN : ACTION_LOGIN);
 	}
+}
+
+bool CGameControllerSheep::ExecuteUpdatePlayerIp(IDbConnection *pSqlServer, const ISqlData *pGameData, Write w, char *pError, int ErrorSize) {
+	if(Write::NORMAL != w)
+		return true;
+
+	const auto *pData = dynamic_cast<const CSqlAccountIdRequest *>(pGameData);
+	
+	if(!pSqlServer->PrepareStatement("UPDATE sheep_accounts SET ip=?, data_lock=?, updated_at=NOW() WHERE id=?", pError, ErrorSize))
+		return false;
+
+	pSqlServer->BindString(1, pData->m_IP);
+	pSqlServer->BindString(2, pData->m_Lock);
+	pSqlServer->BindInt64(3, pData->m_AccountId);
+
+	int NumUpdated;
+	pSqlServer->ExecuteUpdate(&NumUpdated, pError, ErrorSize);
+
+	return NumUpdated != 0;
 }
 
 void CGameControllerSheep::AuthPlayer(CPlayer *pPlayer) {
@@ -98,7 +126,7 @@ void CGameControllerSheep::OnPlayerLogout(CPlayer *pPlayer, const char *pReason,
 		SendActionMessage(pPlayer, ACTION_LOGOUT);
 	}
 	
-	SaveAccount(pPlayer);
+	SaveAccount(pPlayer, true);
 	SaveCosmetics(pPlayer);
 	pPlayer->m_AccountLoginResult = nullptr;
 	DespawnCosmetics(pPlayer->GetCid());
@@ -145,6 +173,8 @@ void CGameControllerSheep::ConLogin(IConsole::IResult *pResult, void *pUserData)
 	str_copy(Tmp->m_Username, aUsername, sizeof(Tmp->m_Username));
 	str_copy(Tmp->m_Password, aPassword, sizeof(Tmp->m_Password));
 	str_copy(Tmp->m_IP, pGameServer->Server()->ClientAddrString(pResult->m_ClientId, false), sizeof(Tmp->m_IP));
+	CServer *pServer = (CServer*)pGameServer->Server();
+	str_format(Tmp->m_Lock, sizeof(Tmp->m_Lock), "%s:%d", pServer->m_NetServer.Address().ip, pServer->m_NetServer.Address().port);
 
 	pGameServer->Sheep()->m_pPool->Execute(CGameControllerSheep::ExecuteLogin, std::move(Tmp), "account login");
 }
@@ -228,31 +258,22 @@ bool CGameControllerSheep::ExecuteLogin(IDbConnection *pSqlServer, const ISqlDat
 	if (BanExpiration != 0 && BanExpiration > time(0)) {
 		int Bantime = BanExpiration - time(0);
 		str_format(pResult->m_Message, sizeof(pResult->m_Message), "Your account is banned. Time left: %d seconds.", Bantime);
+		// todo: ban ip
+		// NETADDR Addr;
+		// if (net_addr_from_str(&Addr, pData->m_IP) == 0)
+		// 	pGameData->BanAddr(pData->m_IP, Bantime, 'Account ban', false);
 		return false;
 	}
 
 	str_copy(pResult->m_Message, "Successfully logged in.");
 
 	GenerateAccountLoginResult(pSqlServer, pGameData);
-
-	// update ip
-	if(pData->m_Type == CSqlAccountCredentialsRequest::TYPE_PASSWORD) {
-		if(!pSqlServer->PrepareStatement("UPDATE sheep_accounts SET ip=? WHERE name=?", pError, ErrorSize))
-			return true;
-
-		pSqlServer->BindString(1, pData->m_IP);
-		pSqlServer->BindString(2, pData->m_Username);
-
-		int NumUpdated;
-		pSqlServer->ExecuteUpdate(&NumUpdated, pError, ErrorSize);
-	}
 	return true;
 }
 
-void CGameControllerSheep::SaveAccount(CPlayer *pPlayer) {
+void CGameControllerSheep::SaveAccount(CPlayer *pPlayer, bool Logout) {
 	if(!pPlayer->IsLoggedIn())
 		return;
-
 
 	std::shared_ptr<CAccountDataResult> Result = std::make_shared<CAccountDataResult>();
 	Result->m_AccountId = pPlayer->m_AccountLoginResult->m_AccountId;
@@ -272,21 +293,30 @@ void CGameControllerSheep::SaveAccount(CPlayer *pPlayer) {
 	str_copy(Result->m_PasswordHash, pPlayer->m_AccountLoginResult->m_PasswordHash);
 	Result->m_Type = pPlayer->m_AccountLoginResult->m_Type;
 
-	auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(Result);
-	Tmp->m_Type = CSqlAccountCredentialsRequest::TYPE_FORCED;
-	str_copy(Tmp->m_Username, pPlayer->m_AccountLoginResult->m_Username, sizeof(Tmp->m_Username));
+	auto Tmp = std::make_unique<CSqlAccountIdRequest>(Result);
+	Tmp->m_AccountId = pPlayer->m_AccountLoginResult->m_AccountId;
+	
+	if(!Logout) {
+		CServer *pServer = (CServer*)Server();
+		str_format(Tmp->m_Lock, sizeof(Tmp->m_Lock), "%s:%d", pServer->m_NetServer.Address().ip, pServer->m_NetServer.Address().port);
+	} else {
+		str_copy(Tmp->m_Lock, "", sizeof(Tmp->m_Lock));
+	}
 
-	m_pPool->Execute(CGameControllerSheep::ExecuteSave, std::move(Tmp), "account save");
+	m_pPool->ExecuteWrite(CGameControllerSheep::ExecuteSave, std::move(Tmp), "account save");
 }
 
-bool CGameControllerSheep::ExecuteSave(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {
-	auto *pResult = dynamic_cast<CAccountDataResult *>(pGameData->m_pResult.get());
-	const auto *pData = dynamic_cast<const CSqlAccountCredentialsRequest *>(pGameData);
+bool CGameControllerSheep::ExecuteSave(IDbConnection *pSqlServer, const ISqlData *pGameData, Write w, char *pError, int ErrorSize) {
+	if(Write::NORMAL != w)
+		return true;
 
-	if(!pSqlServer->PrepareStatement("UPDATE sheep_accounts SET name=?, level=?, exp=?, vip=?, vip_expiration=?, staff_level=?, email=?, email_verified=?, invisible=?, vanish=?, title=?, money=?, playtime=?, updated_at=NOW() WHERE id=?", pError, ErrorSize))
+	auto *pResult = dynamic_cast<CAccountDataResult *>(pGameData->m_pResult.get());
+	const auto *pData = dynamic_cast<const CSqlAccountIdRequest *>(pGameData);
+
+	if(!pSqlServer->PrepareStatement("UPDATE sheep_accounts SET name=?, level=?, exp=?, vip=?, vip_expiration=?, staff_level=?, email=?, email_verified=?, invisible=?, vanish=?, title=?, money=?, playtime=?, updated_at=NOW(), data_lock=? WHERE id=?", pError, ErrorSize))
 		return false;
 	
-	pSqlServer->BindString(1, pData->m_Username);
+	pSqlServer->BindString(1, pResult->m_Username);
 	pSqlServer->BindInt64(2, pResult->m_Level);
 	pSqlServer->BindInt64(3, pResult->m_Exp);
 	pSqlServer->BindInt(4, pResult->m_Vip);
@@ -299,7 +329,8 @@ bool CGameControllerSheep::ExecuteSave(IDbConnection *pSqlServer, const ISqlData
 	pSqlServer->BindString(11, pResult->m_Title);
 	pSqlServer->BindInt64(12, pResult->m_Money);
 	pSqlServer->BindInt64(13, pResult->m_Playtime);
-	pSqlServer->BindInt64(14, pResult->m_AccountId);
+	pSqlServer->BindString(14, pData->m_Lock);
+	pSqlServer->BindInt64(15, pData->m_AccountId);
 
 	int NumUpdated;
 	if(!pSqlServer->ExecuteUpdate(&NumUpdated, pError, ErrorSize))
@@ -339,14 +370,20 @@ void CGameControllerSheep::ConRegister(IConsole::IResult *pResult, void *pUserDa
 	str_copy(Tmp->m_Password, aPassword);
 	str_copy(Tmp->m_IP, pGameServer->Server()->ClientAddrString(pResult->m_ClientId, false));
 
-	pGameServer->Sheep()->m_pPool->Execute(CGameControllerSheep::ExecuteRegister, std::move(Tmp), "account register");
+	CServer *pServer = (CServer*)pGameServer->Server();
+	str_format(Tmp->m_Lock, sizeof(Tmp->m_Lock), "%s:%d", pServer->m_NetServer.Address().ip, pServer->m_NetServer.Address().port);
+
+	pGameServer->Sheep()->m_pPool->ExecuteWrite(CGameControllerSheep::ExecuteRegister, std::move(Tmp), "account register");
 }
 
-bool CGameControllerSheep::ExecuteRegister(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {
+bool CGameControllerSheep::ExecuteRegister(IDbConnection *pSqlServer, const ISqlData *pGameData, Write w, char *pError, int ErrorSize) {
+	if(Write::NORMAL != w)
+		return true;
+
 	auto *pResult = dynamic_cast<CAccountDataResult *>(pGameData->m_pResult.get());
 
 	char aSql[1024];
-	str_format(aSql, sizeof(aSql), "INSERT INTO sheep_accounts (name, password, ip, created_at) VALUES (?, ?, ?, NOW()) RETURNING %s", Fields());
+	str_format(aSql, sizeof(aSql), "INSERT INTO sheep_accounts (name, password, ip, data_lock, created_at) VALUES (?, ?, ?, ?, NOW()) RETURNING %s", Fields());
 	if(!pSqlServer->PrepareStatement(aSql, pError, ErrorSize)) {
 		str_copy(pResult->m_Message, "Database error (1).");
 		return false;
@@ -360,6 +397,7 @@ bool CGameControllerSheep::ExecuteRegister(IDbConnection *pSqlServer, const ISql
 	pSqlServer->BindString(2, aHash);
 
 	pSqlServer->BindString(3, pData->m_IP);
+	pSqlServer->BindString(4, pData->m_Lock);
 
 	bool End;
 	if(!pSqlServer->Step(&End, pError, ErrorSize) || End) {
@@ -391,7 +429,10 @@ void CGameControllerSheep::ConLogout(IConsole::IResult *pResult, void *pUserData
 	pSelf->Sheep()->OnPlayerLogout(pPlayer, "logged out");
 }
 
-bool CGameControllerSheep::ExecutePassword(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {
+bool CGameControllerSheep::ExecutePassword(IDbConnection *pSqlServer, const ISqlData *pGameData, Write w, char *pError, int ErrorSize) {
+	if(Write::NORMAL != w)
+		return true;
+		
 	char aBuf[256];
 	str_copy(aBuf, "UPDATE sheep_accounts SET password=SHA2(?, 256) WHERE name=?");
 	if(!pSqlServer->PrepareStatement(aBuf, pError, ErrorSize))
@@ -434,7 +475,7 @@ void CGameControllerSheep::ConPassword(IConsole::IResult *pResult, void *pUserDa
 	str_copy(Tmp->m_Username, pVictim->m_AccountLoginResult->m_Username, sizeof(Tmp->m_Username));
 	str_copy(Tmp->m_Password, pResult->GetString(1), sizeof(Tmp->m_Password));
 
-	pGameServer->Sheep()->m_pPool->Execute(CGameControllerSheep::ExecutePassword, std::move(Tmp), "account set password");
+	pGameServer->Sheep()->m_pPool->ExecuteWrite(CGameControllerSheep::ExecutePassword, std::move(Tmp), "account set password");
 }
 
 void CGameControllerSheep::ConVanish(IConsole::IResult *pResult, void *pUserData) {
@@ -515,6 +556,9 @@ void CGameControllerSheep::ConForceLogin(IConsole::IResult *pResult, void *pUser
 	auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pVictim->m_AccountLoginResult);
 	Tmp->m_Type = CSqlAccountCredentialsRequest::TYPE_FORCED;
 	str_copy(Tmp->m_Username, aUsername, sizeof(Tmp->m_Username));
+
+	CServer *pServer = (CServer*)pGameServer->Server();
+	str_format(Tmp->m_Lock, sizeof(Tmp->m_Lock), "%s:%d", pServer->m_NetServer.Address().ip, pServer->m_NetServer.Address().port);
 
 	pGameServer->Sheep()->m_pPool->Execute(CGameControllerSheep::ExecuteLogin, std::move(Tmp), "account login");
 
