@@ -33,7 +33,7 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 {
 	for(int i = 0; i < MAX_CLIENTS; i++) {
 		m_RainbowColor[i] = 0;
-
+		
 		for(int j = 0; j < NUM_COSMETICS; j++)
 			m_Cosmetics[i][j] = nullptr;
 	}
@@ -851,10 +851,13 @@ bool CGameControllerSheep::OnCharacterPowerup(CCharacter *pChr, const SPowerupDa
 
 void CGameControllerSheep::ConRedirect(IConsole::IResult *pResult, void *pUserData) {
 	CGameContext *pSelf = (CGameContext *)pUserData;
-	
-	CPlayer *pPlayer = CCommands::GetVictimOrCaller(pResult, pUserData, 2);
+	CPlayer *pVictim = CCommands::GetVictimOrCaller(pResult, pUserData, 2);
+	if(pVictim == nullptr) {
+		pSelf->SendChatTarget(pResult->m_ClientId, "Invalid player");
+		return;
+	}
 
-	pSelf->Server()->RedirectClient(pPlayer->GetCid(), pResult->GetInteger(pResult->NumArguments() - 1));
+	pSelf->Server()->RedirectClient(pVictim->GetCid(), pResult->GetInteger(pResult->NumArguments() - 1));
 }
 
 

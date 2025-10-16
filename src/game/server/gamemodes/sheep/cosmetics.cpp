@@ -108,18 +108,15 @@ void CGameControllerSheep::CreateLaserDeath(int Type, int pOwner, vec2 pPos, CCl
 }
 
 void CGameControllerSheep::ConCosmetic(IConsole::IResult *pResult, void *pUserData) {
-	CPlayer* pVictim;
-	if (pResult->NumArguments() > 1) {
-		pVictim = CCommands::GetVictimOrCaller(pResult, pUserData);
-	} else {
-		pVictim = CCommands::GetCaller(pResult, pUserData);
+	CPlayer* pVictim = CCommands::GetVictimOrCaller(pResult, pUserData, 2);
+	CGameContext *pGameServer = (CGameContext *)pUserData;
+	if(pVictim == nullptr) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "Invalid player");
+		return;
 	}
 
-	CCharacter *pVictimChar = pVictim->GetCharacter();
-	CGameContext *pGameServer = (CGameContext *)pUserData;
-
-	if(!pVictimChar) {
-		pGameServer->SendChatTarget(pResult->m_ClientId, "The player is not spawned");
+	if(!pVictim->IsLoggedIn() || pGameServer->Sheep()->m_CosmeticsResult[pVictim->GetCid()] == nullptr) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "Player is not logged in");
 		return;
 	}
 
