@@ -290,7 +290,7 @@ if(NOT MSVC AND NOT HAIKU)
   # Disable exceptions as DDNet does not use them.
   #<sheep>
   #add_cxx_compiler_flag_if_supported(OUR_FLAGS -fno-exceptions)
-  add_cxx_compiler_flag_if_supported(OUR_FLAGS -Wno-dev) #TODO: remove when all maps have been added
+  add_cxx_compiler_flag_if_supported(OUR_FLAGS -Wno-dev -Wno-error=dev) #TODO: remove when all maps have been added
   #</sheep>
 
   # Inaccurate floating point numbers cause problems on mingw-w64-gcc when
