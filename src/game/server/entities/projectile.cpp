@@ -134,6 +134,11 @@ void CProjectile::Tick()
 	if(pOwnerChar ? !pOwnerChar->GrenadeHitDisabled() : g_Config.m_SvHit)
 		pTargetChr = GameServer()->m_World.IntersectCharacter(PrevPos, ColPos, m_Freeze ? 1.0f : 6.0f, ColPos, pOwnerChar, m_Owner);
 
+	//<sheep>
+	if(pTargetChr && !GameWorld()->m_Core.m_Hittable[pTargetChr->GetPlayer()->GetCid()][m_Owner])
+		pTargetChr = nullptr;
+	//</sheep>
+
 	if(m_LifeSpan > -1)
 		m_LifeSpan--;
 

@@ -158,6 +158,15 @@ public:
 			pCharacter = nullptr;
 		}
 		m_pPrng = nullptr;
+
+		//<sheep>
+		for(int i = 0; i < MAX_CLIENTS; i++) {
+			for(int j = 0; j < MAX_CLIENTS; j++) {
+				m_Collidable[i][j] = true;
+				m_Hittable[i][j] = true;
+				m_Hookable[i][j] = true;
+			}
+		}
 	}
 
 	int RandomOr0(int BelowThis) const
@@ -178,6 +187,13 @@ public:
 
 	void InitSwitchers(int HighestSwitchNumber);
 	std::vector<SSwitchers> m_vSwitchers;
+
+	//<sheep>
+	// [receiving] [active]
+	bool m_Collidable[MAX_CLIENTS][MAX_CLIENTS];
+	bool m_Hittable[MAX_CLIENTS][MAX_CLIENTS];
+	bool m_Hookable[MAX_CLIENTS][MAX_CLIENTS];
+	//</sheep>
 };
 
 class CCharacterCore

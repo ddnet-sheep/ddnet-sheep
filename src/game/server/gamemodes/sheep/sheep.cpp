@@ -282,7 +282,9 @@ void CGameControllerSheep::OnPlayerDisconnect(CPlayer *pPlayer, const char *pRea
 	str_format(aBuf, sizeof(aBuf), "leave player='%d:%s'", ClientId, Server()->ClientName(ClientId));
 	GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "game", aBuf);
 
-	SendActionMessage(pPlayer, ACTION_LEAVE, (char*)pReason);
+	if (pPlayer->m_AccountLoginResult == nullptr || !pPlayer->m_AccountLoginResult->m_Vanish)
+		SendActionMessage(pPlayer, ACTION_LEAVE, (char*)pReason);
+		
 	pPlayer->m_AccountLoginResult = nullptr;
 
 	if(!GameServer()->PlayerModerating() && WasModerator)
@@ -933,6 +935,14 @@ void CGameControllerSheep::SendActionMessage(CPlayer *pPlayer, enum CAccountActi
 	} else {
 		aTitle[0] = '\0';
 	}
-	str_format(aBuf, sizeof(aBuf), "%s'%s' %s the game%s", aTitle, Server()->ClientName(ClientId), aAction, aExtra);
+	str_format(aBuf, sizeof(aBuf), "%s'%s' %s the server%s", aTitle, Server()->ClientName(ClientId), aAction, aExtra);
 	GameServer()->SendChat(-1, TEAM_ALL, aBuf, -1, CGameContext::FLAG_SIX);
+}
+
+void CGameControllerSheep::UpdatePhysics(CPlayer* pPlayer) {
+	for(int i = 0; i < MAX_CLIENTS; i++) {
+		GameServer()->m_World.m_Core.m_Hookable[i][pPlayer->GetCid()] = !pPlayer->m_AccountLoginResult->m_Invisible;
+		GameServer()->m_World.m_Core.m_Collidable[i][pPlayer->GetCid()] = !pPlayer->m_AccountLoginResult->m_Invisible;
+		GameServer()->m_World.m_Core.m_Hittable[i][pPlayer->GetCid()] = !pPlayer->m_AccountLoginResult->m_Invisible;
+	}
 }

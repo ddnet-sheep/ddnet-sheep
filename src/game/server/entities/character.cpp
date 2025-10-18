@@ -338,6 +338,11 @@ void CCharacter::HandleNinja()
 				if(Team() != pChr->Team())
 					continue;
 
+				//<sheep>
+				if(!GameWorld()->m_Core.m_Hittable[pChr->GetPlayer()->GetCid()][m_pPlayer->GetCid()])
+					continue;
+				//</sheep>
+
 				// Don't hit players in solo parts
 				if(Teams()->m_Core.GetSolo(pChr->m_pPlayer->GetCid()))
 					return;
@@ -524,6 +529,11 @@ void CCharacter::FireWeapon()
 			//if ((pTarget == this) || Collision()->IntersectLine(ProjStartPos, pTarget->m_Pos, NULL, NULL))
 			if((pTarget == this || (pTarget->IsAlive() && !CanCollide(pTarget->GetPlayer()->GetCid()))))
 				continue;
+
+			//<sheep>
+			if(!GameWorld()->m_Core.m_Hittable[m_pPlayer->GetCid()][pTarget->GetPlayer()->GetCid()])
+				continue;
+			//</sheep>
 
 			// set his velocity to fast upward (for now)
 			if(length(pTarget->m_Pos - ProjStartPos) > 0.0f)
@@ -1158,6 +1168,10 @@ void CCharacter::SnapCharacter(int SnappingClient, int Id)
 				Faketuning |= FAKETUNE_NOHOOK;
 			if(!m_Core.m_EndlessJump && m_Core.m_Jumps == 0)
 				Faketuning |= FAKETUNE_NOJUMP;
+			//<sheep>
+			if(!GameWorld()->m_Core.m_Collidable[m_pPlayer->GetCid()][SnappingClient] || !GameWorld()->m_Core.m_Collidable[SnappingClient][m_pPlayer->GetCid()])
+				Faketuning |= FAKETUNE_NOCOLL;
+			//</sheep>
 		}
 		if(Faketuning != m_NeededFaketuning)
 		{
@@ -1260,8 +1274,8 @@ bool CCharacter::CanSnapCharacter(int SnappingClient)
 
 	//<sheep>
 	CPlayer *pSnappingPlayer = GameServer()->m_apPlayers[SnappingClient];
-	if(GetPlayer()->IsLoggedIn() && GetPlayer()->m_AccountLoginResult->m_Invisible && SnappingClient != GetPlayer()->GetCid() && SnappingClient >= 0
-		&& pSnappingPlayer->IsLoggedIn() && !pSnappingPlayer->m_AccountLoginResult->m_IgnoreInvisible)
+	if(GetPlayer()->IsLoggedIn() && GetPlayer()->m_AccountLoginResult->m_Invisible && SnappingClient != GetPlayer()->GetCid() && SnappingClient >= 0 &&
+		(!pSnappingPlayer->IsLoggedIn() || !pSnappingPlayer->m_AccountLoginResult->m_IgnoreInvisible))
 		return false;
 	//</sheep>
 

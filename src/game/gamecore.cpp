@@ -354,6 +354,11 @@ void CCharacterCore::Tick(bool UseInput, bool DoDeferredTick)
 				if(!pCharCore || pCharCore == this || (!(m_Super || pCharCore->m_Super) && ((m_Id != -1 && !m_pTeams->CanCollide(i, m_Id)) || pCharCore->m_Solo || m_Solo)))
 					continue;
 
+				//<sheep>
+				if(!m_pWorld->m_Hookable[m_Id][i])
+					continue;
+				//</sheep>
+
 				vec2 ClosestPoint;
 				if(closest_point_on_line(m_HookPos, NewPos, pCharCore->m_Pos, ClosestPoint))
 				{
@@ -481,6 +486,10 @@ void CCharacterCore::TickDeferred()
 
 				bool CanCollide = (m_Super || pCharCore->m_Super) || (!m_CollisionDisabled && !pCharCore->m_CollisionDisabled && m_Tuning.m_PlayerCollision);
 
+				//<sheep>
+				CanCollide &= m_pWorld->m_Collidable[m_Id][i] && m_pWorld->m_Collidable[i][m_Id];
+				//</sheep>
+
 				if(CanCollide && Distance < PhysicalSize() * 1.25f)
 				{
 					float a = (PhysicalSize() * 1.45f - Distance);
@@ -581,6 +590,12 @@ void CCharacterCore::Move()
 						continue;
 					if((!(pCharCore->m_Super || m_Super) && (m_Solo || pCharCore->m_Solo || pCharCore->m_CollisionDisabled || (m_Id != -1 && !m_pTeams->CanCollide(m_Id, p)))))
 						continue;
+
+					//<sheep>
+					if(!m_pWorld->m_Collidable[m_Id][p] || !m_pWorld->m_Collidable[p][m_Id])
+						continue;
+					//</sheep>
+
 					float D = distance(Pos, pCharCore->m_Pos);
 					if(D < PhysicalSize())
 					{

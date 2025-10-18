@@ -30,6 +30,7 @@ void CGameControllerSheep::OnPlayerLogin(CPlayer *pPlayer, bool Autologin) {
 	m_pPool->ExecuteWrite(CGameControllerSheep::ExecuteUpdatePlayerIp, std::move(Tmp), "update player ip");
 
 	LoadCosmetics(pPlayer);
+	UpdatePhysics(pPlayer);
 
 	pPlayer->m_LoginTick = Server()->Tick();
 
@@ -504,7 +505,15 @@ void CGameControllerSheep::ConInvisible(IConsole::IResult *pResult, void *pUserD
 	CGameContext *pGameServer = (CGameContext *)pUserData;
 	CPlayer *pVictim = CCommands::GetVictimOrCaller(pResult, pUserData);
 
+	if(pVictim == nullptr || pVictim->m_AccountLoginResult == nullptr) {
+		pGameServer->SendChatTarget(pResult->m_ClientId, "Player is not logged in.");
+		return;
+	}
+
 	pVictim->m_AccountLoginResult->m_Invisible = !pVictim->m_AccountLoginResult->m_Invisible;
+	
+	pGameServer->Sheep()->UpdatePhysics(pVictim);
+
 	if (pVictim->GetCid() != pResult->m_ClientId) {
 		pGameServer->SendChatTarget(pResult->m_ClientId, pVictim->m_AccountLoginResult->m_Invisible ? "They are now invisible." : "They are no longer invisible.");
 	}

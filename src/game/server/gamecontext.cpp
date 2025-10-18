@@ -350,6 +350,12 @@ void CGameContext::CreateExplosion(vec2 Pos, int Owner, int Weapon, bool NoDamag
 			if(Owner == -1 && ActivatedTeam != -1 && pChr->IsAlive() && pChr->Team() != ActivatedTeam)
 				continue;
 
+			//<sheep>
+			// todo: do we want this?
+			if(Owner != -1 && !m_World.m_Core.m_Hittable[pChr->GetPlayer()->GetCid()][Owner])
+				continue;
+			//</sheep>
+
 			// Explode at most once per team
 			int PlayerTeam = pChr->Team();
 			if((GetPlayerChar(Owner) ? GetPlayerChar(Owner)->GrenadeHitDisabled() : !g_Config.m_SvHit) || NoDamage)

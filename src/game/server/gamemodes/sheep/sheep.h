@@ -45,7 +45,9 @@ public:
 	void SendDiscordChat(int ChatterClientId, int Team, const char *pText, int SpamProtectionClientId, int VersionFlags);
 	
 	void SendActionMessage(CPlayer *pPlayer, enum CAccountActions Action, char* pExtra = "");
-		
+	
+	void UpdatePhysics(CPlayer* pPlayer);
+	
 	void AuthPlayer(CPlayer* pPlayer);
 	void SaveAccount(CPlayer* pPlayer, bool Logout = false);	
     static bool ExecuteLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
