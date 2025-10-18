@@ -1,6 +1,8 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 
+#include "chat.h"
+
 #include <engine/editor.h>
 #include <engine/graphics.h>
 #include <engine/keys.h>
@@ -19,8 +21,6 @@
 #include <game/client/gameclient.h>
 #include <game/localization.h>
 
-#include "chat.h"
-
 char CChat::ms_aDisplayText[MAX_LINE_LENGTH] = "";
 
 CChat::CLine::CLine()
@@ -33,6 +33,7 @@ void CChat::CLine::Reset(CChat &This)
 {
 	This.TextRender()->DeleteTextContainer(m_TextContainerIndex);
 	This.Graphics()->DeleteQuadContainer(m_QuadContainerIndex);
+	m_Initialized = false;
 	m_Time = 0;
 	m_aText[0] = '\0';
 	m_aName[0] = '\0';
@@ -99,6 +100,8 @@ void CChat::RebuildChat()
 {
 	for(auto &Line : m_aLines)
 	{
+		if(!Line.m_Initialized)
+			continue;
 		TextRender()->DeleteTextContainer(Line.m_TextContainerIndex);
 		Graphics()->DeleteQuadContainer(Line.m_QuadContainerIndex);
 		// recalculate sizes
@@ -544,6 +547,7 @@ void CChat::OnMessage(int MsgType, void *pRawMsg)
 	{
 		CNetMsg_Sv_Chat *pMsg = (CNetMsg_Sv_Chat *)pRawMsg;
 
+		/*
 		if(g_Config.m_ClCensorChat)
 		{
 			char aMessage[MAX_LINE_LENGTH];
@@ -553,6 +557,9 @@ void CChat::OnMessage(int MsgType, void *pRawMsg)
 		}
 		else
 			AddLine(pMsg->m_ClientId, pMsg->m_Team, pMsg->m_pMessage);
+		*/
+
+		AddLine(pMsg->m_ClientId, pMsg->m_Team, pMsg->m_pMessage);
 	}
 	else if(MsgType == NETMSGTYPE_SV_COMMANDINFO)
 	{
@@ -595,6 +602,8 @@ static constexpr const char *SAVES_HEADER[] = {
 	"Code",
 };
 
+// TODO: remove this in a few releases (in 2027 or later)
+//       it got deprecated by CGameClient::StoreSave
 void CChat::StoreSave(const char *pText)
 {
 	const char *pStart = str_find(pText, "Team successfully saved by ");
@@ -758,7 +767,11 @@ void CChat::AddLine(int ClientId, int Team, const char *pLine)
 	// 0 = global; 1 = team; 2 = sending whisper; 3 = receiving whisper
 
 	// If it's a client message, m_aText will have ": " prepended so we have to work around it.
-	if(PreviousLine.m_TeamNumber == Team && PreviousLine.m_ClientId == ClientId && str_comp(PreviousLine.m_aText, pLine) == 0 && PreviousLine.m_CustomColor == CustomColor)
+	if(PreviousLine.m_Initialized &&
+		PreviousLine.m_TeamNumber == Team &&
+		PreviousLine.m_ClientId == ClientId &&
+		str_comp(PreviousLine.m_aText, pLine) == 0 &&
+		PreviousLine.m_CustomColor == CustomColor)
 	{
 		PreviousLine.m_TimesRepeated++;
 		TextRender()->DeleteTextContainer(PreviousLine.m_TextContainerIndex);
@@ -775,7 +788,7 @@ void CChat::AddLine(int ClientId, int Team, const char *pLine)
 
 	CLine &CurrentLine = m_aLines[m_CurrentLine];
 	CurrentLine.Reset(*this);
-
+	CurrentLine.m_Initialized = true;
 	CurrentLine.m_Time = time();
 	CurrentLine.m_aYOffset[0] = -1.0f;
 	CurrentLine.m_aYOffset[1] = -1.0f;
@@ -971,7 +984,8 @@ void CChat::OnPrepareLines(float y)
 	for(int i = 0; i < MAX_LINES; i++)
 	{
 		CLine &Line = m_aLines[((m_CurrentLine - i) + MAX_LINES) % MAX_LINES];
-
+		if(!Line.m_Initialized)
+			break;
 		if(Now > Line.m_Time + 16 * time_freq() && !m_PrevShowChat)
 			break;
 
@@ -1292,6 +1306,8 @@ void CChat::OnRender()
 	for(int i = 0; i < MAX_LINES; i++)
 	{
 		CLine &Line = m_aLines[((m_CurrentLine - i) + MAX_LINES) % MAX_LINES];
+		if(!Line.m_Initialized)
+			break;
 		if(Now > Line.m_Time + 16 * time_freq() && !m_PrevShowChat)
 			break;
 

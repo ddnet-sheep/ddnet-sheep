@@ -1,12 +1,14 @@
+/*
+#include "censor.h"
+
 #include <base/log.h>
+
 #include <engine/engine.h>
 #include <engine/external/json-parser/json.h>
 #include <engine/shared/config.h>
 
 #include <optional>
 #include <utility>
-
-#include "censor.h"
 
 static void ReplaceWords(char *pBuffer, const std::vector<std::string> &vWords, char Replacement)
 {
@@ -165,7 +167,7 @@ std::optional<std::vector<std::string>> CCensor::LoadCensorList(const void *pLis
 
 	json_value_free(pData);
 
-	log_info("censor", "Loaded %d words from censor list", vWordList.size());
+	log_info("censor", "Loaded %" PRIzu " words from censor list", vWordList.size());
 	return vWordList;
 }
 
@@ -254,3 +256,4 @@ void CCensor::CCensorListDownloadJob::Run()
 		m_vLoadedWords = std::move(vLoadedWords);
 	}
 }
+*/

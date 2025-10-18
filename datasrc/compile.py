@@ -91,7 +91,7 @@ def gen_network_header():
 		"HEARTGUN",
 		"PLASMA_RIFLE",
 		"PROJECTILE_RIFLE",
-		"BALL_GRENADE"
+		"BALL_GRENADE",
 		"LIGHTNING_LASER"
 	]
 	#</sheep>

@@ -8,15 +8,15 @@ class CLayerQuads : public CLayer
 public:
 	explicit CLayerQuads(CEditor *pEditor);
 	CLayerQuads(const CLayerQuads &Other);
-	~CLayerQuads();
+	~CLayerQuads() override;
 
 	void Render(bool QuadPicker = false) override;
 	CQuad *NewQuad(int x, int y, int Width, int Height);
 	int SwapQuads(int Index0, int Index1);
 
 	void BrushSelecting(CUIRect Rect) override;
-	int BrushGrab(std::shared_ptr<CLayerGroup> pBrush, CUIRect Rect) override;
-	void BrushPlace(std::shared_ptr<CLayer> pBrush, vec2 WorldPos) override;
+	int BrushGrab(CLayerGroup *pBrush, CUIRect Rect) override;
+	void BrushPlace(CLayer *pBrush, vec2 WorldPos) override;
 	void BrushFlipX() override;
 	void BrushFlipY() override;
 	void BrushRotate(float Amount) override;

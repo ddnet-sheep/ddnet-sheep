@@ -1,15 +1,13 @@
 #ifndef ENGINE_CLIENT_BACKEND_SDL_H
 #define ENGINE_CLIENT_BACKEND_SDL_H
 
-#include <SDL_video.h>
-
 #include <base/detect.h>
 
+#include <engine/client/backend/backend_base.h>
+#include <engine/client/graphics_threaded.h>
 #include <engine/graphics.h>
 
-#include <engine/client/graphics_threaded.h>
-
-#include <engine/client/backend/backend_base.h>
+#include <SDL_video.h>
 
 #include <atomic>
 #include <condition_variable>
@@ -186,7 +184,7 @@ class CCommandProcessor_SDL_GL : public CGraphicsBackend_Threaded::ICommandProce
 
 public:
 	CCommandProcessor_SDL_GL(EBackendType BackendType, int GLMajor, int GLMinor, int GLPatch);
-	virtual ~CCommandProcessor_SDL_GL();
+	~CCommandProcessor_SDL_GL() override;
 	void RunBuffer(CCommandBuffer *pBuffer) override;
 
 	const SGfxErrorContainer &GetError() const override;

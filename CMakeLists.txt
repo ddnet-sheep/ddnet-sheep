@@ -326,7 +326,7 @@ if(NOT MSVC AND NOT HAIKU)
   add_cxx_compiler_flag_if_supported(OUR_FLAGS_OWN -Wno-psabi) # parameter passing for argument of type ‘__gnu_cxx::__normal_iterator<CCommandProcessorFragment_Vulkan::SMemoryBlock<1>*, std::vector<CCommandProcessorFragment_Vulkan::SMemoryBlock<1>, std::allocator<CCommandProcessorFragment_Vulkan::SMemoryBlock<1> > > >’ changed in GCC 7.1
   add_cxx_compiler_flag_if_supported(OUR_FLAGS_OWN -Wno-unused-parameter)
   add_cxx_compiler_flag_if_supported(OUR_FLAGS_OWN -Wno-missing-field-initializers)
-  if(CMAKE_BUILD_TYPE STREQUAL DEBUG)
+  if(CMAKE_BUILD_TYPE STREQUAL Debug)
     add_cxx_compiler_flag_if_supported(OUR_FLAGS_OWN -Wformat=2) # Warn about format strings.
   else()
     add_cxx_compiler_flag_if_supported(OUR_FLAGS_OWN -Wno-format) # Don't warn about format strings in release mode since our `str_format` optimization is incompatible with it.
@@ -870,6 +870,7 @@ set_src(RUST_BRIDGE_SHARED GLOB_RECURSE src/rust-bridge
 
 set_glob(RUST_MASTERSRV GLOB "rs;toml" src/mastersrv/src
   addr.rs
+  community_token.rs
   config.rs
   locations.rs
   main.rs
@@ -2017,6 +2018,8 @@ set_src(BASE GLOB_RECURSE src/base
   crashdump.cpp
   detect.h
   dynamic.h
+  fs.cpp
+  fs.h
   hash.cpp
   hash.h
   hash_bundled.cpp
@@ -2397,6 +2400,8 @@ if(CLIENT)
     components/infomessages.h
     components/items.cpp
     components/items.h
+    components/key_binder.cpp
+    components/key_binder.h
     components/local_server.cpp
     components/local_server.h
     components/mapimages.cpp
@@ -2417,6 +2422,8 @@ if(CLIENT)
     components/menus_settings.cpp
     components/menus_settings7.cpp
     components/menus_settings_assets.cpp
+    components/menus_settings_controls.cpp
+    components/menus_settings_controls.h
     components/menus_start.cpp
     components/menus_start.h
     components/motd.cpp
@@ -2516,6 +2523,7 @@ if(CLIENT)
     editor_server_settings.h
     editor_trackers.cpp
     editor_trackers.h
+    editor_ui.cpp
     editor_ui.h
     enums.h
     explanations.cpp

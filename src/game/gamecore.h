@@ -3,10 +3,9 @@
 #ifndef GAME_GAMECORE_H
 #define GAME_GAMECORE_H
 
-#include <base/vmath.h>
+#include "prng.h"
 
-#include <set>
-#include <vector>
+#include <base/vmath.h>
 
 #include <engine/shared/protocol.h>
 
@@ -14,7 +13,8 @@
 
 #include <game/teamscore.h>
 
-#include "prng.h"
+#include <set>
+#include <vector>
 
 //<sheep>
 #include <game/server/gamemodes/sheep/weapon.h>
@@ -169,7 +169,7 @@ public:
 		}
 	}
 
-	int RandomOr0(int BelowThis) const
+	int RandomOr0(int BelowThis) // NOLINT(readability-make-member-function-const)
 	{
 		if(BelowThis <= 1 || !m_pPrng)
 		{

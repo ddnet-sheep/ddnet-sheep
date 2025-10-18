@@ -3,6 +3,10 @@
 
 #include "server.h"
 
+#include "databases/connection.h"
+#include "databases/connection_pool.h"
+#include "register.h"
+
 #include <base/logger.h>
 #include <base/math.h>
 #include <base/system.h>
@@ -12,8 +16,6 @@
 #include <engine/engine.h>
 #include <engine/map.h>
 #include <engine/server.h>
-#include <engine/storage.h>
-
 #include <engine/shared/compression.h>
 #include <engine/shared/config.h>
 #include <engine/shared/console.h>
@@ -25,6 +27,7 @@
 #include <engine/shared/http.h>
 #include <engine/shared/json.h>
 #include <engine/shared/jsonwriter.h>
+#include <engine/shared/linereader.h>
 #include <engine/shared/masterserver.h>
 #include <engine/shared/netban.h>
 #include <engine/shared/network.h>
@@ -34,19 +37,14 @@
 #include <engine/shared/protocol_ex.h>
 #include <engine/shared/rust_version.h>
 #include <engine/shared/snapshot.h>
+#include <engine/storage.h>
 
 #include <game/version.h>
 
-// DDRace
-#include <engine/shared/linereader.h>
-#include <vector>
 #include <zlib.h>
 
-#include "databases/connection.h"
-#include "databases/connection_pool.h"
-#include "register.h"
-
 #include <chrono>
+#include <vector>
 
 using namespace std::chrono_literals;
 
@@ -84,7 +82,7 @@ int CServerBan::BanExt(T *pBanPool, const typename T::CDataType *pData, int Seco
 			if(i == Server()->m_RconClientId || Server()->m_aClients[i].m_State == CServer::CClient::STATE_EMPTY)
 				continue;
 
-			if(Server()->m_aClients[i].m_Authed >= Server()->m_RconAuthLevel && NetMatch(pData, Server()->ClientAddr(i)))
+			if(Server()->GetAuthedState(i) >= Server()->m_RconAuthLevel && NetMatch(pData, Server()->ClientAddr(i)))
 			{
 				Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "net_ban", "ban error (command denied)");
 				return -1;
@@ -313,17 +311,17 @@ const char *CServer::DnsblStateStr(EDnsblState State)
 	dbg_break();
 }
 
-int CServer::ConsoleAccessLevel(int ClientId) const
+IConsole::EAccessLevel CServer::ConsoleAccessLevel(int ClientId) const
 {
 	int AuthLevel = GetAuthedState(ClientId);
 	switch(AuthLevel)
 	{
 	case AUTHED_ADMIN:
-		return IConsole::ACCESS_LEVEL_ADMIN;
+		return IConsole::EAccessLevel::ADMIN;
 	case AUTHED_MOD:
-		return IConsole::ACCESS_LEVEL_MOD;
+		return IConsole::EAccessLevel::MODERATOR;
 	case AUTHED_HELPER:
-		return IConsole::ACCESS_LEVEL_HELPER;
+		return IConsole::EAccessLevel::HELPER;
 	};
 
 	dbg_assert(false, "invalid auth level: %d", AuthLevel);
@@ -510,7 +508,7 @@ void CServer::Kick(int ClientId, const char *pReason)
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", "you can't kick yourself");
 		return;
 	}
-	else if(m_aClients[ClientId].m_Authed > m_RconAuthLevel)
+	else if(GetAuthedState(ClientId) > m_RconAuthLevel)
 	{
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", "kick command denied");
 		return;
@@ -630,7 +628,7 @@ int CServer::GetAuthedState(int ClientId) const
 {
 	dbg_assert(ClientId >= 0 && ClientId < MAX_CLIENTS, "ClientId is not valid");
 	dbg_assert(m_aClients[ClientId].m_State != CServer::CClient::STATE_EMPTY, "Client slot is empty");
-	return m_aClients[ClientId].m_Authed;
+	return m_AuthManager.KeyLevel(m_aClients[ClientId].m_AuthKey);
 }
 
 bool CServer::IsRconAuthed(int ClientId) const
@@ -1118,7 +1116,6 @@ int CServer::ClientRejoinCallback(int ClientId, void *pUser)
 {
 	CServer *pThis = (CServer *)pUser;
 
-	pThis->m_aClients[ClientId].m_Authed = AUTHED_NO;
 	pThis->m_aClients[ClientId].m_AuthKey = -1;
 	pThis->m_aClients[ClientId].m_pRconCmdToSend = nullptr;
 	pThis->m_aClients[ClientId].m_MaplistEntryToSend = CClient::MAPLIST_UNINITIALIZED;
@@ -1147,7 +1144,6 @@ int CServer::NewClientNoAuthCallback(int ClientId, void *pUser)
 	pThis->m_aClients[ClientId].m_aName[0] = 0;
 	pThis->m_aClients[ClientId].m_aClan[0] = 0;
 	pThis->m_aClients[ClientId].m_Country = -1;
-	pThis->m_aClients[ClientId].m_Authed = AUTHED_NO;
 	pThis->m_aClients[ClientId].m_AuthKey = -1;
 	pThis->m_aClients[ClientId].m_AuthTries = 0;
 	pThis->m_aClients[ClientId].m_AuthHidden = false;
@@ -1184,7 +1180,6 @@ int CServer::NewClientCallback(int ClientId, void *pUser, bool Sixup)
 	pThis->m_aClients[ClientId].m_aName[0] = 0;
 	pThis->m_aClients[ClientId].m_aClan[0] = 0;
 	pThis->m_aClients[ClientId].m_Country = -1;
-	pThis->m_aClients[ClientId].m_Authed = AUTHED_NO;
 	pThis->m_aClients[ClientId].m_AuthKey = -1;
 	pThis->m_aClients[ClientId].m_AuthTries = 0;
 	pThis->m_aClients[ClientId].m_AuthHidden = false;
@@ -1278,7 +1273,6 @@ int CServer::DelClientCallback(int ClientId, const char *pReason, void *pUser)
 	pThis->m_aClients[ClientId].m_aName[0] = 0;
 	pThis->m_aClients[ClientId].m_aClan[0] = 0;
 	pThis->m_aClients[ClientId].m_Country = -1;
-	pThis->m_aClients[ClientId].m_Authed = AUTHED_NO;
 	pThis->m_aClients[ClientId].m_AuthKey = -1;
 	pThis->m_aClients[ClientId].m_AuthTries = 0;
 	pThis->m_aClients[ClientId].m_AuthHidden = false;
@@ -1465,19 +1459,19 @@ void CServer::SendRconLogLine(int ClientId, const CLogMessage *pMessage)
 	}
 }
 
-void CServer::SendRconCmdAdd(const IConsole::CCommandInfo *pCommandInfo, int ClientId)
+void CServer::SendRconCmdAdd(const IConsole::ICommandInfo *pCommandInfo, int ClientId)
 {
 	CMsgPacker Msg(NETMSG_RCON_CMD_ADD, true);
-	Msg.AddString(pCommandInfo->m_pName, IConsole::TEMPCMD_NAME_LENGTH);
-	Msg.AddString(pCommandInfo->m_pHelp, IConsole::TEMPCMD_HELP_LENGTH);
-	Msg.AddString(pCommandInfo->m_pParams, IConsole::TEMPCMD_PARAMS_LENGTH);
+	Msg.AddString(pCommandInfo->Name(), IConsole::TEMPCMD_NAME_LENGTH);
+	Msg.AddString(pCommandInfo->Help(), IConsole::TEMPCMD_HELP_LENGTH);
+	Msg.AddString(pCommandInfo->Params(), IConsole::TEMPCMD_PARAMS_LENGTH);
 	SendMsg(&Msg, MSGFLAG_VITAL, ClientId);
 }
 
-void CServer::SendRconCmdRem(const IConsole::CCommandInfo *pCommandInfo, int ClientId)
+void CServer::SendRconCmdRem(const IConsole::ICommandInfo *pCommandInfo, int ClientId)
 {
 	CMsgPacker Msg(NETMSG_RCON_CMD_REM, true);
-	Msg.AddString(pCommandInfo->m_pName, IConsole::TEMPCMD_NAME_LENGTH);
+	Msg.AddString(pCommandInfo->Name(), IConsole::TEMPCMD_NAME_LENGTH);
 	SendMsg(&Msg, MSGFLAG_VITAL, ClientId);
 }
 
@@ -1497,9 +1491,9 @@ void CServer::SendRconCmdGroupEnd(int ClientId)
 int CServer::NumRconCommands(int ClientId)
 {
 	int Num = 0;
-	const int AccessLevel = ConsoleAccessLevel(ClientId);
-	for(const IConsole::CCommandInfo *pCmd = Console()->FirstCommandInfo(AccessLevel, CFGFLAG_SERVER);
-		pCmd; pCmd = pCmd->NextCommandInfo(AccessLevel, CFGFLAG_SERVER))
+	const IConsole::EAccessLevel AccessLevel = ConsoleAccessLevel(ClientId);
+	for(const IConsole::ICommandInfo *pCmd = Console()->FirstCommandInfo(AccessLevel, CFGFLAG_SERVER);
+		pCmd; pCmd = Console()->NextCommandInfo(pCmd, AccessLevel, CFGFLAG_SERVER))
 	{
 		Num++;
 	}
@@ -1516,11 +1510,11 @@ void CServer::UpdateClientRconCommands(int ClientId)
 		return;
 	}
 
-	const int AccessLevel = ConsoleAccessLevel(ClientId);
+	const IConsole::EAccessLevel AccessLevel = ConsoleAccessLevel(ClientId);
 	for(int i = 0; i < MAX_RCONCMD_SEND && Client.m_pRconCmdToSend; ++i)
 	{
 		SendRconCmdAdd(Client.m_pRconCmdToSend, ClientId);
-		Client.m_pRconCmdToSend = Client.m_pRconCmdToSend->NextCommandInfo(AccessLevel, CFGFLAG_SERVER);
+		Client.m_pRconCmdToSend = Console()->NextCommandInfo(Client.m_pRconCmdToSend, AccessLevel, CFGFLAG_SERVER);
 		if(Client.m_pRconCmdToSend == nullptr)
 		{
 			SendRconCmdGroupEnd(ClientId);
@@ -1567,9 +1561,9 @@ void CServer::UpdateClientMaplistEntries(int ClientId)
 	if(Client.m_MaplistEntryToSend == CClient::MAPLIST_UNINITIALIZED)
 	{
 		static const char *const MAP_COMMANDS[] = {"sv_map", "change_map"};
-		const int AccessLevel = ConsoleAccessLevel(ClientId);
+		const IConsole::EAccessLevel AccessLevel = ConsoleAccessLevel(ClientId);
 		const bool MapCommandAllowed = std::any_of(std::begin(MAP_COMMANDS), std::end(MAP_COMMANDS), [&](const char *pMapCommand) {
-			const IConsole::CCommandInfo *pInfo = Console()->GetCommandInfo(pMapCommand, CFGFLAG_SERVER, false);
+			const IConsole::ICommandInfo *pInfo = Console()->GetCommandInfo(pMapCommand, CFGFLAG_SERVER, false);
 			dbg_assert(pInfo != nullptr, "Map command not found");
 			return AccessLevel <= pInfo->GetAccessLevel();
 		});
@@ -1981,14 +1975,14 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 					str_format(aBuf, sizeof(aBuf), "ClientId=%d rcon='%s'", ClientId, pCmd);
 					Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
 					m_RconClientId = ClientId;
-					m_RconAuthLevel = m_aClients[ClientId].m_Authed;
+					m_RconAuthLevel = GetAuthedState(ClientId);
 					Console()->SetAccessLevel(ConsoleAccessLevel(ClientId));
 					{
 						CRconClientLogger Logger(this, ClientId);
 						CLogScope Scope(&Logger);
 						Console()->ExecuteLineFlag(pCmd, CFGFLAG_SERVER, ClientId);
 					}
-					Console()->SetAccessLevel(IConsole::ACCESS_LEVEL_ADMIN);
+					Console()->SetAccessLevel(IConsole::EAccessLevel::ADMIN);
 					m_RconClientId = IServer::RCON_CID_SERV;
 					m_RconAuthLevel = AUTHED_ADMIN;
 				}
@@ -2032,7 +2026,7 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 
 			if(AuthLevel != -1)
 			{
-				if(m_aClients[ClientId].m_Authed != AuthLevel)
+				if(GetAuthedState(ClientId) != AuthLevel)
 				{
 					if(!IsSixup(ClientId))
 					{
@@ -2047,7 +2041,6 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 						SendMsg(&Msgp, MSGFLAG_VITAL, ClientId);
 					}
 
-					m_aClients[ClientId].m_Authed = AuthLevel; // Keeping m_Authed around is unwise...
 					m_aClients[ClientId].m_AuthKey = KeySlot;
 					int SendRconCmds = IsSixup(ClientId) ? true : Unpacker.GetInt();
 					if(!Unpacker.Error() && SendRconCmds)
@@ -2678,6 +2671,15 @@ void CServer::UpdateRegisterServerInfo()
 	JsonWriter.WriteAttribute("game_type");
 	JsonWriter.WriteStrValue(GameServer()->GameType());
 
+	if(g_Config.m_SvRegisterCommunityToken[0])
+	{
+		if(g_Config.m_SvFlag != -1)
+		{
+			JsonWriter.WriteAttribute("flag");
+			JsonWriter.WriteIntValue(g_Config.m_SvFlag);
+		}
+	}
+
 	JsonWriter.WriteAttribute("name");
 	JsonWriter.WriteStrValue(g_Config.m_SvName);
 
@@ -2689,6 +2691,11 @@ void CServer::UpdateRegisterServerInfo()
 	JsonWriter.WriteStrValue(aMapSha256);
 	JsonWriter.WriteAttribute("size");
 	JsonWriter.WriteIntValue(m_aCurrentMapSize[MAP_TYPE_SIX]);
+	if(m_aMapDownloadUrl[0])
+	{
+		JsonWriter.WriteAttribute("url");
+		JsonWriter.WriteStrValue(m_aMapDownloadUrl);
+	}
 	JsonWriter.EndObject();
 
 	JsonWriter.WriteAttribute("version");
@@ -3518,9 +3525,9 @@ void CServer::ConStatus(IConsole::IResult *pResult, void *pUser)
 			aAuthStr[0] = '\0';
 			if(pThis->m_aClients[i].m_AuthKey >= 0)
 			{
-				const char *pAuthStr = pThis->m_aClients[i].m_Authed == AUTHED_ADMIN ? "(Admin)" :
-												       pThis->m_aClients[i].m_Authed == AUTHED_MOD ? "(Mod)" :
-																		     pThis->m_aClients[i].m_Authed == AUTHED_HELPER ? "(Helper)" : "";
+				const char *pAuthStr = pThis->GetAuthedState(i) == AUTHED_ADMIN ? "(Admin)" :
+												  pThis->GetAuthedState(i) == AUTHED_MOD ? "(Mod)" :
+																	   pThis->GetAuthedState(i) == AUTHED_HELPER ? "(Helper)" : "";
 
 				str_format(aAuthStr, sizeof(aAuthStr), " key=%s %s", pThis->m_AuthManager.KeyIdent(pThis->m_aClients[i].m_AuthKey), pAuthStr);
 			}
@@ -4092,8 +4099,8 @@ void CServer::ConchainCommandAccessUpdate(IConsole::IResult *pResult, void *pUse
 	if(pResult->NumArguments() == 2)
 	{
 		CServer *pThis = static_cast<CServer *>(pUserData);
-		const IConsole::CCommandInfo *pInfo = pThis->Console()->GetCommandInfo(pResult->GetString(0), CFGFLAG_SERVER, false);
-		int OldAccessLevel = 0;
+		const IConsole::ICommandInfo *pInfo = pThis->Console()->GetCommandInfo(pResult->GetString(0), CFGFLAG_SERVER, false);
+		IConsole::EAccessLevel OldAccessLevel = IConsole::EAccessLevel::ADMIN;
 		if(pInfo)
 			OldAccessLevel = pInfo->GetAccessLevel();
 		pfnCallback(pResult, pCallbackUserData);
@@ -4105,13 +4112,19 @@ void CServer::ConchainCommandAccessUpdate(IConsole::IResult *pResult, void *pUse
 					continue;
 				if(!pThis->IsRconAuthed(i))
 					continue;
-				const int ClientAccessLevel = pThis->ConsoleAccessLevel(i);
-				if((pInfo->GetAccessLevel() > ClientAccessLevel && ClientAccessLevel < OldAccessLevel) ||
-					(pInfo->GetAccessLevel() < ClientAccessLevel && ClientAccessLevel > OldAccessLevel) ||
-					(pThis->m_aClients[i].m_pRconCmdToSend && str_comp(pResult->GetString(0), pThis->m_aClients[i].m_pRconCmdToSend->m_pName) >= 0))
+
+				const IConsole::EAccessLevel ClientAccessLevel = pThis->ConsoleAccessLevel(i);
+				bool HadAccess = OldAccessLevel >= ClientAccessLevel;
+				bool HasAccess = pInfo->GetAccessLevel() >= ClientAccessLevel;
+
+				// Nothing changed
+				if(HadAccess == HasAccess)
+					continue;
+				// Command not sent yet. The sending will happen in alphabetical order with correctly updated permissions.
+				if(pThis->m_aClients[i].m_pRconCmdToSend && str_comp(pResult->GetString(0), pThis->m_aClients[i].m_pRconCmdToSend->Name()) >= 0)
 					continue;
 
-				if(OldAccessLevel < pInfo->GetAccessLevel())
+				if(HasAccess)
 					pThis->SendRconCmdAdd(pInfo, i);
 				else
 					pThis->SendRconCmdRem(pInfo, i);
@@ -4154,7 +4167,6 @@ void CServer::LogoutClient(int ClientId, const char *pReason)
 		str_format(aBuf, sizeof(aBuf), "ClientId=%d with key=%s logged out", ClientId, m_AuthManager.KeyIdent(m_aClients[ClientId].m_AuthKey));
 	}
 
-	m_aClients[ClientId].m_Authed = AUTHED_NO;
 	m_aClients[ClientId].m_AuthKey = -1;
 
 	GameServer()->OnSetAuthed(ClientId, AUTHED_NO);
@@ -4236,6 +4248,23 @@ void CServer::ConchainSixupUpdate(IConsole::IResult *pResult, void *pUserData, I
 	CServer *pThis = static_cast<CServer *>(pUserData);
 	if(pResult->NumArguments() >= 1 && pThis->m_aCurrentMap[0] != '\0')
 		pThis->m_MapReload |= (pThis->m_apCurrentMapData[MAP_TYPE_SIXUP] != nullptr) != (pResult->GetInteger(0) != 0);
+}
+
+void CServer::ConchainRegisterCommunityTokenRedact(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
+{
+	// community tokens look like this:
+	// ddtc_6DnZq5Ix0J2kvDHbkPNtb6bsZxOVQg4ly2jw. The first 11 bytes are
+	// shared between the token and the verification token, so they're
+	// semi-public. Redact everything beyond that point.
+	static constexpr int REDACT_FROM = 11;
+	if(pResult->NumArguments() == 0 && str_length(g_Config.m_SvRegisterCommunityToken) > REDACT_FROM)
+	{
+		char aTruncated[16];
+		str_truncate(aTruncated, sizeof(aTruncated), g_Config.m_SvRegisterCommunityToken, REDACT_FROM);
+		log_info("config", "Value: %s[REDACTED] (total length %d)", aTruncated, str_length(g_Config.m_SvRegisterCommunityToken));
+		return;
+	}
+	pfnCallback(pResult, pCallbackUserData);
 }
 
 void CServer::ConchainLoglevel(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
@@ -4359,6 +4388,7 @@ void CServer::RegisterCommands()
 	Console()->Chain("sv_rcon_helper_password", ConchainRconHelperPasswordChange, this);
 	Console()->Chain("sv_map", ConchainMapUpdate, this);
 	Console()->Chain("sv_sixup", ConchainSixupUpdate, this);
+	Console()->Chain("sv_register_community_token", ConchainRegisterCommunityTokenRedact, nullptr);
 
 	Console()->Chain("loglevel", ConchainLoglevel, this);
 	Console()->Chain("stdout_output_level", ConchainStdoutOutputLevel, this);
@@ -4540,7 +4570,7 @@ bool CServer::SetTimedOut(int ClientId, int OrigId)
 		LogoutClient(ClientId, "Timeout Protection");
 	}
 	DelClientCallback(OrigId, "Timeout Protection used", this);
-	m_aClients[ClientId].m_Authed = AUTHED_NO;
+	m_aClients[ClientId].m_AuthKey = -1;
 	m_aClients[ClientId].m_Flags = m_aClients[OrigId].m_Flags;
 	m_aClients[ClientId].m_DDNetVersion = m_aClients[OrigId].m_DDNetVersion;
 	m_aClients[ClientId].m_GotDDNetVersionPacket = m_aClients[OrigId].m_GotDDNetVersionPacket;

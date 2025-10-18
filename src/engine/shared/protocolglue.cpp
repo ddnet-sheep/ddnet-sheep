@@ -1,19 +1,19 @@
+#include "protocolglue.h"
+
 #include <engine/shared/network.h>
 
 #include <generated/protocol.h>
 #include <generated/protocol7.h>
 #include <generated/protocolglue.h>
 
-#include "protocolglue.h"
-
-namespace protocol7 {
-
-enum
+namespace protocol7
 {
-	NET_PACKETFLAG_CONTROL = 1 << 0,
-	NET_PACKETFLAG_RESEND = 1 << 1,
-	NET_PACKETFLAG_COMPRESSION = 1 << 2,
-};
+	enum
+	{
+		NET_PACKETFLAG_CONTROL = 1 << 0,
+		NET_PACKETFLAG_RESEND = 1 << 1,
+		NET_PACKETFLAG_COMPRESSION = 1 << 2,
+	};
 
 }
 

@@ -1,9 +1,9 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
+#include "maplayers.h"
+
 #include <game/client/gameclient.h>
 #include <game/localization.h>
-
-#include "maplayers.h"
 
 #include <chrono>
 
@@ -107,7 +107,9 @@ void CMapLayers::OnRender()
 	m_Params.m_Center = GetCurCamera()->m_Center;
 	m_Params.m_Zoom = GetCurCamera()->m_Zoom;
 	m_Params.m_RenderText = g_Config.m_ClTextEntities;
-	m_Params.m_DebugRenderOptions = g_Config.m_DbgRenderLayers;
+	m_Params.m_DebugRenderGroupClips = g_Config.m_DbgRenderGroupClips;
+	m_Params.m_DebugRenderQuadClips = g_Config.m_DbgRenderQuadClips;
+	m_Params.m_DebugRenderClusterClips = g_Config.m_DbgRenderClusterClips;
 
 	m_MapRenderer.Render(m_Params);
 }

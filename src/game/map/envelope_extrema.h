@@ -2,6 +2,7 @@
 #define GAME_MAP_ENVELOPE_EXTREMA_H
 
 #include <engine/map.h>
+
 #include <game/map/render_map.h>
 
 #include <vector>
@@ -15,6 +16,7 @@ public:
 	{
 	public:
 		bool m_Available;
+		bool m_Rotating;
 		ivec2 m_Minima;
 		ivec2 m_Maxima;
 	};

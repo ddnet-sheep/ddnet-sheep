@@ -3,15 +3,13 @@
 
 #include "editor.h"
 #include "editor_action.h"
+
 #include <game/editor/references.h>
 
 class CEditorActionLayerBase : public IEditorAction
 {
 public:
 	CEditorActionLayerBase(CEditor *pEditor, int GroupIndex, int LayerIndex);
-
-	void Undo() override {}
-	void Redo() override {}
 
 protected:
 	int m_GroupIndex;
@@ -232,9 +230,6 @@ class CEditorActionEditLayerPropBase : public CEditorActionLayerBase
 public:
 	CEditorActionEditLayerPropBase(CEditor *pEditor, int GroupIndex, int LayerIndex, E Prop, int Previous, int Current);
 
-	void Undo() override {}
-	void Redo() override {}
-
 protected:
 	E m_Prop;
 	int m_Previous;
@@ -309,7 +304,6 @@ public:
 		int m_Envelopes;
 	};
 
-public:
 	CEditorActionAppendMap(CEditor *pEditor, const char *pMapName, const SPrevInfo &PrevInfo, std::vector<int> &vImageIndexMap);
 
 	void Undo() override;
@@ -383,13 +377,14 @@ private:
 class CEditorActionEnvelopeAdd : public IEditorAction
 {
 public:
-	CEditorActionEnvelopeAdd(CEditor *pEditor, const std::shared_ptr<CEnvelope> &pEnv);
+	CEditorActionEnvelopeAdd(CEditor *pEditor, CEnvelope::EType EnvelopeType);
 
 	void Undo() override;
 	void Redo() override;
 
 private:
-	std::shared_ptr<CEnvelope> m_pEnv;
+	CEnvelope::EType m_EnvelopeType;
+	int m_PreviousSelectedEnvelope;
 };
 
 class CEditorActionEnvelopeDelete : public IEditorAction
@@ -606,7 +601,6 @@ public:
 private:
 	int m_SourceIndex;
 
-private:
 	void Apply(int Value);
 };
 
@@ -621,7 +615,6 @@ public:
 private:
 	int m_SourceIndex;
 
-private:
 	void Apply(int Value);
 };
 
@@ -636,7 +629,6 @@ public:
 private:
 	int m_SourceIndex;
 
-private:
 	void Apply(int Value);
 };
 

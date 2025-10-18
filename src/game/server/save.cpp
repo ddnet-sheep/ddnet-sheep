@@ -1,14 +1,16 @@
+#include "save.h"
+
+#include "player.h"
+#include "teams.h"
+
 #include <engine/shared/config.h>
 #include <engine/shared/protocol.h>
+
 #include <game/server/entities/character.h>
 #include <game/server/gamemodes/DDRace.h>
 #include <game/team_state.h>
 
 #include <cstdio> // sscanf
-
-#include "player.h"
-#include "save.h"
-#include "teams.h"
 
 CSaveTee::CSaveTee() = default;
 
@@ -669,7 +671,7 @@ CCharacter *CSaveTeam::MatchCharacter(CGameContext *pGameServer, int ClientId, i
 
 char *CSaveTeam::GetString()
 {
-	str_format(m_aString, sizeof(m_aString), "%d\t%d\t%d\t%d\t%d", m_TeamState, m_MembersCount, m_HighestSwitchNumber, m_TeamLocked, m_Practice);
+	str_format(m_aString, sizeof(m_aString), "%d\t%d\t%d\t%d\t%d", static_cast<int>(m_TeamState), m_MembersCount, m_HighestSwitchNumber, m_TeamLocked, m_Practice);
 
 	for(int i = 0; i < m_MembersCount; i++)
 	{
@@ -724,7 +726,9 @@ int CSaveTeam::FromString(const char *pString)
 	if(StrSize < sizeof(aTeamStats))
 	{
 		str_copy(aTeamStats, pCopyPos, StrSize);
-		int Num = sscanf(aTeamStats, "%d\t%d\t%d\t%d\t%d", &m_TeamState, &m_MembersCount, &m_HighestSwitchNumber, &m_TeamLocked, &m_Practice);
+		int TeamState;
+		int Num = sscanf(aTeamStats, "%d\t%d\t%d\t%d\t%d", &TeamState, &m_MembersCount, &m_HighestSwitchNumber, &m_TeamLocked, &m_Practice);
+		m_TeamState = static_cast<ETeamState>(TeamState);
 		switch(Num) // Don't forget to update this when you save / load more / less.
 		{
 		case 4:

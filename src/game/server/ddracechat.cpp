@@ -1,7 +1,13 @@
 /* (c) Shereef Marzouk. See "licence DDRace.txt" and the readme.txt in the root of the distribution for more information. */
+#include "gamecontext.h"
+#include "player.h"
+#include "score.h"
+
 #include <base/log.h>
+
 #include <engine/shared/config.h>
 #include <engine/shared/protocol.h>
+
 #include <game/mapitems.h>
 #include <game/server/entities/character.h>
 #include <game/server/gamemodes/DDRace.h>
@@ -9,10 +15,6 @@
 #include <game/team_state.h>
 #include <game/teamscore.h>
 #include <game/version.h>
-
-#include "gamecontext.h"
-#include "player.h"
-#include "score.h"
 
 void CGameContext::ConCredits(IConsole::IResult *pResult, void *pUserData)
 {
@@ -30,11 +32,11 @@ void CGameContext::ConCredits(IConsole::IResult *pResult, void *pUserData)
 		"Bojidar, FallenKN, ardadem, archimede67, sirius1242, Aerll,",
 		"trafilaw, Zwelf, Patiga, Konsti, ElXreno, MikiGamer,",
 		"Fireball, Banana090, axblk, yangfl, Kaffeine, Zodiac,",
-		"c0d3d3v, GiuCcc, Ravie, Robyt3, simpygirl, sjrc6, Cellegen,",
+		"c0d3d3v, GiuCcc, Ravie, Robyt3, simpygirl, Tater, Cellegen,",
 		"srdante, Nouaa, Voxel, luk51, Vy0x2, Avolicious, louis,",
 		"Marmare314, hus3h, ArijanJ, tarunsamanta2k20, Possseidon,",
-		"M0REKZ, Teero, furo, dobrykafe, Moiman, JSaurusRex,",
-		"Steinchen, ewancg, gerdoe-jr, BlaiZephyr, KebsCS, bencie,",
+		"+KZ, Teero, furo, dobrykafe, Moiman, JSaurusRex,",
+		"Steinchen, ewancg, gerdoe-jr, melon, KebsCS, bencie,",
 		"DynamoFox, MilkeeyCat, iMilchshake, SchrodingerZhu,",
 		"catseyenebulous, Rei-Tw, Matodor, Emilcha, art0007i, SollyBunny,",
 		"0xfaulty & others",
@@ -94,19 +96,19 @@ void CGameContext::ConHelp(IConsole::IResult *pResult, void *pUserData)
 	else
 	{
 		const char *pArg = pResult->GetString(0);
-		const IConsole::CCommandInfo *pCmdInfo =
+		const IConsole::ICommandInfo *pCmdInfo =
 			pSelf->Console()->GetCommandInfo(pArg, CFGFLAG_SERVER | CFGFLAG_CHAT, false);
 		if(pCmdInfo)
 		{
-			if(pCmdInfo->m_pParams)
+			if(pCmdInfo->Params())
 			{
 				char aBuf[256];
-				str_format(aBuf, sizeof(aBuf), "Usage: %s %s", pCmdInfo->m_pName, pCmdInfo->m_pParams);
+				str_format(aBuf, sizeof(aBuf), "Usage: %s %s", pCmdInfo->Name(), pCmdInfo->Params());
 				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp", aBuf);
 			}
 
-			if(pCmdInfo->m_pHelp)
-				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp", pCmdInfo->m_pHelp);
+			if(pCmdInfo->Help())
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp", pCmdInfo->Help());
 		}
 		else
 		{
@@ -771,12 +773,12 @@ void CGameContext::ConPracticeCmdList(IConsole::IResult *pResult, void *pUserDat
 	CGameContext *pSelf = (CGameContext *)pUserData;
 
 	char aPracticeCommands[256] = "Available practice commands: ";
-	for(const IConsole::CCommandInfo *pCmd = pSelf->Console()->FirstCommandInfo(IConsole::ACCESS_LEVEL_USER, CMDFLAG_PRACTICE);
-		pCmd; pCmd = pCmd->NextCommandInfo(IConsole::ACCESS_LEVEL_USER, CMDFLAG_PRACTICE))
+	for(const IConsole::ICommandInfo *pCmd = pSelf->Console()->FirstCommandInfo(IConsole::EAccessLevel::USER, CMDFLAG_PRACTICE);
+		pCmd; pCmd = pSelf->Console()->NextCommandInfo(pCmd, IConsole::EAccessLevel::USER, CMDFLAG_PRACTICE))
 	{
 		char aCommand[64];
 
-		str_format(aCommand, sizeof(aCommand), "/%s%s", pCmd->m_pName, pCmd->NextCommandInfo(IConsole::ACCESS_LEVEL_USER, CMDFLAG_PRACTICE) ? ", " : "");
+		str_format(aCommand, sizeof(aCommand), "/%s%s", pCmd->Name(), pSelf->Console()->NextCommandInfo(pCmd, IConsole::EAccessLevel::USER, CMDFLAG_PRACTICE) ? ", " : "");
 
 		if(str_length(aCommand) + str_length(aPracticeCommands) > 255)
 		{

@@ -3,13 +3,28 @@
 #ifndef GAME_EDITOR_EDITOR_H
 #define GAME_EDITOR_EDITOR_H
 
+#include "editor_history.h"
+#include "editor_server_settings.h"
+#include "editor_trackers.h"
+#include "editor_ui.h"
+#include "font_typer.h"
+#include "layer_selector.h"
+#include "map_view.h"
+#include "quadart.h"
+#include "smooth_value.h"
+
 #include <base/bezier.h>
 #include <base/system.h>
 
+#include <engine/console.h>
+#include <engine/editor.h>
+#include <engine/engine.h>
+#include <engine/graphics.h>
+#include <engine/shared/datafile.h>
+#include <engine/shared/jobs.h>
+
 #include <game/client/ui.h>
 #include <game/client/ui_listbox.h>
-#include <game/mapitems.h>
-
 #include <game/editor/enums.h>
 #include <game/editor/file_browser.h>
 #include <game/editor/mapitems/envelope.h>
@@ -25,27 +40,10 @@
 #include <game/editor/mapitems/layer_tiles.h>
 #include <game/editor/mapitems/layer_tune.h>
 #include <game/editor/mapitems/map.h>
-
-#include <game/map/render_interfaces.h>
-
-#include <engine/console.h>
-#include <engine/editor.h>
-#include <engine/engine.h>
-#include <engine/graphics.h>
-#include <engine/shared/datafile.h>
-#include <engine/shared/jobs.h>
-
-#include "editor_history.h"
-#include "editor_server_settings.h"
-#include "editor_trackers.h"
-#include "editor_ui.h"
-#include "font_typer.h"
-#include "layer_selector.h"
-#include "map_view.h"
-#include "quadart.h"
-#include "smooth_value.h"
 #include <game/editor/prompt.h>
 #include <game/editor/quick_action.h>
+#include <game/map/render_interfaces.h>
+#include <game/mapitems.h>
 
 #include <deque>
 #include <functional>
@@ -246,7 +244,6 @@ public:
 		m_AnimateSpeed = 1;
 		m_AnimateUpdatePopup = false;
 
-		m_ShowEnvelopePreview = SHOWENV_NONE;
 		m_SelectedQuadEnvelope = -1;
 
 		m_vSelectedEnvelopePoints = {};
@@ -276,10 +273,10 @@ public:
 		m_TeleCheckpointNumber = 1;
 		m_ViewTeleNumber = 0;
 
-		m_TuningNum = 1;
+		m_TuningNumber = 1;
 		m_ViewTuning = 0;
 
-		m_SwitchNum = 1;
+		m_SwitchNumber = 1;
 		m_SwitchDelay = 0;
 		m_SpeedupForce = 50;
 		m_SpeedupMaxSpeed = 0;
@@ -335,6 +332,13 @@ public:
 		Horizontal,
 		Vertical
 	} m_MouseAxisLockState = EAxisLock::Start;
+
+	/**
+	 * Global time when the autosave was last updated in the @link HandleAutosave @endlink function.
+	 * This is used so that the autosave does not immediately activate when reopening the editor after
+	 * a longer time of inactivity, as autosaves are only updated while the editor is open.
+	 */
+	float m_LastAutosaveUpdateTime = -1.0f;
 	void HandleAutosave();
 	bool PerformAutosave();
 	void HandleWriterFinishJobs();
@@ -516,13 +520,14 @@ public:
 	float m_aExtraEditorSplits[NUM_EXTRAEDITORS] = {250.0f, 250.0f, 250.0f};
 	float m_ToolBoxWidth = 100.0f;
 
-	enum EShowEnvelope
+	bool m_ShowEnvelopePreview = false;
+	enum class EEnvelopePreview
 	{
-		SHOWENV_NONE = 0,
-		SHOWENV_SELECTED,
-		SHOWENV_ALL
+		NONE,
+		SELECTED,
+		ALL,
 	};
-	EShowEnvelope m_ShowEnvelopePreview;
+	EEnvelopePreview m_ActiveEnvelopePreview = EEnvelopePreview::NONE;
 	bool m_ShowPicker;
 
 	std::vector<int> m_vSelectedLayers;
@@ -535,8 +540,6 @@ public:
 	std::vector<std::pair<int, int>> m_vSelectedEnvelopePoints;
 	int m_SelectedQuadEnvelope;
 	int m_CurrentQuadIndex;
-	int m_SelectedImage;
-	int m_SelectedSound;
 	int m_SelectedSource;
 	std::pair<int, int> m_SelectedTangentInPoint;
 	std::pair<int, int> m_SelectedTangentOutPoint;
@@ -593,30 +596,27 @@ public:
 
 	void PlaceBorderTiles();
 
+	// editor_ui.cpp
 	void UpdateTooltip(const void *pId, const CUIRect *pRect, const char *pToolTip);
-	int DoButton_Editor_Common(const void *pId, const char *pText, int Checked, const CUIRect *pRect, int Flags, const char *pToolTip);
+	ColorRGBA GetButtonColor(const void *pId, int Checked);
+	int DoButtonLogic(const void *pId, int Checked, const CUIRect *pRect, int Flags, const char *pToolTip);
 	int DoButton_Editor(const void *pId, const char *pText, int Checked, const CUIRect *pRect, int Flags, const char *pToolTip);
 	int DoButton_Env(const void *pId, const char *pText, int Checked, const CUIRect *pRect, const char *pToolTip, ColorRGBA Color, int Corners);
-
 	int DoButton_Ex(const void *pId, const char *pText, int Checked, const CUIRect *pRect, int Flags, const char *pToolTip, int Corners, float FontSize = EditorFontSizes::MENU, int Align = TEXTALIGN_MC);
 	int DoButton_FontIcon(const void *pId, const char *pText, int Checked, const CUIRect *pRect, int Flags, const char *pToolTip, int Corners, float FontSize = 10.0f);
 	int DoButton_MenuItem(const void *pId, const char *pText, int Checked, const CUIRect *pRect, int Flags = BUTTONFLAG_LEFT, const char *pToolTip = nullptr);
-
 	int DoButton_DraggableEx(const void *pId, const char *pText, int Checked, const CUIRect *pRect, bool *pClicked, bool *pAbrupted, int Flags, const char *pToolTip = nullptr, int Corners = IGraphics::CORNER_ALL, float FontSize = 10.0f);
-
 	bool DoEditBox(CLineInput *pLineInput, const CUIRect *pRect, float FontSize, int Corners = IGraphics::CORNER_ALL, const char *pToolTip = nullptr, const std::vector<STextColorSplit> &vColorSplits = {});
 	bool DoClearableEditBox(CLineInput *pLineInput, const CUIRect *pRect, float FontSize, int Corners = IGraphics::CORNER_ALL, const char *pToolTip = nullptr, const std::vector<STextColorSplit> &vColorSplits = {});
+	SEditResult<int> UiDoValueSelector(void *pId, CUIRect *pRect, const char *pLabel, int Current, int Min, int Max, int Step, float Scale, const char *pToolTip, bool IsDegree = false, bool IsHex = false, int Corners = IGraphics::CORNER_ALL, const ColorRGBA *pColor = nullptr, bool ShowValue = true);
+	void RenderBackground(CUIRect View, IGraphics::CTextureHandle Texture, float Size, float Brightness) const;
 
+	// editor_server_settings.cpp
 	void DoMapSettingsEditBox(CMapSettingsBackend::CContext *pContext, const CUIRect *pRect, float FontSize, float DropdownMaxHeight, int Corners = IGraphics::CORNER_ALL, const char *pToolTip = nullptr);
-
 	template<typename T>
 	int DoEditBoxDropdown(SEditBoxDropdownContext *pDropdown, CLineInput *pLineInput, const CUIRect *pEditBoxRect, int x, float MaxHeight, bool AutoWidth, const std::vector<T> &vData, const FDropdownRenderCallback<T> &pfnMatchCallback);
 	template<typename T>
 	int RenderEditBoxDropdown(SEditBoxDropdownContext *pDropdown, CUIRect View, CLineInput *pLineInput, int x, float MaxHeight, bool AutoWidth, const std::vector<T> &vData, const FDropdownRenderCallback<T> &pfnMatchCallback);
-
-	void RenderBackground(CUIRect View, IGraphics::CTextureHandle Texture, float Size, float Brightness) const;
-
-	SEditResult<int> UiDoValueSelector(void *pId, CUIRect *pRect, const char *pLabel, int Current, int Min, int Max, int Step, float Scale, const char *pToolTip, bool IsDegree = false, bool IsHex = false, int Corners = IGraphics::CORNER_ALL, const ColorRGBA *pColor = nullptr, bool ShowValue = true);
 
 	static CUi::EPopupMenuFunctionResult PopupMenuFile(void *pContext, CUIRect View, bool Active);
 	static CUi::EPopupMenuFunctionResult PopupMenuTools(void *pContext, CUIRect View, bool Active);
@@ -722,7 +722,6 @@ public:
 	EAxis GetDragAxis(int OffsetX, int OffsetY) const;
 	void DrawAxis(EAxis Axis, CPoint &OriginalPoint, CPoint &Point) const;
 	void DrawAABB(const SAxisAlignedBoundingBox &AABB, int OffsetX = 0, int OffsetY = 0) const;
-	ColorRGBA GetButtonColor(const void *pId, int Checked);
 
 	// Alignment methods
 	// These methods take `OffsetX` and `OffsetY` because the calculations are made with the original positions
@@ -756,7 +755,6 @@ public:
 	static bool ReplaceSoundCallback(const char *pFileName, int StorageType, void *pUser);
 	static bool AddImage(const char *pFilename, int StorageType, void *pUser);
 	static bool AddSound(const char *pFileName, int StorageType, void *pUser);
-	static bool IsAssetUsed(CFileBrowser::EFileType FileType, int Index, void *pUser);
 
 	bool IsEnvelopeUsed(int EnvelopeIndex) const;
 	void RemoveUnusedEnvelopes();
@@ -765,7 +763,7 @@ public:
 
 	void RenderLayers(CUIRect LayersBox);
 	void RenderImagesList(CUIRect Toolbox);
-	void RenderSelectedImage(CUIRect View);
+	void RenderSelectedImage(CUIRect View) const;
 	void RenderSounds(CUIRect Toolbox);
 	void RenderModebar(CUIRect View);
 	void RenderStatusbar(CUIRect View, CUIRect *pTooltipRect);
@@ -794,7 +792,6 @@ public:
 	void RenderMenubar(CUIRect Menubar);
 
 	void SelectGameLayer();
-	std::vector<int> SortImages();
 
 	void DoAudioPreview(CUIRect View, const void *pPlayPauseButtonId, const void *pStopButtonId, const void *pSeekBarId, int SampleId);
 
@@ -826,14 +823,14 @@ public:
 	unsigned char m_TeleCheckpointNumber;
 	unsigned char m_ViewTeleNumber;
 
-	unsigned char m_TuningNum;
+	unsigned char m_TuningNumber;
 	unsigned char m_ViewTuning;
 
 	unsigned char m_SpeedupForce;
 	unsigned char m_SpeedupMaxSpeed;
 	short m_SpeedupAngle;
 
-	unsigned char m_SwitchNum;
+	unsigned char m_SwitchNumber;
 	unsigned char m_SwitchDelay;
 	unsigned char m_ViewSwitch;
 
@@ -854,8 +851,8 @@ private:
 
 // make sure to inline this function
 inline const class IGraphics *CLayer::Graphics() const { return m_pEditor->Graphics(); }
-inline class IGraphics *CLayer::Graphics() { return const_cast<IGraphics *>(const_cast<const CLayer *>(this)->Graphics()); }
+inline class IGraphics *CLayer::Graphics() { return m_pEditor->Graphics(); } // NOLINT(readability-make-member-function-const)
 inline const class ITextRender *CLayer::TextRender() const { return m_pEditor->TextRender(); }
-inline class ITextRender *CLayer::TextRender() { return const_cast<ITextRender *>(const_cast<const CLayer *>(this)->TextRender()); }
+inline class ITextRender *CLayer::TextRender() { return m_pEditor->TextRender(); } // NOLINT(readability-make-member-function-const)
 
 #endif

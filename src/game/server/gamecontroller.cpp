@@ -1,18 +1,6 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
-#include <engine/shared/config.h>
-
-#include <engine/shared/protocolglue.h>
-
-#include <generated/protocol.h>
-
-#include <game/mapitems.h>
-#include <game/server/score.h>
-#include <game/teamscore.h>
-
-#include "gamecontext.h"
 #include "gamecontroller.h"
-#include "player.h"
 
 #include "entities/character.h"
 #include "entities/door.h"
@@ -21,6 +9,17 @@
 #include "entities/light.h"
 #include "entities/pickup.h"
 #include "entities/projectile.h"
+#include "gamecontext.h"
+#include "player.h"
+
+#include <engine/shared/config.h>
+#include <engine/shared/protocolglue.h>
+
+#include <generated/protocol.h>
+
+#include <game/mapitems.h>
+#include <game/server/score.h>
+#include <game/teamscore.h>
 
 IGameController::IGameController(class CGameContext *pGameServer) :
 	m_Teams(pGameServer), m_pLoadBestTimeResult(nullptr)
@@ -135,8 +134,10 @@ void IGameController::EvaluateSpawnType(CSpawnEval *pEval, ESpawnType SpawnType,
 					for(int c = 0; c < Num; ++c)
 					{
 						CCharacter *pChr = static_cast<CCharacter *>(apEnts[c]);
+						const bool SameTeam = GameServer()->GetDDRaceTeam(pChr->GetPlayer()->GetCid()) == DDTeam;
+
 						if(GameServer()->Collision()->CheckPoint(SpawnPoint + aPositions[Index]) ||
-							distance(pChr->m_Pos, SpawnPoint + aPositions[Index]) <= pChr->GetProximityRadius())
+							(SameTeam && distance(pChr->m_Pos, SpawnPoint + aPositions[Index]) <= pChr->GetProximityRadius()))
 						{
 							Result = -1;
 							break;

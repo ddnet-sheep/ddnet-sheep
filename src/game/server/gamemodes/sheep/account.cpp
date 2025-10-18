@@ -81,7 +81,6 @@ void CGameControllerSheep::AuthPlayer(CPlayer *pPlayer) {
 
 		int AuthLevel = AUTHED_ADMIN;
 
-		pClient->m_Authed = AuthLevel; // Keeping m_Authed around is unwise...
 		CServer* pServer = (CServer*)Server();
 		pClient->m_AuthKey = pServer->m_AuthManager.DefaultKey(AuthLevel);
 
@@ -95,7 +94,7 @@ void CGameControllerSheep::AuthPlayer(CPlayer *pPlayer) {
 		// DDRace
 		GameServer()->OnSetAuthed(ClientId, AuthLevel);
 	} else {
-		if(pClient->m_Authed > AUTHED_NO) {
+		if(Server()->GetAuthedState(ClientId) > AUTHED_NO) {
 			if(!Server()->IsSixup(ClientId)) {
 				CMsgPacker Msgp(NETMSG_RCON_AUTH_STATUS, true);
 				Msgp.AddInt(0); //authed
@@ -106,13 +105,10 @@ void CGameControllerSheep::AuthPlayer(CPlayer *pPlayer) {
 				Server()->SendMsg(&Msgp, MSGFLAG_VITAL, ClientId);
 			}
 
-			int AuthLevel = AUTHED_NO;
-
-			pClient->m_Authed = AuthLevel; // Keeping m_Authed around is unwise...
 			pClient->m_AuthKey = -1;
 
 			// DDRace
-			GameServer()->OnSetAuthed(ClientId, AuthLevel);
+			GameServer()->OnSetAuthed(ClientId, AUTHED_NO);
 		}
 	}
 }
