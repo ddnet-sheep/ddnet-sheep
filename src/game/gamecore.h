@@ -16,10 +16,6 @@
 #include <set>
 #include <vector>
 
-//<sheep>
-#include <game/server/gamemodes/sheep/weapon.h>
-//</sheep>
-
 class CCollision;
 class CTeamsCore;
 
@@ -158,15 +154,6 @@ public:
 			pCharacter = nullptr;
 		}
 		m_pPrng = nullptr;
-
-		//<sheep>
-		for(int i = 0; i < MAX_CLIENTS; i++) {
-			for(int j = 0; j < MAX_CLIENTS; j++) {
-				m_Collidable[i][j] = true;
-				m_Hittable[i][j] = true;
-				m_Hookable[i][j] = true;
-			}
-		}
 	}
 
 	int RandomOr0(int BelowThis) // NOLINT(readability-make-member-function-const)
@@ -187,13 +174,6 @@ public:
 
 	void InitSwitchers(int HighestSwitchNumber);
 	std::vector<SSwitchers> m_vSwitchers;
-
-	//<sheep>
-	// [receiving] [active]
-	bool m_Collidable[MAX_CLIENTS][MAX_CLIENTS];
-	bool m_Hittable[MAX_CLIENTS][MAX_CLIENTS];
-	bool m_Hookable[MAX_CLIENTS][MAX_CLIENTS];
-	//</sheep>
 };
 
 class CCharacterCore
@@ -292,6 +272,18 @@ public:
 	bool m_LiveFrozen;
 	CTuningParams m_Tuning;
 
+	//<sheep>
+	bool m_Collidable[MAX_CLIENTS];
+	bool m_Hittable[MAX_CLIENTS];
+	bool m_Hookable[MAX_CLIENTS];
+	CCharacterCore() {
+		for(int i = 0; i < MAX_CLIENTS; i++) {
+			m_Collidable[i] = true;
+			m_Hittable[i] = true;
+			m_Hookable[i] = true;
+		}
+	}
+	//</sheep>
 private:
 	CTeamsCore *m_pTeams;
 	int m_MoveRestrictions;

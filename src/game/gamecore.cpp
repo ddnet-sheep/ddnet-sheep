@@ -356,7 +356,7 @@ void CCharacterCore::Tick(bool UseInput, bool DoDeferredTick)
 					continue;
 
 				//<sheep>
-				if(!m_pWorld->m_Hookable[m_Id][i])
+				if(!m_Hookable[i])
 					continue;
 				//</sheep>
 
@@ -488,7 +488,7 @@ void CCharacterCore::TickDeferred()
 				bool CanCollide = (m_Super || pCharCore->m_Super) || (!m_CollisionDisabled && !pCharCore->m_CollisionDisabled && m_Tuning.m_PlayerCollision);
 
 				//<sheep>
-				CanCollide &= m_pWorld->m_Collidable[m_Id][i] && m_pWorld->m_Collidable[i][m_Id];
+				CanCollide &= m_Collidable[i] && pCharCore->m_Collidable[m_Id];
 				//</sheep>
 
 				if(CanCollide && Distance < PhysicalSize() * 1.25f)
@@ -593,7 +593,7 @@ void CCharacterCore::Move()
 						continue;
 
 					//<sheep>
-					if(!m_pWorld->m_Collidable[m_Id][p] || !m_pWorld->m_Collidable[p][m_Id])
+					if(!m_Collidable[p] || !pCharCore->m_Collidable[m_Id])
 						continue;
 					//</sheep>
 

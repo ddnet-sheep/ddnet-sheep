@@ -135,7 +135,7 @@ void CProjectile::Tick()
 		pTargetChr = GameServer()->m_World.IntersectCharacter(PrevPos, ColPos, m_Freeze ? 1.0f : 6.0f, ColPos, pOwnerChar, m_Owner);
 
 	//<sheep>
-	if(pTargetChr && !GameWorld()->m_Core.m_Hittable[pTargetChr->GetPlayer()->GetCid()][m_Owner])
+	if(pTargetChr && !pTargetChr->Core()->m_Hittable[m_Owner])
 		pTargetChr = nullptr;
 	//</sheep>
 

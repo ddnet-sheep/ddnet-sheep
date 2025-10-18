@@ -62,7 +62,8 @@ struct CAccountDataResult : ISheepSqlResult
         m_Title(""),
         m_Playtime(0),
         m_Money(0),
-        m_Lock("")
+        m_Lock(""),
+        m_AccountId(0)
 	{
 	}
 

@@ -230,7 +230,7 @@ bool CGameControllerSheep::ExecuteLogin(IDbConnection *pSqlServer, const ISqlDat
 	bool End;
 	if(!pSqlServer->Step(&End, pError, ErrorSize) || End) {
 		str_format(pResult->m_Message, sizeof(pResult->m_Message), "User %s does not exist. Please /register <password>", pData->m_Username);
-		return false;
+		return true;
 	}
 
 	if(pData->m_Type == CSqlAccountCredentialsRequest::TYPE_PASSWORD) {
@@ -239,7 +239,7 @@ bool CGameControllerSheep::ExecuteLogin(IDbConnection *pSqlServer, const ISqlDat
 
 		if (!VerifyPassword(aPasswordHash, pData->m_Password)) {
 			str_copy(pResult->m_Message, "Login: Invalid password.");
-			return false;
+			return true;
 		}
 	} else if(pData->m_Type == CSqlAccountCredentialsRequest::TYPE_IP) {
 		char aIP[64];
@@ -247,7 +247,7 @@ bool CGameControllerSheep::ExecuteLogin(IDbConnection *pSqlServer, const ISqlDat
 
 		if (strcmp(aIP, pData->m_IP) != 0) {
 			str_copy(pResult->m_Message, "Autologin: IP mismatch. Please /login <password>.");
-			return false;
+			return true;
 		}
 	}
 
@@ -262,7 +262,7 @@ bool CGameControllerSheep::ExecuteLogin(IDbConnection *pSqlServer, const ISqlDat
 			time_t current_time = time(0);
 			if (current_time <= updated_at_time + 20 * 60) {
 				str_copy(pResult->m_Message, "Login: Account is locked due to recent activity on another server. Please try again later.");
-				return false;
+				return true;
 			}
 		}
 	}
@@ -275,7 +275,7 @@ bool CGameControllerSheep::ExecuteLogin(IDbConnection *pSqlServer, const ISqlDat
 		// NETADDR Addr;
 		// if (net_addr_from_str(&Addr, pData->m_IP) == 0)
 		// 	pGameData->BanAddr(pData->m_IP, Bantime, 'Account ban', false);
-		return false;
+		return true;
 	}
 
 	str_copy(pResult->m_Message, "Successfully logged in.");
@@ -459,12 +459,8 @@ bool CGameControllerSheep::ExecutePassword(IDbConnection *pSqlServer, const ISql
 	if(!pSqlServer->ExecuteUpdate(&NumUpdated, pError, ErrorSize))
 		return false;
 	
-	auto *pResult = dynamic_cast<CSqlSuccessResult *>(pGameData->m_pResult.get());
-	pResult->m_Success = NumUpdated != 0;
-
 	// TODO: change to sync logic, make instant sync
-
-	return pResult->m_Success;
+	return NumUpdated != 0;
 }
 
 void CGameControllerSheep::ConPassword(IConsole::IResult *pResult, void *pUserData) {
@@ -481,7 +477,7 @@ void CGameControllerSheep::ConPassword(IConsole::IResult *pResult, void *pUserDa
 
 	// TODO: change to sync logic, make instant sync
 
-	pVictim->m_PasswordChangeSuccessResult = std::make_shared<CSqlSuccessResult>();
+	pVictim->m_PasswordChangeSuccessResult = std::make_shared<ISqlResult>();
 
 	auto Tmp = std::make_unique<CSqlAccountCredentialsRequest>(pVictim->m_PasswordChangeSuccessResult);
 	Tmp->m_Type = CSqlAccountCredentialsRequest::TYPE_PASSWORD;

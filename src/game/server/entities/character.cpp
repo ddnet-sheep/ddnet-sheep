@@ -340,7 +340,7 @@ void CCharacter::HandleNinja()
 					continue;
 
 				//<sheep>
-				if(!GameWorld()->m_Core.m_Hittable[pChr->GetPlayer()->GetCid()][m_pPlayer->GetCid()])
+				if(!pChr->Core()->m_Hittable[m_pPlayer->GetCid()])
 					continue;
 				//</sheep>
 
@@ -532,7 +532,7 @@ void CCharacter::FireWeapon()
 				continue;
 
 			//<sheep>
-			if(!GameWorld()->m_Core.m_Hittable[m_pPlayer->GetCid()][pTarget->GetPlayer()->GetCid()])
+			if(!Core()->m_Hittable[pTarget->GetPlayer()->GetCid()])
 				continue;
 			//</sheep>
 
@@ -1172,7 +1172,8 @@ void CCharacter::SnapCharacter(int SnappingClient, int Id)
 			if(!m_Core.m_EndlessJump && m_Core.m_Jumps == 0)
 				Faketuning |= FAKETUNE_NOJUMP;
 			//<sheep>
-			if(!GameWorld()->m_Core.m_Collidable[m_pPlayer->GetCid()][SnappingClient] || !GameWorld()->m_Core.m_Collidable[SnappingClient][m_pPlayer->GetCid()])
+			CCharacter* pSnappingChar = GameServer()->GetPlayerChar(SnappingClient);
+			if(!m_Core.m_Collidable[SnappingClient] || pSnappingChar != nullptr && pSnappingChar->GetCore().m_Collidable[m_pPlayer->GetCid()])
 				Faketuning |= FAKETUNE_NOCOLL;
 			//</sheep>
 		}

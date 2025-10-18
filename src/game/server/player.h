@@ -131,7 +131,7 @@ public:
 	//<sheep>
 	std::shared_ptr<CAccountDataResult> m_AccountLoginResult;
 	std::shared_ptr<CAccountDataResult> m_AccountStatsResult;
-	std::shared_ptr<CSqlSuccessResult> m_PasswordChangeSuccessResult;
+	std::shared_ptr<ISqlResult> m_PasswordChangeSuccessResult;
 
 	int64_t m_LoginTick;
 

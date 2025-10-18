@@ -52,7 +52,7 @@ bool CLaser::HitCharacter(vec2 From, vec2 To)
 	if(!pHit || (pHit == pOwnerChar && g_Config.m_SvOldLaser) || (pHit != pOwnerChar && pOwnerChar ? (pOwnerChar->LaserHitDisabled() && m_Type == WEAPON_LASER) || (pOwnerChar->ShotgunHitDisabled() && m_Type == WEAPON_SHOTGUN) : !g_Config.m_SvHit))
 		return false;
 	//<sheep>
-	if(!GameWorld()->m_Core.m_Hittable[pHit->GetPlayer()->GetCid()][m_Owner])
+	if(!pHit->Core()->m_Hittable[m_Owner])
 		return false;
 	//</sheep>
 	m_From = From;

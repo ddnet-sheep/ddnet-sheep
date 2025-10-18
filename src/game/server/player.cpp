@@ -1136,7 +1136,7 @@ void CPlayer::SendBroadcastHud(const char *pMessage) {
 }
 
 bool CPlayer::IsLoggedIn() {
-	return m_AccountLoginResult != nullptr && m_AccountLoginResult->m_Success;
+	return m_AccountLoginResult != nullptr && m_AccountLoginResult->m_AccountId > 0;
 }
 
 void CPlayer::Repredict(int PredMargin)

@@ -354,7 +354,7 @@ void CGameContext::CreateExplosion(vec2 Pos, int Owner, int Weapon, bool NoDamag
 
 			//<sheep>
 			// todo: do we want this?
-			if(Owner != -1 && !m_World.m_Core.m_Hittable[pChr->GetPlayer()->GetCid()][Owner])
+			if(Owner != -1 && !pChr->Core()->m_Hittable[Owner])
 				continue;
 			//</sheep>
 

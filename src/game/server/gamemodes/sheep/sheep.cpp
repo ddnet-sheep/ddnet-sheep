@@ -533,7 +533,7 @@ void CGameControllerSheep::OnPlayerTick(CPlayer *pPlayer) {
 	if (pPlayer->m_AccountLoginResult != nullptr && pPlayer->m_AccountLoginResult->m_Completed && !pPlayer->m_AccountLoginResult->m_Processed) {
 		char aMessage[512];
 		str_copy(aMessage, pPlayer->m_AccountLoginResult->m_Message);
-		if (pPlayer->m_AccountLoginResult->m_Success) {
+		if (pPlayer->m_AccountLoginResult->m_AccountId > 0) {
 			pPlayer->m_AccountLoginResult->m_Processed = true;
 			OnPlayerLogin(pPlayer, pPlayer->m_AccountLoginResult->m_Type == CSqlAccountCredentialsRequest::TYPE_IP);
 		} else {
@@ -547,7 +547,7 @@ void CGameControllerSheep::OnPlayerTick(CPlayer *pPlayer) {
 	}
 
 	if (pPlayer->m_AccountStatsResult != nullptr && pPlayer->m_AccountStatsResult->m_Completed) {
-		if (pPlayer->m_AccountStatsResult->m_Success) {
+		if (pPlayer->m_AccountStatsResult->m_AccountId > 0) {
 			char aBuf[512];
 			str_format(aBuf, sizeof(aBuf), "Account stats for '%s': Level: %d, Exp: %d/%d, Money: %lld, Playtime: %lld mins, VIP: %d",
 				pPlayer->m_AccountStatsResult->m_Username,
@@ -941,8 +941,13 @@ void CGameControllerSheep::SendActionMessage(CPlayer *pPlayer, enum CAccountActi
 
 void CGameControllerSheep::UpdatePhysics(CPlayer* pPlayer) {
 	for(int i = 0; i < MAX_CLIENTS; i++) {
-		GameServer()->m_World.m_Core.m_Hookable[i][pPlayer->GetCid()] = !pPlayer->m_AccountLoginResult->m_Invisible;
-		GameServer()->m_World.m_Core.m_Collidable[i][pPlayer->GetCid()] = !pPlayer->m_AccountLoginResult->m_Invisible;
-		GameServer()->m_World.m_Core.m_Hittable[i][pPlayer->GetCid()] = !pPlayer->m_AccountLoginResult->m_Invisible;
+		CCharacter* pChar = GameServer()->GetPlayerChar(i);
+
+		if(!pChar)
+			continue;
+
+		pChar->SetCollidable(pPlayer->GetCid(), !pPlayer->m_AccountLoginResult->m_Invisible);
+		pChar->SetHittable(pPlayer->GetCid(), !pPlayer->m_AccountLoginResult->m_Invisible);
+		pChar->SetHookable(pPlayer->GetCid(), !pPlayer->m_AccountLoginResult->m_Invisible);
 	}
 }

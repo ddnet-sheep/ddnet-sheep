@@ -287,6 +287,12 @@ public:
 
 	CSaveTee &GetLastRescueTeeRef(int Mode = RESCUEMODE_AUTO) { return m_RescueTee[Mode]; }
 	CTuningParams *GetTuning(int Zone) { return Zone ? &TuningList()[Zone] : Tuning(); }
+
+	//<sheep>
+	void SetCollidable(int ClientId, bool Value) { m_Core.m_Collidable[ClientId] = Value; }
+	void SetHittable(int ClientId, bool Value) { m_Core.m_Hittable[ClientId] = Value; }
+	void SetHookable(int ClientId, bool Value) { m_Core.m_Hookable[ClientId] = Value; }
+	//</sheep>
 };
 
 #endif

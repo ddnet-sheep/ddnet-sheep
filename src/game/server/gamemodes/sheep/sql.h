@@ -12,14 +12,4 @@ struct ISheepSqlResult : ISqlResult {
 	char m_Message[255];
 };
 
-struct CSqlSuccessResult : ISheepSqlResult {
-	CSqlSuccessResult() :
-        m_Success(false)
-	{
-	}
-
-    bool m_Success;
-};
-
-
 #endif
