@@ -213,7 +213,7 @@ void GenerateAccountLoginResult(IDbConnection *pSqlServer, const ISqlData *pGame
 }
 
 const char* Fields() {
-	return "ban_expiration, level, exp, vip, vip_expiration, staff_level, email, email_verified, password, id, invisible, vanish, title, ip, name, money, playtime";
+	return "ban_expiration, level, exp, vip, vip_expiration, staff_level, email, email_verified, password, id, invisible, vanish, title, ip, name, money, playtime, data_lock, updated_at";
 }
 
 bool CGameControllerSheep::ExecuteLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize) {
@@ -252,6 +252,22 @@ bool CGameControllerSheep::ExecuteLogin(IDbConnection *pSqlServer, const ISqlDat
 		if (strcmp(aIP, pData->m_IP) != 0) {
 			str_copy(pResult->m_Message, "Autologin: IP mismatch. Please /login <password>.");
 			return false;
+		}
+	}
+
+	pSqlServer->GetString(18, pResult->m_Lock, sizeof(pResult->m_Lock));
+	pSqlServer->GetString(19, pResult->m_UpdatedAt, sizeof(pResult->m_UpdatedAt));
+	if(str_comp(pResult->m_Lock, "") != 0) {
+		struct tm tm_result = {0};
+		char *end_ptr = strptime(pResult->m_UpdatedAt, "%Y-%m-%d %H:%M:%S", &tm_result);
+
+		if (end_ptr != nullptr && *end_ptr == '\0') {
+			time_t updated_at_time = timegm(&tm_result);
+			time_t current_time = time(0);
+			if (current_time <= updated_at_time + 20 * 60) {
+				str_copy(pResult->m_Message, "Login: Account is locked due to recent activity on another server. Please try again later.");
+				return false;
+			}
 		}
 	}
 

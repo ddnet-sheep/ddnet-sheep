@@ -61,7 +61,8 @@ struct CAccountDataResult : ISheepSqlResult
         m_Type(CSqlAccountCredentialsRequest::TYPE_PASSWORD),
         m_Title(""),
         m_Playtime(0),
-        m_Money(0)
+        m_Money(0),
+        m_Lock("")
 	{
 	}
 
@@ -93,6 +94,9 @@ struct CAccountDataResult : ISheepSqlResult
     bool m_Vanish; // silent join and not visible in the player list
 
     char m_Title[32];
+
+    char m_Lock[64];
+    char m_UpdatedAt[128];
 };
 
 #endif
