@@ -5,11 +5,11 @@
 #<sheep>
 [submodule "ddnet-libs-sheep/DPP"]
 	path = ddnet-libs-sheep/DPP
-	url = git@github.com:brainboxdotcc/DPP.git
-#</sheep>
+	url = https://github.com/brainboxdotcc/DPP.git
 [submodule "data/ddnet-maps"]
 	path = data/ddnet-maps
-	url = git@github.com:ddnet/ddnet-maps.git
+	url = https://github.com/ddnet/ddnet-maps.git
 [submodule "data/opengores-maps"]
 	path = data/opengores-maps
-	url = git@github.com:teemods/opengores-maps.git
+	url = https://github.com/teemods/opengores-maps.git
+#</sheep>
