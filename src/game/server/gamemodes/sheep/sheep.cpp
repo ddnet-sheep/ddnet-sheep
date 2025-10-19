@@ -131,6 +131,8 @@ CGameControllerSheep::CGameControllerSheep(class CGameContext *pGameServer) :
 	GameServer()->Console()->Chain("sv_sheep_discord_token", ConChainSheepDiscordTokenChange, this);
 
 	m_PowerupDelay = Server()->Tick() + Server()->TickSpeed() * 5;
+
+	ResetLocks();
 }
 
 CGameControllerSheep::~CGameControllerSheep() {
@@ -950,4 +952,37 @@ void CGameControllerSheep::UpdatePhysics(CPlayer* pPlayer) {
 		pChar->SetHittable(pPlayer->GetCid(), !pPlayer->m_AccountLoginResult->m_Invisible);
 		pChar->SetHookable(pPlayer->GetCid(), !pPlayer->m_AccountLoginResult->m_Invisible);
 	}
+}
+
+void CGameControllerSheep::ResetLocks() {
+	auto Result = std::make_shared<ISqlResult>();
+
+	auto Tmp = std::make_unique<CSqlServerRequest>(Result);
+	CServer* pServer = (CServer*)GameServer()->Server();
+	str_format(Tmp->m_Host, sizeof(Tmp->m_Host), "%s", pServer->m_NetServer.Address().ip);
+	Tmp->m_Port = pServer->m_NetServer.Address().port;
+
+	m_pPool->ExecuteWrite(CGameControllerSheep::ExecuteResetLocks, std::move(Tmp), "reset locks");
+}
+
+bool CGameControllerSheep::ExecuteResetLocks(IDbConnection *pSqlServer, const ISqlData *pGameData, Write w, char *pError, int ErrorSize) {
+	if(Write::NORMAL != w)
+		return true;
+
+	const auto *pData = dynamic_cast<const CSqlServerRequest *>(pGameData);
+
+	if(!pSqlServer->PrepareStatement("UPDATE sheep_accounts SET data_lock='' WHERE data_lock=?", pError, ErrorSize))
+		return false;
+
+	char aBuf[128];
+	str_format(aBuf, sizeof(aBuf), "%s:%d", pData->m_Host, pData->m_Port);
+	pSqlServer->BindString(1, aBuf);
+
+	pSqlServer->Print();
+
+	int NumUpdated;
+	if(!pSqlServer->ExecuteUpdate(&NumUpdated, pError, ErrorSize))
+		return false;
+
+	return true;
 }

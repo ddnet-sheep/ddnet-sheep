@@ -48,6 +48,9 @@ public:
 	
 	void UpdatePhysics(CPlayer* pPlayer);
 	
+	void ResetLocks();
+	static bool ExecuteResetLocks(IDbConnection *pSqlServer, const ISqlData *pGameData, Write w, char *pError, int ErrorSize);
+
 	void AuthPlayer(CPlayer* pPlayer);
 	void SaveAccount(CPlayer* pPlayer, bool Logout = false);	
     static bool ExecuteLogin(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);

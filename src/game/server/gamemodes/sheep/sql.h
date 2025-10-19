@@ -12,4 +12,14 @@ struct ISheepSqlResult : ISqlResult {
 	char m_Message[255];
 };
 
+struct CSqlServerRequest : ISqlData {
+	char m_Host[16];
+	int m_Port;
+	
+	CSqlServerRequest(std::shared_ptr<ISqlResult> pResult) :
+		ISqlData(std::move(pResult))
+	{
+	}
+};
+
 #endif
