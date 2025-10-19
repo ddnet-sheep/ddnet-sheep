@@ -223,8 +223,15 @@ bool CMysqlConnection::ConnectImpl()
 	{
 		if(m_pStmt && mysql_stmt_free_result(m_pStmt.get()))
 		{
+			//<sheep>
+			// if the statement has no result set, we can't clear it. not sure if this case has not been handled or why this can happen at all
+			if(str_comp(m_aErrorDetail, "(free_result:stmt:5025): Statement has no result set") != 0) {
+			//</sheep>
 			StoreErrorStmt("free_result");
 			dbg_msg("mysql", "can't free last result %s", m_aErrorDetail);
+			//<sheep>
+			}
+			//</sheep>
 		}
 		//<sheep>
 		// if(m_pStmt) {
