@@ -35,7 +35,7 @@ struct CSqlAccountCredentialsRequest : ISqlData
 
 struct CSqlAccountIdRequest : ISqlData
 {
-    uint64_t m_AccountId;
+    int64_t m_AccountId;
     char m_IP[64] = "";
     char m_Lock[65] = "";
 
@@ -69,22 +69,22 @@ struct CAccountDataResult : ISheepSqlResult
 
     CSqlAccountCredentialsRequest::EType m_Type;
     
-    uint64_t m_AccountId;
+    int64_t m_AccountId;
 
     char m_Username[64];
     char m_PasswordHash[65];
 
-	uint64_t m_BanExpiration;
+	int64_t m_BanExpiration;
 
-    uint64_t m_Level;
-    uint64_t m_Exp;
-    uint64_t m_Playtime;
-    uint64_t m_Money;
+    int64_t m_Level;
+    int64_t m_Exp;
+    int64_t m_Playtime;
+    int64_t m_Money;
     
-    uint8_t m_Vip; // vip level
-    uint64_t m_VipExpiration; // vip expiration time
+    int m_Vip; // vip level
+    int64_t m_VipExpiration; // vip expiration time
 
-    uint8_t m_Staff; // admin level
+    int8_t m_Staff; // admin level
 
     std::string m_Email;
     bool m_EmailVerified;

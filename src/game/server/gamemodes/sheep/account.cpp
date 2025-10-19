@@ -57,8 +57,11 @@ bool CGameControllerSheep::ExecuteUpdatePlayerIp(IDbConnection *pSqlServer, cons
 	pSqlServer->BindString(2, pData->m_Lock);
 	pSqlServer->BindInt64(3, pData->m_AccountId);
 
+	pSqlServer->Print();
+
 	int NumUpdated;
-	pSqlServer->ExecuteUpdate(&NumUpdated, pError, ErrorSize);
+	if(!pSqlServer->ExecuteUpdate(&NumUpdated, pError, ErrorSize))
+		return false;
 
 	return NumUpdated != 0;
 }
@@ -227,8 +230,13 @@ bool CGameControllerSheep::ExecuteLogin(IDbConnection *pSqlServer, const ISqlDat
 
 	pSqlServer->BindString(1, pData->m_Username);
 
+	pSqlServer->Print();
+
 	bool End;
-	if(!pSqlServer->Step(&End, pError, ErrorSize) || End) {
+	if(!pSqlServer->Step(&End, pError, ErrorSize))
+		return false;
+
+	if(End) {
 		str_format(pResult->m_Message, sizeof(pResult->m_Message), "User %s does not exist. Please /register <password>", pData->m_Username);
 		return true;
 	}
@@ -345,6 +353,8 @@ bool CGameControllerSheep::ExecuteSave(IDbConnection *pSqlServer, const ISqlData
 	pSqlServer->BindString(14, pData->m_Lock);
 	pSqlServer->BindInt64(15, pData->m_AccountId);
 
+	pSqlServer->Print();
+
 	int NumUpdated;
 	if(!pSqlServer->ExecuteUpdate(&NumUpdated, pError, ErrorSize))
 		return false;
@@ -412,10 +422,15 @@ bool CGameControllerSheep::ExecuteRegister(IDbConnection *pSqlServer, const ISql
 	pSqlServer->BindString(3, pData->m_IP);
 	pSqlServer->BindString(4, pData->m_Lock);
 
+	pSqlServer->Print();
+
 	bool End;
-	if(!pSqlServer->Step(&End, pError, ErrorSize) || End) {
-		str_copy(pResult->m_Message, "User does already exist.");
+	if(!pSqlServer->Step(&End, pError, ErrorSize))
 		return false;
+
+	if(End) {
+		str_copy(pResult->m_Message, "User does already exist.");
+		return true;
 	}
 
 	str_copy(pResult->m_Message, "Successfully registered.");
@@ -454,6 +469,8 @@ bool CGameControllerSheep::ExecutePassword(IDbConnection *pSqlServer, const ISql
 	const auto *pData = dynamic_cast<const CSqlAccountCredentialsRequest *>(pGameData);
 	pSqlServer->BindString(1, pData->m_Password);
 	pSqlServer->BindString(2, pData->m_Username);
+
+	pSqlServer->Print();
 
 	int NumUpdated;
 	if(!pSqlServer->ExecuteUpdate(&NumUpdated, pError, ErrorSize))

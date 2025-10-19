@@ -31,15 +31,16 @@ bool CGameControllerSheep::ExecuteLoadCosmetics(IDbConnection *pSqlServer, const
 	for(int i = 0; i < NUM_COSMETICS; i++)
 		pResult->m_State[i] = 0;
 
-    bool End;
-    do {
-        pSqlServer->Step(&End, pError, ErrorSize);
-        
-        if(End)
-            break;
+	pSqlServer->Print();
 
-        pResult->m_State[pSqlServer->GetInt(1)] = pSqlServer->GetInt(2);
-    } while(!End);
+    bool End;	
+	if(!pSqlServer->Step(&End, pError, ErrorSize))
+		return false;
+
+	while(!End) {
+		pResult->m_State[pSqlServer->GetInt(1)] = pSqlServer->GetInt(2);
+		pSqlServer->Step(&End, pError, ErrorSize);
+	}
 
 	return true;
 }
@@ -177,17 +178,16 @@ bool CGameControllerSheep::ExecuteSaveCosmetic(IDbConnection *pSqlServer, const 
 			str_append(aSql, ", ");
 	}
 
-
 	str_append(aSql, " ON DUPLICATE KEY UPDATE state=VALUES(state), updated_at=NOW()");
 
-	if(!pSqlServer->PrepareStatement(aSql, pError, ErrorSize)) {
+	if(!pSqlServer->PrepareStatement(aSql, pError, ErrorSize))
 		return false;
-	}
 	
+	pSqlServer->Print();
+
 	int NumUpdated;
-	if(!pSqlServer->ExecuteUpdate(&NumUpdated, pError, ErrorSize)) {
+	if(!pSqlServer->ExecuteUpdate(&NumUpdated, pError, ErrorSize))
 		return false;
-	}
 
 	return NumUpdated != 0;
 }

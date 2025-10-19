@@ -134,6 +134,18 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 		}
 	}
 
+	//<sheep>
+	for(int i = 0; i < MAX_CLIENTS; i++) {
+		CPlayer* pOtherPlayer = GameServer()->m_apPlayers[i];
+		if(pOtherPlayer == nullptr || !pOtherPlayer->IsLoggedIn())
+			continue;
+
+		SetCollidable(i, !pOtherPlayer->m_AccountLoginResult->m_Invisible);
+		SetHittable(i, !pOtherPlayer->m_AccountLoginResult->m_Invisible);
+		SetHookable(i, !pOtherPlayer->m_AccountLoginResult->m_Invisible);
+	}
+	//</sheep>
+
 	return true;
 }
 

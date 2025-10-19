@@ -226,6 +226,11 @@ bool CMysqlConnection::ConnectImpl()
 			StoreErrorStmt("free_result");
 			dbg_msg("mysql", "can't free last result %s", m_aErrorDetail);
 		}
+		//<sheep>
+		if(m_pStmt) {
+			dbg_msg("mysql", "%s", m_pStmt.get()->sql);
+		}
+		//</sheep>
 		if(!mysql_select_db(&m_Mysql, m_Config.m_aDatabase))
 		{
 			// Success.
