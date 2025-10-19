@@ -276,13 +276,6 @@ public:
 	bool m_Collidable[MAX_CLIENTS];
 	bool m_Hittable[MAX_CLIENTS];
 	bool m_Hookable[MAX_CLIENTS];
-	CCharacterCore() {
-		for(int i = 0; i < MAX_CLIENTS; i++) {
-			m_Collidable[i] = true;
-			m_Hittable[i] = true;
-			m_Hookable[i] = true;
-		}
-	}
 	//</sheep>
 private:
 	CTeamsCore *m_pTeams;

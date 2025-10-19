@@ -187,6 +187,14 @@ void CCharacterCore::Reset()
 	// never initialize both to 0
 	m_Input.m_TargetX = 0;
 	m_Input.m_TargetY = -1;
+
+	//<sheep>
+	for(int i = 0; i < MAX_CLIENTS; i++) {
+		m_Collidable[i] = true;
+		m_Hittable[i] = true;
+		m_Hookable[i] = true;
+	}
+	//</sheep>
 }
 
 void CCharacterCore::Tick(bool UseInput, bool DoDeferredTick)
