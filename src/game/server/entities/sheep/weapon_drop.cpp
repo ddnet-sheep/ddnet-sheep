@@ -40,13 +40,11 @@ static int GetNeededIds(int Type) {
 }
 
 CWeaponDrop::CWeaponDrop(CCharacter* pCharacter, vec2 Pos, int Team, int TeleCheckpoint, vec2 Vel, int Lifetime, int Type) :
-	CEntityOwned(CGameWorld::ENTTYPE_WEAPON_DROP, -1, pCharacter, 0, Pos, 28)
+	CEntityOwned(CGameWorld::ENTTYPE_WEAPON_DROP, -1, pCharacter, GetNeededIds(Type), Pos, 28)
 {
     m_Team = Team;
 
     m_Type = Type;
-	for(int i = 0; i < GetNeededIds(Type); i++)
-		m_vIds.push_back(Server()->SnapNewId());
 
 	m_PrevPos = m_Pos;
 	m_Vel = Vel;
@@ -61,15 +59,11 @@ CWeaponDrop::CWeaponDrop(CCharacter* pCharacter, vec2 Pos, int Team, int TeleChe
 
 void CWeaponDrop::Reset(bool PickedUp)
 {
-	for(int i = 0; i < m_vIds.size(); i++)
-		Server()->SnapFreeId(m_vIds[i]);
-	Server()->SnapFreeId(GetId());
-	
 	CClientMask TeamMask = CClientMask().set();
 	if(!PickedUp)
 		GameServer()->CreateDeath(m_Pos, m_Player->GetCid(), TeamMask);
 
-	GameWorld()->RemoveEntity(this);
+	CEntityOwned::Reset();
 }
 
 bool CWeaponDrop::IsSwitchActiveCb(int Number, void *pUser)
@@ -310,11 +304,11 @@ void CWeaponDrop::Snap(int ClientId) {
 	vec2 Offset = vec2(0.0f, -32.0f);
 	switch (m_Type) {
 		case WEAPON_HEARTGUN:
-			GameServer()->SnapPickup(SnapContext, m_vIds[0], m_Pos + Offset, POWERUP_HEALTH, 0, -1, PICKUPFLAG_NO_PREDICT);
+			GameServer()->SnapPickup(SnapContext, m_SnapIds[0], m_Pos + Offset, POWERUP_HEALTH, 0, -1, PICKUPFLAG_NO_PREDICT);
 			break;
 		case WEAPON_PROJECTILE_RIFLE:
 			{
-				CNetObj_Projectile* pShotgunBullet = static_cast<CNetObj_Projectile*>(Server()->SnapNewItem(NETOBJTYPE_PROJECTILE, m_vIds[0], sizeof(CNetObj_Projectile)));
+				CNetObj_Projectile* pShotgunBullet = static_cast<CNetObj_Projectile*>(Server()->SnapNewItem(NETOBJTYPE_PROJECTILE, m_SnapIds[0], sizeof(CNetObj_Projectile)));
 				if (!pShotgunBullet)
 					return;
 
@@ -326,14 +320,14 @@ void CWeaponDrop::Snap(int ClientId) {
 			break;
 		case WEAPON_PLASMA_RIFLE:
 		case WEAPON_LIGHTSABER:
-			GameServer()->SnapLaserObject(SnapContext, m_vIds[0], m_Pos + Offset, m_Pos + Offset, Server()->Tick(), -1, LASERTYPE_GUN);
+			GameServer()->SnapLaserObject(SnapContext, m_SnapIds[0], m_Pos + Offset, m_Pos + Offset, Server()->Tick(), -1, LASERTYPE_GUN);
 			break;
 		case WEAPON_PORTALGUN:
-			GameServer()->SnapLaserObject(SnapContext, m_vIds[0], m_Pos + Offset, m_Pos + Offset, Server()->Tick(), -1, LASERTYPE_GUN);
+			GameServer()->SnapLaserObject(SnapContext, m_SnapIds[0], m_Pos + Offset, m_Pos + Offset, Server()->Tick(), -1, LASERTYPE_GUN);
 			vec2 Spin = vec2(cos(Server()->Tick() / 5.0f), sin(Server()->Tick() / 5.0f)) * 17.0f;
 			Spin += Offset;
 
-			CNetObj_Projectile *pProj = Server()->SnapNewItem<CNetObj_Projectile>(m_vIds[1]);
+			CNetObj_Projectile *pProj = Server()->SnapNewItem<CNetObj_Projectile>(m_SnapIds[1]);
 			if(!pProj)
 				break;
 

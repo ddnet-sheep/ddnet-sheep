@@ -18,7 +18,6 @@ class CWeaponDrop : public CEntityOwned
 	
     int m_Type;
 
-	std::vector<int> m_vIds = std::vector<int>();
 	int m_Team;
 
 	vec2 m_GroundElasticity;

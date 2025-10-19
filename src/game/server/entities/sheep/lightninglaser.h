@@ -3,10 +3,11 @@
 #ifndef GAME_SERVER_ENTITIES_SPECIAL_LIGHTNINGLASER_H
 #define GAME_SERVER_ENTITIES_SPECIAL_LIGHTNINGLASER_H
 
-#include <game/server/entity.h>
+#include <game/server/entities/sheep/entity_owned.h>
+
 #include <game/server/gamecontext.h>
 
-class CLightningLaser : public CEntity
+class CLightningLaser : public CEntityOwned
 {
 	enum
 	{
@@ -16,7 +17,6 @@ class CLightningLaser : public CEntity
 	};
 
 	vec2 m_Dir;
-	int m_Owner;
 	
 	int m_Lifespan;
 	int m_StartLifespan;
@@ -42,17 +42,15 @@ class CLightningLaser : public CEntity
 
 	STarget m_Target;
 
-	int *m_aIDs;
 	vec2 **m_aaPositions;
 
 	int m_Count;
 	int m_Length;
 	
 public:
-	CLightningLaser(CGameWorld *pGameWorld, vec2 Pos, vec2 Direction, int Owner);
+	CLightningLaser(CCharacter *pCharacter, vec2 Direction);
 	~CLightningLaser();
 
-	virtual void Reset();
 	virtual void Tick();
 	virtual void Snap(int SnappingClient);
 

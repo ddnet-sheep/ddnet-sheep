@@ -11,11 +11,9 @@
 
 #include <base/vmath.h>
 
-CLightningLaser::CLightningLaser(CGameWorld *pGameWorld, vec2 Pos, vec2 Direction, int Owner)
-: CEntity(pGameWorld, CGameWorld::ENTTYPE_LIGHTNING_LASER, Pos)
+CLightningLaser::CLightningLaser(CCharacter *pCharacter, vec2 Direction)
+: CEntityOwned(CGameWorld::ENTTYPE_LIGHTNING_LASER, -1, pCharacter, 7, pCharacter->GetPos())
 {
-	m_Pos = Pos;
-	m_Owner = Owner;
 	m_Dir = Direction;
 	m_StartTick = -2.5f;
 
@@ -26,48 +24,32 @@ CLightningLaser::CLightningLaser(CGameWorld *pGameWorld, vec2 Pos, vec2 Directio
 	m_Count = 7;
 	m_Length = 70;
 
-	m_aIDs = (int *)calloc(sizeof(int), m_Count);
 	m_aaPositions = (vec2 **)calloc(sizeof(vec2 *), m_Count);
 	for (int i = 0; i < m_Count; i++)
 		m_aaPositions[i] = (vec2 *)calloc(POS_COUNT, sizeof(vec2));
-	
-	m_aaPositions[0][POS_START] = Pos;
-	
-	for(int i = 0; i < m_Count; i++)
-		m_aIDs[i] = Server()->SnapNewId();
+
+	m_aaPositions[0][POS_START] = m_Pos;
 
 	InitTarget(); // just in case there's a target
 	GenerateLights(); // we generate position of lights
-
-	GameWorld()->InsertEntity(this);
 }
 
 CLightningLaser::~CLightningLaser()
 {
-	free(m_aIDs);
 	for (int i = 0; i < m_Count; i++)
 		free(m_aaPositions[i]);
 	free(m_aaPositions);
 }
 
-void CLightningLaser::Reset()
-{
-	GameWorld()->RemoveEntity(this);
-	for(int i = 0; i < m_Count; i ++)
-		Server()->SnapFreeId(m_aIDs[i]);
-}
-
-void CLightningLaser::InitTarget()
-{
+void CLightningLaser::InitTarget() {
 	m_Target.Reset();
 
-	const float DetectAngle = 90.f;
+	const float DetectAngle = 20.f;
 	float OwnAngle = CMath::GetAngle(m_Dir) * 180 / pi + 75.f;
 	float ClosestDist = 0;
 
-	for(int i = 0; i < MAX_CLIENTS; i ++)
-	{
-		if(i == m_Owner || !GameServer()->GetPlayerChar(i))
+	for(int i = 0; i < MAX_CLIENTS; i ++) {
+		if(i == m_Player->GetCid() || !GameServer()->GetPlayerChar(i))
 			continue;
 
 		float Dist = distance(m_Pos, GameServer()->GetPlayerChar(i)->GetPos());
@@ -139,7 +121,7 @@ void CLightningLaser::HitCharacter()
 		{
 			CCharacter *pChrs = GameServer()->GetPlayerChar(j);
 
-			if(!pChrs || j == m_Owner)
+			if(!pChrs || j == m_Player->GetCid())
 				continue;
 
 			// closest point in the light near of a tee
@@ -199,7 +181,7 @@ void CLightningLaser::Snap(int SnappingClient)
 		CNetObj_DDNetLaser **apObjs = (CNetObj_DDNetLaser **)calloc(sizeof(CNetObj_DDNetLaser *), m_Count);
 		for(int i = Start - 1; i >= 0; i--)
 		{
-			apObjs[i] = static_cast<CNetObj_DDNetLaser *>(Server()->SnapNewItem(NETOBJTYPE_DDNETLASER, m_aIDs[i], sizeof(CNetObj_DDNetLaser)));
+			apObjs[i] = static_cast<CNetObj_DDNetLaser *>(Server()->SnapNewItem(NETOBJTYPE_DDNETLASER, m_SnapIds[i], sizeof(CNetObj_DDNetLaser)));
 			if(!apObjs[i])
 				return;
 
@@ -209,7 +191,7 @@ void CLightningLaser::Snap(int SnappingClient)
 			apObjs[i]->m_FromX = (int)m_aaPositions[i][POS_END].x;
 			apObjs[i]->m_FromY = (int)m_aaPositions[i][POS_END].y;
 			apObjs[i]->m_StartTick = Server()->Tick() + m_StartTick;
-			apObjs[i]->m_Owner = m_Owner;
+			apObjs[i]->m_Owner = m_Player->GetCid();
 			apObjs[i]->m_Type = LASERTYPE_FREEZE;
 		}
 		free(apObjs);
@@ -219,7 +201,7 @@ void CLightningLaser::Snap(int SnappingClient)
 		CNetObj_Laser **apObjs = (CNetObj_Laser **)calloc(sizeof(CNetObj_Laser *), m_Count);
 		for(int i = Start - 1; i >= 0; i--)
 		{
-			apObjs[i] = static_cast<CNetObj_Laser *>(Server()->SnapNewItem(NETOBJTYPE_LASER, m_aIDs[i], sizeof(CNetObj_Laser)));
+			apObjs[i] = static_cast<CNetObj_Laser *>(Server()->SnapNewItem(NETOBJTYPE_LASER, m_SnapIds[i], sizeof(CNetObj_Laser)));
 			if(!apObjs[i])
 				return;
 

@@ -49,12 +49,8 @@ CPortal::CPortal(CCharacter* pCharacter, vec2 Pos) :
 	}
 }
 
-void CPortal::Reset()
-{
-	Server()->SnapFreeId(GetId());
-
-	for(int p = 0; p < NUM_PORTALS; p++)
-	{
+void CPortal::Reset() {
+	for(int p = 0; p < NUM_PORTALS; p++) {
 		for(int i = 0; i < NUM_IDS; i++)
 			Server()->SnapFreeId(m_Snap[p].m_aIds[i]);
 		for(int i = 0; i < NUM_PRTCL; i++)
@@ -62,8 +58,8 @@ void CPortal::Reset()
 	}
 
 	GameServer()->Sheep()->m_pPortals[Player()->GetCid()] = nullptr;
-	
-	GameWorld()->RemoveEntity(this);
+
+	CEntityOwned::Reset();
 }
 
 inline bool PointInCircle(vec2 pos, vec2 center, float radius)

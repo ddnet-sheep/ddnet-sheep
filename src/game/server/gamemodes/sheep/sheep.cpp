@@ -673,7 +673,7 @@ bool CGameControllerSheep::OnCharacterWeaponFire(CCharacter *pCharacter, int Wea
 	switch(Weapon) {
 		case WEAPON_LIGHTNING_LASER:
 			{
-				new CLightningLaser(pCharacter->GameWorld(), ProjStartPos, Direction, ClientId);
+				new CLightningLaser(pCharacter, Direction);
 
 				GameServer()->CreateSound(pCharacter->m_Pos, SOUND_LASER_FIRE, pCharacter->TeamMask());
 			} 
@@ -784,7 +784,7 @@ bool CGameControllerSheep::OnCharacterWeaponFire(CCharacter *pCharacter, int Wea
 			return true;
 		case WEAPON_LIGHTSABER:
 			if(m_pLightsabers[ClientId] == nullptr)
-				m_pLightsabers[ClientId] = new CLightsaber(pCharacter->GameWorld(), ClientId, pCharacter->m_Pos);
+				m_pLightsabers[ClientId] = new CLightsaber(pCharacter);
 			m_pLightsabers[ClientId]->OnFire();
 			return true;
 		case WEAPON_PORTALGUN:

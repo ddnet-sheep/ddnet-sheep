@@ -19,111 +19,88 @@
 #include <game/server/gameworld.h>
 #include <game/teamscore.h>
 
-CLightsaber::CLightsaber(CGameWorld *pGameWorld, int Owner, vec2 Pos) :
-	CEntity(pGameWorld, CGameWorld::ENTTYPE_LIGHTSABER, Pos)
+CLightsaber::CLightsaber(CCharacter* pCharacter) :
+	CEntityOwned(CGameWorld::ENTTYPE_LIGHTSABER, -1, pCharacter, 0, pCharacter->m_Pos) 
 {
-	m_Owner = Owner;
-	m_Pos = Pos;
-	m_From = Pos;
-	m_To = Pos;
-
-	GameWorld()->InsertEntity(this);
+	m_From = pCharacter->m_Pos;
+	m_To = pCharacter->m_Pos;
 }
 
-void CLightsaber::Reset()
-{
-    if(GameServer()->Sheep()->m_pLightsabers[m_Owner] != nullptr)
-        GameServer()->Sheep()->m_pLightsabers[m_Owner] = nullptr;
+void CLightsaber::Reset() {
+    if(GameServer()->Sheep()->m_pLightsabers[m_Player->GetCid()] != nullptr)
+        GameServer()->Sheep()->m_pLightsabers[m_Player->GetCid()] = nullptr;
 
-	Server()->SnapFreeId(GetId());
-	GameWorld()->RemoveEntity(this);
+	CEntityOwned::Reset();
 }
 
-void CLightsaber::OnFire()
-{
+void CLightsaber::OnFire() {
 	if(m_State == STATE_RETRACTED || m_State == STATE_RETRACTING)
 		m_State = STATE_EXTENDING;
 	else if(m_State == STATE_EXTENDED || m_State == STATE_EXTENDING)
 		m_State = STATE_RETRACTING;
 }
 
-void CLightsaber::Tick()
-{
-	CCharacter *pChr = GameServer()->GetPlayerChar(m_Owner);
-
-	if(!pChr)
-	{
+void CLightsaber::Tick() {
+	if(!Character()) {
 		Reset();
 		return;
 	}
-	if(pChr->GetActiveWeapon() != WEAPON_LIGHTSABER)
-	{
-		if(m_Length > 0)
-			m_State = STATE_RETRACTING;
-		else
-		{
+
+	if(Character()->GetActiveWeapon() != WEAPON_LIGHTSABER) {
+		if(m_Length == 0) {
 			Reset();
 			return;
 		}
-	}
-	if(pChr->m_FreezeTime > 0 || pChr->IsPaused())
-	{
-		if(m_Length > 0)
-			m_State = STATE_RETRACTING;
+
+		m_State = STATE_RETRACTING;
 	}
 
-	if(m_State == STATE_EXTENDING)
-	{
+	if((Character()->m_FreezeTime > 0 || Character()->IsPaused()) && m_Length > 0)
+		m_State = STATE_RETRACTING;
+
+	if(m_State == STATE_EXTENDING) {
 		if(Server()->Tick() % 5 == 0)
-			GameServer()->CreateSound(m_Pos, SOUND_LASER_BOUNCE, pChr->TeamMask());
+			GameServer()->CreateSound(m_Pos, SOUND_LASER_BOUNCE, Character()->TeamMask());
 		m_Length += LIGHTSABER_SPEED;
-		if(m_Length > LIGHTSABER_MAX_LENGTH)
-		{
+		if(m_Length > LIGHTSABER_MAX_LENGTH) {
 			m_Length = LIGHTSABER_MAX_LENGTH;
 			m_State = STATE_EXTENDED;
 		}
-	}
-	else if(m_State == STATE_RETRACTING)
-	{
+	} else if(m_State == STATE_RETRACTING) {
 		if(Server()->Tick() % 5 == 0)
-			GameServer()->CreateSound(m_Pos, SOUND_HOOK_LOOP, pChr->TeamMask());
+			GameServer()->CreateSound(m_Pos, SOUND_HOOK_LOOP, Character()->TeamMask());
 		m_Length -= LIGHTSABER_SPEED;
-		if(m_Length < 0)
-		{
+		if(m_Length < 0) {
 			m_Length = 0;
 			m_State = STATE_RETRACTED;
 		}
 	}
-	m_Pos = pChr->m_Pos;
-	m_From = pChr->m_Pos;
-	vec2 WantedTo = m_Pos + normalize(vec2(pChr->Input()->m_TargetX, pChr->Input()->m_TargetY)) * m_Length;
+	m_Pos = Character()->m_Pos;
+	m_From = Character()->m_Pos;
+	vec2 WantedTo = m_Pos + normalize(vec2(Character()->Input()->m_TargetX, Character()->Input()->m_TargetY)) * m_Length;
 	GameServer()->Collision()->IntersectLine(m_Pos, WantedTo, &m_To, 0);
 
-	std::vector<CCharacter *> HitChars = GameWorld()->IntersectedCharacters(m_From, m_To, 6.0f, GameServer()->GetPlayerChar(m_Owner));
-	if(HitChars.empty())
-		return;
-
-	for(CCharacter *pHit : HitChars)
-	{
-		if(pChr->Team() != TEAM_SUPER && pChr->Team() != pHit->Team())
-			return;
+	for(CCharacter *pHit : GameWorld()->IntersectedCharacters(m_From, m_To, 6.0f, Character())) {
+		if(Character()->Team() != pHit->Team())
+			continue;
 
 		pHit->SetEmote(EMOTE_PAIN, Server()->Tick() + 2);
+		if((Server()->Tick() % Server()->TickSpeed()) % 20 == 0) {
+			GameServer()->CreateDamageInd(pHit->m_Pos, 90 + 45, 1, Character()->TeamMask());
+			GameServer()->CreateSound(pHit->m_Pos, SOUND_PLAYER_PAIN_SHORT, Character()->TeamMask());
+		}
 	}
 }
 
-void CLightsaber::Snap(int SnappingClient)
-{
+void CLightsaber::Snap(int SnappingClient) {
 	if(NetworkClipped(SnappingClient))
 		return;
 
-	CCharacter *pOwnerChar = GameServer()->GetPlayerChar(m_Owner);
-	if(!pOwnerChar)
+	if(!Character())
 		return;
 
-	if(SnappingClient != SERVER_DEMO_CLIENT)
-	{
-		if(!pOwnerChar->TeamMask().test(SnappingClient))
+	if(SnappingClient != SERVER_DEMO_CLIENT) {
+		if(!Character()->TeamMask().test(SnappingClient))
 			return;
 
 		CCharacter *pSnapper = GameServer()->GetPlayerChar(SnappingClient);
@@ -132,8 +109,8 @@ void CLightsaber::Snap(int SnappingClient)
 		if(!pSnapPlayer)
 			return;
 	
-		if(pSnapPlayer->GetCharacter() && pOwnerChar)
-			if(!pOwnerChar->CanSnapCharacter(SnappingClient))
+		if(pSnapPlayer->GetCharacter() && Character())
+			if(!Character()->CanSnapCharacter(SnappingClient))
 				return;
 
 		// if(pOwnerChar->GetPlayer()->m_Vanish && SnappingClient != pOwnerChar->GetPlayer()->GetCid() && SnappingClient != -1)
@@ -145,16 +122,16 @@ void CLightsaber::Snap(int SnappingClient)
 		return;
 
 
-	vec2 From = m_To + pOwnerChar->Core()->m_Vel / 2;
-	vec2 To = m_From + pOwnerChar->Core()->m_Vel / 2;
-	if(SnappingClient == m_Owner)
+	vec2 From = m_To + Character()->Core()->m_Vel / 2;
+	vec2 To = m_From + Character()->Core()->m_Vel / 2;
+	if(SnappingClient == Player()->GetCid())
 	{
-		From = m_To + pOwnerChar->Core()->m_Vel;
-		To = m_From + pOwnerChar->Core()->m_Vel;
+		From = m_To + Character()->Core()->m_Vel;
+		To = m_From + Character()->Core()->m_Vel;
 	}
 
 	const int SnapVer = Server()->GetClientVersion(SnappingClient);
 	bool SixUp = Server()->IsSixup(SnappingClient);
 
-	GameServer()->SnapLaserObject(CSnapContext(SnapVer, SixUp, SnappingClient), GetId(), To, From, Server()->Tick() - 3, m_Owner, LASERTYPE_GUN);
+	GameServer()->SnapLaserObject(CSnapContext(SnapVer, SixUp, SnappingClient), GetId(), To, From, Server()->Tick() - 3, Player()->GetCid(), LASERTYPE_GUN);
 }

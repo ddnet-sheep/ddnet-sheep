@@ -21,6 +21,9 @@ CEntityOwned::CEntityOwned(int EntityId, int ItemId, CCharacter* pCharacter, int
 void CEntityOwned::Reset() {
     for(int id : m_SnapIds)
         Server()->SnapFreeId(id);
+
+    m_SnapIds.clear();
+    
 	GameWorld()->RemoveEntity(this);
 }
 

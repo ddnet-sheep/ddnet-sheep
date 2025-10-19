@@ -2,21 +2,19 @@
 #ifndef GAME_SERVER_ENTITIES_SHEEP_LIGHTSABER_H
 #define GAME_SERVER_ENTITIES_SHEEP_LIGHTSABER_H
 
+#include <game/server/entities/sheep/entity_owned.h>
+
 #include <base/vmath.h>
-#include <game/server/entity.h>
 #include <game/server/gameworld.h>
 
 constexpr float LIGHTSABER_SPEED = 10.0f;
 constexpr float LIGHTSABER_MAX_LENGTH = 220.0f;
 
-class CLightsaber : public CEntity
-{
+class CLightsaber : public CEntityOwned {
 	vec2 m_From;
 	vec2 m_To;
 
 	float m_Length = 0;
-
-	int m_Owner;
 
 	enum States
 	{
@@ -29,7 +27,7 @@ class CLightsaber : public CEntity
 	int m_State = 0;
 
 public:
-	CLightsaber(CGameWorld *pGameWorld, int Owner, vec2 Pos);
+	CLightsaber(CCharacter* pCharacter);
 
 	void OnFire();
 
