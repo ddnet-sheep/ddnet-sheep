@@ -415,35 +415,38 @@ void CGameControllerSheep::Snap(int SnappingClient) {
 	CPlayer *pPlayer = GameServer()->m_apPlayers[SnappingClient];
 
 	for(auto pFakePlayerMessageItem = m_FakePlayerMessageQueue.begin(); pFakePlayerMessageItem < m_FakePlayerMessageQueue.end(); pFakePlayerMessageItem++) {
-		if(pFakePlayerMessageItem->m_SenderId != -1)
-			continue;
-		
-		for(int ClientId = 0; ClientId < MAX_CLIENTS; ClientId++) {
-			if(GameServer()->m_apPlayers[ClientId] || !Server()->ClientSlotEmpty(ClientId))
-				continue;
+		if(pFakePlayerMessageItem->m_SenderId == -1 || !Server()->ClientSlotEmpty(pFakePlayerMessageItem->m_SenderId)) {
+			pFakePlayerMessageItem->m_SenderId = -1;
 
-			auto *pClientInfo = Server()->SnapNewItem<CNetObj_ClientInfo>(ClientId);
-			auto *pPlayerInfo = Server()->SnapNewItem<CNetObj_PlayerInfo>(ClientId);
-			if(!pClientInfo || !pPlayerInfo)
-				continue;
+			for(int ClientId = 0; ClientId < MAX_CLIENTS; ClientId++) {
+				if(GameServer()->m_apPlayers[ClientId] || !Server()->ClientSlotEmpty(ClientId))
+					continue;
 
-			StrToInts(pClientInfo->m_aName, std::size(pClientInfo->m_aName), pFakePlayerMessageItem->m_aName);
-			StrToInts(pClientInfo->m_aClan, std::size(pClientInfo->m_aClan), "");
-			StrToInts(pClientInfo->m_aSkin, std::size(pClientInfo->m_aSkin), "sheep");
-			pClientInfo->m_Country = -1;
-			pClientInfo->m_UseCustomColor = 0;
-			pClientInfo->m_ColorBody = 0;
-			pClientInfo->m_ColorFeet = 0;
-
-			pPlayerInfo->m_Latency = 0;
-			pPlayerInfo->m_Score = 0;
-			pPlayerInfo->m_Team = TEAM_SPECTATORS;
-			pPlayerInfo->m_Local = 0;
-			pPlayerInfo->m_ClientId = ClientId;
-
-			pFakePlayerMessageItem->m_SenderId = ClientId;
-			break;
+				pFakePlayerMessageItem->m_SenderId = ClientId;
+				break;
+			}
 		}
+		
+		auto *pClientInfo = Server()->SnapNewItem<CNetObj_ClientInfo>(pFakePlayerMessageItem->m_SenderId);
+		auto *pPlayerInfo = Server()->SnapNewItem<CNetObj_PlayerInfo>(pFakePlayerMessageItem->m_SenderId);
+		if(!pClientInfo || !pPlayerInfo) {
+			pFakePlayerMessageItem->m_SenderId = -1;
+			continue;
+		}
+
+		StrToInts(pClientInfo->m_aName, std::size(pClientInfo->m_aName), pFakePlayerMessageItem->m_aName);
+		StrToInts(pClientInfo->m_aClan, std::size(pClientInfo->m_aClan), "");
+		StrToInts(pClientInfo->m_aSkin, std::size(pClientInfo->m_aSkin), "sheep");
+		pClientInfo->m_Country = -1;
+		pClientInfo->m_UseCustomColor = 0;
+		pClientInfo->m_ColorBody = 0;
+		pClientInfo->m_ColorFeet = 0;
+
+		pPlayerInfo->m_Latency = 0;
+		pPlayerInfo->m_Score = 0;
+		pPlayerInfo->m_Team = TEAM_SPECTATORS;
+		pPlayerInfo->m_Local = 0;
+		pPlayerInfo->m_ClientId = pFakePlayerMessageItem->m_SenderId;
 	}
 
 	for(auto it = m_vLaserDeaths.begin(); it != m_vLaserDeaths.end();) {
@@ -486,25 +489,7 @@ void CGameControllerSheep::OnPostGlobalSnap() {
 		Msg.m_ClientId = pFakePlayerMessageItem->m_SenderId;
 		Msg.m_pMessage = pFakePlayerMessageItem->m_aMessage;
 
-		// check if receiverid is dummy
-		if(pFakePlayerMessageItem->m_ReceiverId == -1) {
-			for(int ClientId = 0; ClientId < MAX_CLIENTS; ClientId++) {
-				if(Server()->ClientSlotEmpty(ClientId))
-					continue;
-
-				int Result = Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, ClientId);
-				if(Result != 0) {
-					log_error("discordchat", "Failed to send fake player message to client %d, error %d", ClientId, Result);
-				} else {
-					log_info("discordchat", "Sent fake player message to client %d", ClientId);
-				}
-			}
-		} else {
-			int Result = Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, pFakePlayerMessageItem->m_ReceiverId);
-			if(Result != 0) {
-				log_error("discordchat", "Failed to send fake player message to client %d, error %d", pFakePlayerMessageItem->m_ReceiverId, Result);
-			}
-		}
+		Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, pFakePlayerMessageItem->m_ReceiverId);
 
 		log_info("discordchat", "TO: %d | %d:%d:%s: %s", pFakePlayerMessageItem->m_ReceiverId, Msg.m_ClientId, Msg.m_Team, pFakePlayerMessageItem->m_aName, pFakePlayerMessageItem->m_aMessage);
 
