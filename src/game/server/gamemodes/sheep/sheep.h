@@ -44,7 +44,7 @@ public:
 	void DiscordShutdown();
 	void SendDiscordChat(int ChatterClientId, int Team, const char *pText, int SpamProtectionClientId, int VersionFlags);
 	
-	void SendActionMessage(CPlayer *pPlayer, enum CAccountActions Action, char* pExtra = "");
+	void SendActionMessage(CPlayer *pPlayer, enum CAccountActions Action, const char* pExtra = "");
 	
 	void UpdatePhysics(CPlayer* pPlayer);
 	
@@ -71,8 +71,6 @@ public:
 
 	void CreateLaserDeath(int Type, int pOwner, vec2 pPos, CClientMask pMask);
 
-	CClientMask CosmeticMask(int Team, int ExceptId = -1, int Asker = -1, int VersionFlags = CGameContext::FLAG_SIX | CGameContext::FLAG_SIXUP, bool Opposite = false);
-	
 	// user commands
 	static void ConLogin(IConsole::IResult *pResult, void *pUserData);
 	static void ConRegister(IConsole::IResult *pResult, void *pUserData);
@@ -112,7 +110,7 @@ public:
 	
 	int CalcPlayerExpPerMinute(CPlayer *pPlayer);
 	void GivePlayerMoney(CPlayer* pPlayer, int64_t Amount, const char *pReason);
-	void GivePlayerExp(CPlayer *pPlayer, int Exp, char* pReason = "");
+	void GivePlayerExp(CPlayer *pPlayer, int Exp, const char* pReason = "");
 	void GivePlayerPlaytime(CPlayer *pPlayer, int Minutes);
 	
 	bool OnCharacterPowerup(CCharacter *pChr, const SPowerupData *pData);
@@ -170,7 +168,6 @@ private:
 
 	// database
 	CDbConnectionPool *m_pPool;
-	CDbConnectionPool Pool();
 };
 
 #endif

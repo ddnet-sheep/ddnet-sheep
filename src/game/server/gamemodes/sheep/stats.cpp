@@ -31,7 +31,7 @@ int CGameControllerSheep::CalcPlayerNeededExp(CPlayer *pPlayer) {
     return NextLevel * NextLevel * 10;
 }
 
-void CGameControllerSheep::GivePlayerExp(CPlayer *pPlayer, int Exp, char* pReason) {
+void CGameControllerSheep::GivePlayerExp(CPlayer *pPlayer, int Exp, const char* pReason) {
 	if (!pPlayer->IsLoggedIn()) {
         if(pReason && pReason[0] != '\0') {
             char aBuf[256];

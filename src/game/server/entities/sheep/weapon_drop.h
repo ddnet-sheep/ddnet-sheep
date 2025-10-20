@@ -13,8 +13,8 @@
 
 class CWeaponDrop : public CEntityOwned
 {
-	uint m_Lifetime; // In ticks
-	uint m_PickupDelay; // In ticks
+	int m_Lifetime; // In ticks
+	int m_PickupDelay; // In ticks
 	
     int m_Type;
 

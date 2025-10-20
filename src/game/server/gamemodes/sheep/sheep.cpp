@@ -275,10 +275,6 @@ void CGameControllerSheep::OnPlayerDisconnect(CPlayer *pPlayer, const char *pRea
 {
 	int ClientId = pPlayer->GetCid();
 	bool WasModerator = pPlayer->m_Moderating && Server()->ClientIngame(ClientId);
-
-	OnPlayerLogout(pPlayer, pReason, true);
-
-	pPlayer->OnDisconnect();
 	
 	char aBuf[512];
 	str_format(aBuf, sizeof(aBuf), "leave player='%d:%s'", ClientId, Server()->ClientName(ClientId));
@@ -286,9 +282,7 @@ void CGameControllerSheep::OnPlayerDisconnect(CPlayer *pPlayer, const char *pRea
 
 	if (pPlayer->m_AccountLoginResult == nullptr || !pPlayer->m_AccountLoginResult->m_Vanish)
 		SendActionMessage(pPlayer, ACTION_LEAVE, (char*)pReason);
-		
-	pPlayer->m_AccountLoginResult = nullptr;
-
+	
 	if(!GameServer()->PlayerModerating() && WasModerator)
 		GameServer()->SendChat(-1, TEAM_ALL, "Server kick/spec votes are no longer actively moderated.");
 	
@@ -298,6 +292,9 @@ void CGameControllerSheep::OnPlayerDisconnect(CPlayer *pPlayer, const char *pRea
 	for(int Team = TEAM_FLOCK + 1; Team < TEAM_SUPER; Team++)
 		if(Teams().IsInvited(Team, ClientId))
 			Teams().SetClientInvited(Team, ClientId, false);
+	
+	OnPlayerLogout(pPlayer, pReason, true);
+	pPlayer->OnDisconnect();
 }
 
 void CGameControllerSheep::OnReset() {
@@ -426,6 +423,10 @@ void CGameControllerSheep::Snap(int SnappingClient) {
 				continue;
 
 			auto *pClientInfo = Server()->SnapNewItem<CNetObj_ClientInfo>(ClientId);
+			auto *pPlayerInfo = Server()->SnapNewItem<CNetObj_PlayerInfo>(ClientId);
+			if(!pClientInfo || !pPlayerInfo)
+				continue;
+
 			StrToInts(pClientInfo->m_aName, std::size(pClientInfo->m_aName), pFakePlayerMessageItem->m_aName);
 			StrToInts(pClientInfo->m_aClan, std::size(pClientInfo->m_aClan), "");
 			StrToInts(pClientInfo->m_aSkin, std::size(pClientInfo->m_aSkin), "sheep");
@@ -434,7 +435,6 @@ void CGameControllerSheep::Snap(int SnappingClient) {
 			pClientInfo->m_ColorBody = 0;
 			pClientInfo->m_ColorFeet = 0;
 
-			auto *pPlayerInfo = Server()->SnapNewItem<CNetObj_PlayerInfo>(ClientId);
 			pPlayerInfo->m_Latency = 0;
 			pPlayerInfo->m_Score = 0;
 			pPlayerInfo->m_Team = TEAM_SPECTATORS;
@@ -487,7 +487,24 @@ void CGameControllerSheep::OnPostGlobalSnap() {
 		Msg.m_pMessage = pFakePlayerMessageItem->m_aMessage;
 
 		// check if receiverid is dummy
-		Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, pFakePlayerMessageItem->m_ReceiverId);
+		if(pFakePlayerMessageItem->m_ReceiverId == -1) {
+			for(int ClientId = 0; ClientId < MAX_CLIENTS; ClientId++) {
+				if(Server()->ClientSlotEmpty(ClientId))
+					continue;
+
+				int Result = Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, ClientId);
+				if(Result != 0) {
+					log_error("discordchat", "Failed to send fake player message to client %d, error %d", ClientId, Result);
+				} else {
+					log_info("discordchat", "Sent fake player message to client %d", ClientId);
+				}
+			}
+		} else {
+			int Result = Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, pFakePlayerMessageItem->m_ReceiverId);
+			if(Result != 0) {
+				log_error("discordchat", "Failed to send fake player message to client %d, error %d", pFakePlayerMessageItem->m_ReceiverId, Result);
+			}
+		}
 
 		log_info("discordchat", "TO: %d | %d:%d:%s: %s", pFakePlayerMessageItem->m_ReceiverId, Msg.m_ClientId, Msg.m_Team, pFakePlayerMessageItem->m_aName, pFakePlayerMessageItem->m_aMessage);
 
@@ -888,7 +905,7 @@ bool CGameControllerSheep::OnEntity(int Index, int x, int y, int Layer, int Flag
 	return false;
 }
 
-void CGameControllerSheep::SendActionMessage(CPlayer *pPlayer, enum CAccountActions Action, char *pExtra) {
+void CGameControllerSheep::SendActionMessage(CPlayer *pPlayer, enum CAccountActions Action, const char *pExtra) {
 	int ClientId = pPlayer->GetCid();
 	CServer *pServer = (CServer*)Server();
 
