@@ -455,12 +455,6 @@ def gen_common_content_header():
 	# print some includes
 	print('#include "data_types.h"')
 
-	#<sheep>
-	#<windows>
-	print('#undef IMAGE_CURSOR')
-	#</windows>
-	#</sheep>
-
 	# the container pointer
 	print('extern CDataContainer *g_pData;')
 

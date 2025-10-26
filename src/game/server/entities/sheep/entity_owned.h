@@ -8,14 +8,14 @@ class CEntityOwned : public CEntity
 {    
 protected:
     CPlayer* m_Player;
-    int m_ItemId;
+    int m_CosmeticId;
     std::vector<int> m_SnapIds;
 
     bool ShouldReset();
 
     bool HasReset();
 public:
-    CEntityOwned(int EntityId, int ItemId, CCharacter* pCharacter, int ExtraIds = 0, vec2 Pos = vec2(0, 0), int ProximityRadius = 0);
+    CEntityOwned(int EntityId, int CosmeticId, CCharacter* pCharacter, int ExtraIds = 0, vec2 Pos = vec2(0, 0), int ProximityRadius = 0);
 
     CPlayer* Player() const { return m_Player; }
     CCharacter* Character() const { return m_Player ? m_Player->GetCharacter() : nullptr; }

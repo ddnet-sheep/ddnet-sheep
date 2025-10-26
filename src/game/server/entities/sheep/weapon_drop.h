@@ -28,6 +28,8 @@ class CWeaponDrop : public CEntityOwned
 	int m_TuneZone;
 	int m_MoveRestrictions;
 
+	std::vector<int> m_vIds = std::vector<int>();
+
 	vec2 m_PrevPos;
 	vec2 m_Vel;
 

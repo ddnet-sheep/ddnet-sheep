@@ -3,17 +3,16 @@
 #include <game/server/entities/character.h>
 #include <game/server/gamemodes/sheep/sheep.h>
 
-CEntityOwned::CEntityOwned(int EntityId, int ItemId, CCharacter* pCharacter, int ExtraIds, vec2 Pos, int ProximityRadius)
+CEntityOwned::CEntityOwned(int EntityId, int CosmeticId, CCharacter* pCharacter, int ExtraIds, vec2 Pos, int ProximityRadius)
     : CEntity(pCharacter->GameWorld(), EntityId, Pos, ProximityRadius)
     , m_Player(pCharacter->GetPlayer())
-    , m_ItemId(ItemId)
+    , m_CosmeticId(CosmeticId)
 {
     if(!pCharacter)
         return;
 
     GameWorld()->InsertEntity(this);
 
-    m_SnapIds.push_back(GetId());
     for(int i = 0; i < ExtraIds; i++)
         m_SnapIds.push_back(Server()->SnapNewId());
 }
@@ -21,6 +20,7 @@ CEntityOwned::CEntityOwned(int EntityId, int ItemId, CCharacter* pCharacter, int
 void CEntityOwned::Reset() {
     for(int id : m_SnapIds)
         Server()->SnapFreeId(id);
+    Server()->SnapFreeId(GetId());
 
     m_SnapIds.clear();
     
@@ -28,7 +28,7 @@ void CEntityOwned::Reset() {
 }
 
 bool CEntityOwned::ShouldReset() {
-    return m_ItemId > -1 && (!Player() || GameServer()->Sheep()->m_Cosmetics[Player()->GetCid()][m_ItemId] != this);
+    return m_CosmeticId > -1 && (!Player() || GameServer()->Sheep()->m_Cosmetics[Player()->GetCid()][m_CosmeticId] != this);
 }
 
 bool CEntityOwned::HasReset() {

@@ -527,11 +527,6 @@ public:
 
 	virtual std::optional<SWarning> CurrentWarning() = 0;
 
-	//<sheep>
-	//<windows>
-	#undef DELETE
-	//</windows>
-	//</sheep>
 	/**
 	 * Type of a message box popup.
 	 *

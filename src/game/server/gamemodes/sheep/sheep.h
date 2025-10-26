@@ -25,6 +25,9 @@
 #undef log_error
 #include <dpp/dpp.h>
 #define log_error(sys, ...) log_log(LEVEL_ERROR, sys, __VA_ARGS__)
+#undef ERROR
+#undef DELETE
+#undef IMAGE_CURSOR
 
 enum CAccountActions {
 	ACTION_ENTER,
